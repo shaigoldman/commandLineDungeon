@@ -1,0 +1,1 @@
+{Difficulty:Hard;Autosave:False;Scroll speed:0.6;}
