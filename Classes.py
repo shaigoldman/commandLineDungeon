@@ -210,7 +210,8 @@ def Chieftan():
         ('Speed', speed), ('Magic', magic)])
 
 # --- General funcs ---- #
-def printStats(stats, dungeon=None, statusbar=None, health=None, range=0, mob=None, weapons=None):
+def printStats(stats, dungeon=None, statusbar=None, health=None, 
+               range=0, mob=None, weapons=None):
     import random
     if not (dungeon or statusbar):
         class InputError(Exception):
