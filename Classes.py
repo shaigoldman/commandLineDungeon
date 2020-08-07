@@ -210,7 +210,7 @@ def Chieftan():
         ('Speed', speed), ('Magic', magic)])
 
 # --- General funcs ---- #
-def printStats(stats, dungeon=None, statusbar=None, health=None, range=0, mob=None, weapon=None):
+def printStats(stats, dungeon=None, statusbar=None, health=None, range=0, mob=None, weapons=None):
     import random
     if not (dungeon or statusbar):
         class InputError(Exception):
@@ -259,19 +259,20 @@ def printStats(stats, dungeon=None, statusbar=None, health=None, range=0, mob=No
                 if min<0:
                     min = 0
                 text +='%s: %d-%d' % (i, int(min), int(shown+range))
-            if weapon:
-                if weapon.itemtype == 'Weapon':
-                    if i == 'Power':
-                        text += ' + %d (from %s)' % (weapon.stats['Attack'], weapon.name)
-                    elif i == 'Speed':
-                        text += ' - %d (from %s)' % (weapon.getSpeedDetr(), weapon.name)
-                    elif i == 'Accuracy':
-                        text += ' - %d (from %s)' % (weapon.getAccrDetr(), weapon.name)
-                elif weapon.itemtype == 'Tome':
-                    if i == 'Magic':
-                        text += ' + %d (from %s)' % (weapon.stats['Attack'], weapon.name)
-                if i == 'Luck':
-                    text += ' + %d (from %s)' % (weapon.stats['Luck'], weapon.name)
+            if weapons:
+                for weapon in weapon:
+                    if weapon.itemtype == 'Weapon':
+                        if i == 'Power':
+                            text += ' + %d (from %s)' % (weapon.stats['Attack'], weapon.name)
+                        elif i == 'Speed':
+                            text += ' - %d (from %s)' % (weapon.getSpeedDetr(), weapon.name)
+                        elif i == 'Accuracy':
+                            text += ' - %d (from %s)' % (weapon.getAccrDetr(), weapon.name)
+                    elif weapon.itemtype == 'Tome':
+                        if i == 'Magic':
+                            text += ' + %d (from %s)' % (weapon.stats['Attack'], weapon.name)
+                    if i == 'Luck':
+                        text += ' + %d (from %s)' % (weapon.stats['Luck'], weapon.name)
             try:
                 dungeon.statusbar.addText(text, dungeon)
             except:

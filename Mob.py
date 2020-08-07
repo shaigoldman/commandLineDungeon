@@ -314,7 +314,7 @@ class Mob(Instance):
                 statusbar.addText('That is not a valid option.', dungeon)
         if not ask or inpt == 'y':
             from Classes import printStats
-            printStats(self.stats, dungeon, health=self.health, range=range, mob=self, weapon=self.weapons)
+            printStats(self.stats, dungeon, health=self.health, range=range, mob=self, weapons=self.weapons)
 
     def gainHealth(self, healthGain, dungeon):
 
