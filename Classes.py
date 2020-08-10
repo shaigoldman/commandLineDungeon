@@ -261,7 +261,7 @@ def printStats(stats, dungeon=None, statusbar=None, health=None,
                     min = 0
                 text +='%s: %d-%d' % (i, int(min), int(shown+range))
             if weapons:
-                for weapon in weapon:
+                for weapon in weapons:
                     if weapon.itemtype == 'Weapon':
                         if i == 'Power':
                             text += ' + %d (from %s)' % (weapon.stats['Attack'], weapon.name)
