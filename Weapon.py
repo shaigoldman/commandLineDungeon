@@ -152,7 +152,7 @@ class Weapon(Item):
         return strng
 
     def brek(self, player, dungeon):
-        dungeon.statusbar.addText('The %s broke!' % self.name)
+        dungeon.statusbar.addText('The %s broke!' % self.name, dungeon)
         player.weapons.remove(self)
 
     def getSpeedDetr(self):
