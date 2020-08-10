@@ -208,7 +208,7 @@ class Dungeon(object):
                     xdif = abs(j-self.P.x)
                     ydif = abs(i-self.P.y)
                     
-                    if ((xdif/2)+ydif<self.P.sightrange):
+                    if ((xdif/2)**2+ydif**2<self.P.sightrange**2):
                         row.append(1)
                     else:
                         row.append(0)
