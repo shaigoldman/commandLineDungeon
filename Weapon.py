@@ -21,7 +21,7 @@ class Weapon(Item):
 
         if self.itemtype == 'Weapon' and player.getMagicAttk() > player.stats['Power']:
             dungeon.statusbar.addText(
-                'When attacking with a physical weapon, your attack damage will be based on\n your ' +
+                'When attacking with a physical weapon, your attack damage will be based on\nyour ' +
                 'physical Attack power, not your Magic Power.', dungeon, waitForResp=True)
             dungeon.statusbar.addText('Your physical attack power would therefor be ' + 
                 '%d (+ %d for this weapon\'s bonus).' % (player.stats['Power'], self.stats['Attack']), dungeon, waitForResp=True)
@@ -37,7 +37,9 @@ class Weapon(Item):
 
         if self.stats['Weight']*2 > player.stats['Power']:
             dungeon.statusbar.addText('The %s is too heavy to equip!' % self.name)
-            dungeon.statusbar.addText('Try again when you have %d power.' % self.stats['Weight'])
+            dungeon.statusbar.addText('%s\'s weight: %d. Power required to weild: %d x 2 = %d.' % (
+                    self.name, self.stats['Weight'], self.stats['Weight'], self.stats['Weight']*2))
+            dungeon.statusbar.addText('Try again when you have %d power.' % (self.stats['Weight']*2))
             return
 
         if self in player.weapons:
