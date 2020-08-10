@@ -36,10 +36,12 @@ class Weapon(Item):
                 return
 
         if self.stats['Weight']*2 > player.stats['Power']:
-            dungeon.statusbar.addText('The %s is too heavy to equip!' % self.name)
+            dungeon.statusbar.addText('The %s is too heavy to equip!' % self.name, dungeon)
             dungeon.statusbar.addText('%s\'s weight: %d. Power required to weild: %d x 2 = %d.' % (
-                    self.name, self.stats['Weight'], self.stats['Weight'], self.stats['Weight']*2))
-            dungeon.statusbar.addText('Try again when you have %d power.' % (self.stats['Weight']*2))
+                    self.name, self.stats['Weight'], self.stats['Weight'], self.stats['Weight']*2),
+                    dungeon)
+            dungeon.statusbar.addText('Try again when you have %d power.' % (self.stats['Weight']*2), 
+                                      dungeon, waitForResp=True)
             return
 
         if self in player.weapons:
