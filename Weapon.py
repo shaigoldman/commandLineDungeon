@@ -147,6 +147,7 @@ class Weapon(Item):
         for i in self.stats:
             strng += '%s: %d; ' % (i, self.stats[i])
         strng += '\n-%d Speed and -%d Accuracy when equipped due to weight.' % (self.getSpeedDetr(), self.getAccrDetr())
+        strng += '\nPower required to weild: %d x 2 = %d' % (self.stats['Weight'], self.stats['Weight']*2)
         strng += '\nUses: %d/%d' % (self.usesLeft, self.uses)
         return strng
 
