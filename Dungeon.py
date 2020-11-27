@@ -326,6 +326,8 @@ class Dungeon(object):
             info.append(mob.getStatInfo('Speed'))
             if mob.ID == 3:
                 info.append(mob.getStatInfo('Magic'))
+            elif 'Armor' in mob.stats:
+                info.append(mob.getStatInfo('Armor'))
             if mob.fighting:
                 info.append(mob.getStatInfo('Hit')+'%')
             if 'Poison' in mob.stats['Effects']:
@@ -411,7 +413,7 @@ class Dungeon(object):
                         spaces += 2
                 except IndexError:
                     if line == len(self.b4pane.info):
-                        spaces = self.startline+1-9
+                        spaces = self.startline+1-12
                     else:
                         spaces = self.startline+3
                 try:
@@ -420,8 +422,11 @@ class Dungeon(object):
                             len(self.b4pane.b4pane.info[line]))
                 except IndexError:
                     if self.b4pane.b4pane and len(self.b4pane.info) < line:
-                        spaces += (max([len(i) for i in self.b4pane.b4pane.info]) -
-                            len(self.b4pane.b4pane.info[line-1]))
+                        try:
+                            spaces += (max([len(i) for i in self.b4pane.b4pane.info]) -
+	                            len(self.b4pane.b4pane.info[line-1]))
+                        except IndexError:
+	                        spaces += 15
 
             for i in range(spaces):
                 sys.stdout.write(' ')
@@ -442,8 +447,9 @@ class Dungeon(object):
         def addTitle(self, title):
             self.info.append(title)
 
-        def printLine(self, line):
-            if line > len(self.info) or line > 14:
+        def printLine(self, line, dungeon=None):
+            maxlines = dungeon.shape[0]#-1
+            if line > len(self.info) or line > maxlines:
                 return
             if line == len(self.info) :
                 self.addSpaces(line)
@@ -458,8 +464,8 @@ class Dungeon(object):
                 self.addSpaces(line)
                 sys.stdout.write(' '+color.UNDERLINE+
                     self.info[line]+color.END)
-            elif line<len(self.info) and line <= 14:
-            	if line == 14 and len(self.info)>line:
+            elif line<len(self.info) and line <= maxlines:
+            	if line == maxlines and len(self.info)>line:
             		self.addSpaces(line)
             		sys.stdout.write(' | ...')
                 elif self.info[line]:
@@ -530,9 +536,9 @@ class Dungeon(object):
         for i in range(dungeon.shape[1]+2):
             sys.stdout.write(wchar)
 
-        basePane.printLine(0)
-        statPane.printLine(0)
-        otherInfoPane.printLine(0)
+        basePane.printLine(0, dungeon)
+        statPane.printLine(0, dungeon)
+        otherInfoPane.printLine(0, dungeon)
 
         sys.stdout.write('\n')
 
@@ -557,9 +563,9 @@ class Dungeon(object):
                 else:
                     sys.stdout.write(wchar)
             sys.stdout.write(wchar)
-            basePane.printLine(i+1)
-            statPane.printLine(i+1)
-            otherInfoPane.printLine(i+1)
+            basePane.printLine(i+1, dungeon)
+            statPane.printLine(i+1, dungeon)
+            otherInfoPane.printLine(i+1, dungeon)
             
             sys.stdout.write('\n')
 
