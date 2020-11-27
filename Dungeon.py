@@ -443,25 +443,29 @@ class Dungeon(object):
             self.info.append(title)
 
         def printLine(self, line):
-            if line > len(self.info):
+            if line > len(self.info) or line > 14:
                 return
-            if line == len(self.info):
+            if line == len(self.info) :
                 self.addSpaces(line)
                 sys.stdout.write('  ')
                 if self.info:
-                    for i in range(9):
+                    for i in range(12):
                         sys.stdout.write('-')
-            elif self.info[line] == '-' * 9:
+            elif self.info[line] == '-' * 12:
                 self.addSpaces(line)
                 sys.stdout.write('  '+self.info[line]+' ')
             elif line in self.start:
                 self.addSpaces(line)
                 sys.stdout.write(' '+color.UNDERLINE+
                     self.info[line]+color.END)
-            elif line<len(self.info):
-                if self.info[line]:
+            elif line<len(self.info) and line <= 14:
+            	if line == 14 and len(self.info)>line:
+            		self.addSpaces(line)
+            		sys.stdout.write(' | ...')
+                elif self.info[line]:
                     self.addSpaces(line)
                     sys.stdout.write(' | '+self.info[line])
+
 
         def concat(self, pane2):
             while len(self.info) < len(pane2.info):
@@ -477,7 +481,7 @@ class Dungeon(object):
                 except UnicodeDecodeError:
                     pass
             if spot:
-                self.info[spot] = '-' * 9
+                self.info[spot] = '-' * 12
             self.start.extend(pane2.start)
             
     def disp(self):
