@@ -338,6 +338,8 @@ class Dungeon(object):
                 info.append('%d psn/%d turns' % 
                         (mob.stats['Poison'][1], 
                         mob.stats['Poison'][0]))
+            if mob.blood_drain:
+                info.append('Blood Drain')
 
             self.info.extend(info)
 
