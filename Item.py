@@ -266,6 +266,12 @@ class Terrible_Armor(Armor):
         self.rarity = 4
         self.initialize(-1, dungeon=dungeon)
 
+class Golem_Armor(Armor):
+    def __init__(self, dungeon=None):
+        self.name = 'Iron Armor'
+        self.rarity = 10
+        self.initialize(10, dungeon=dungeon)
+
 class Nuke(Item):
     def __init__(self, dungeon=None):
         self.init(dungeon)

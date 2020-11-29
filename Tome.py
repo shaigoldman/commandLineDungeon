@@ -177,6 +177,7 @@ class Wind_Tome(Tome):
         def Healing_Winds(player, dungeon=None, enemy=None):
             player.gainHealth(player.stats['Health']/2, dungeon)
             player.stats['Effects'] = {}
+            dungeon.statusbar.addText('Status effects healed!', dungeon)
 
         Healing_Winds = Spell(name='Healing Winds', when_use='Anytime', cost=8, magicReq=15,
                               usefunc=Healing_Winds, disc='Heals for half your hp and clears status effects.')
@@ -252,10 +253,10 @@ class Water_Tome(Tome):
                      usefunc=Heal, disc='Heals hp equal to your magic power.')
 
         def Grow(player, dungeon):
-            player.stats['Health'] += 5
+            player.stats['Health'] += 10
 
         Grow = Spell(name='Grow', when_use='Noncombat', cost=10, magicReq=60,
-                     usefunc=Grow, disc='+5 max HP.')
+                     usefunc=Grow, disc='+10 max HP.')
 
         # def Summon(player, dungeon=None, enemy=None):
         #     player.gainHealth(player.stats['Magic'], dungeon)
