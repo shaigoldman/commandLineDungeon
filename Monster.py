@@ -204,7 +204,7 @@ class Zombie(Monster):
             EXPmult=1, level=level, disp = disp)
 
         self.stats['Health'] += 4.5 * self.stats['Level']
-        self.stats['Power'] += 6 * (self.stats['Level']*.7)
+        self.stats['Power'] += 6 * (self.stats['Level']*.3)
         self.stats['Accuracy'] += (5 * self.stats['Level'])
         self.stats['Speed'] += self.stats['Level']/3
 
@@ -230,7 +230,7 @@ class Spider(Monster):
 
         self.stats['Health'] += 5.3 * self.stats['Level']
         self.stats['Power'] += 2.2 * self.stats['Level']
-        self.stats['Accuracy'] += (5 * self.stats['Level'] ** .7)
+        self.stats['Accuracy'] += (5 * self.stats['Level'] * .4)
         self.stats['Speed'] += 4 * self.stats['Level']
 
         self.statsRandomizer()
@@ -256,7 +256,7 @@ class Snake(Monster):
 
         self.stats['Health'] += 6 * self.stats['Level']
         self.stats['Power'] += 4 * self.stats['Level']
-        self.stats['Accuracy'] += (5 * self.stats['Level'] ** .7)
+        self.stats['Accuracy'] += (5 * self.stats['Level'] * .4)
         self.stats['Speed'] += 2 * self.stats['Level']
         #first is how long, second is amount of damge
         rand = int(random.random()*3)-1
@@ -290,7 +290,7 @@ class Parasite(Monster):
 
         self.stats['Health'] += 7 * self.stats['Level']
         self.stats['Power'] += 3 * self.stats['Level']
-        self.stats['Accuracy'] += (2 * self.stats['Level'] ** .7)
+        self.stats['Accuracy'] += (2 * self.stats['Level'] * .4)
         self.stats['Speed'] += 1.5 * self.stats['Level']
         #first is how long, second is amount of damge
         rand = int(random.random()*3)-1
@@ -322,7 +322,7 @@ class Golem(Monster):
 
         self.stats['Health'] += 7 * self.stats['Level']
         self.stats['Power'] += 4 * self.stats['Level']
-        self.stats['Accuracy'] += (4 * self.stats['Level'] ** .8)
+        self.stats['Accuracy'] += (4 * self.stats['Level'] * .5)
         self.stats['Speed'] += 1.8 * self.stats['Level']
         self.stats['Armor'] += 2 * self.stats['Level']
         #first is how long, second is amount of damge
