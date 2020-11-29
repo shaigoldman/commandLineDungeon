@@ -185,7 +185,7 @@ def Dragon():
     health = 200
     power = 50
     luck = 0
-    accuracy = 100
+    accuracy = 150
     speed = 40
     magic = 20
     classname = 'Dragon'
