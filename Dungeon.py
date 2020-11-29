@@ -282,7 +282,9 @@ class Dungeon(object):
             info.append('EXP: %d/100' % dungeon.P.stats['EXP'])
 
             if 'Armor' in dungeon.P.stats:
-                info.append('Armr: %d' % dungeon.P.stats['Armor'])  
+                info.append('Armr: %d' % dungeon.P.stats['Armor']) 
+            if dungeon.P.hands > 1:
+                 info.append('Hands: %d' % dungeon.P.hands) 
 
             if len(dungeon.P.weapons)==1:
                 for w in dungeon.P.weapons:
@@ -467,9 +469,9 @@ class Dungeon(object):
                 sys.stdout.write(' '+color.UNDERLINE+
                     self.info[line]+color.END)
             elif line<len(self.info) and line <= maxlines:
-            	if line == maxlines and len(self.info)>line:
-            		self.addSpaces(line)
-            		sys.stdout.write(' | ...')
+                if line == maxlines and len(self.info)>line:
+                    self.addSpaces(line)
+                    sys.stdout.write(' | .../')
                 elif self.info[line]:
                     self.addSpaces(line)
                     sys.stdout.write(' | '+self.info[line])

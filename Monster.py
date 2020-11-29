@@ -119,6 +119,7 @@ class Monster(Mob):
         for i in self.stats:
             if type(self.stats[i]) == int and i != 'Level' and i != 'EXP Reward' and self.stats[i] != 0:
                 self.stats[i] += int(random.random() * multiplier)
+                self.stats[i] = self.stats[i] ** 1.05
 
     def adjustStatsToDifficulty(self, difficulty):
         for d in range(difficulty):
@@ -204,7 +205,7 @@ class Zombie(Monster):
             EXPmult=1, level=level, disp = disp)
 
         self.stats['Health'] += 4.5 * self.stats['Level']
-        self.stats['Power'] += 1.9 * (self.stats['Level'])
+        self.stats['Power'] += 6 * (self.stats['Level'])
         self.stats['Accuracy'] += (1.8 * self.stats['Level'])
         self.stats['Speed'] += self.stats['Level']/3
 

@@ -120,8 +120,8 @@ class Player(Mob):
         while 1:
             inpt = statusbar.addOptionList(None, ['Wind', 'Fire', 'Water'], 
                     includeNoneOpt=False, startText='Choose a magic book element:')
-            from Tome import *
-            tome = locals()[inpt+'_Tome']()
+            from Tome import Magic_Staff
+            tome = Magic_Staff(element=inpt.lower())
             tome.printDisc(None, statusbar)
             inpt2 = statusbar.addYN(None, 'View Spells')
             if inpt2 == 'y':
@@ -253,6 +253,16 @@ class Player(Mob):
             if inpt == 'Fight':
                 return
             elif inpt == 'Flee':
+                numerator = self.stats['Speed'] - monster.stats['Speed']
+                denomenator = (self.stats['Speed'] + monster.stats['Speed'])/2.
+                fleechance = numerator / denomenator
+                if fleechance <= .3:
+                    fleechance = .3
+                if fleechance > 1:
+                    fleechance = 1
+
+                dungeon.statusbar.addText('Flee chance: %.2f' % fleechance)
+
                 if 'Escape Rope' in [i.itemtype for i in self.items]:
                     item = self.items[[i.itemtype for i in self.items].index('Escape Rope')]
                     inpt2 = dungeon.statusbar.addYN(dungeon, 'Use the escape rope?')
@@ -269,9 +279,7 @@ class Player(Mob):
                 if item and item.itemtype == 'Escape Rope':
                     return self.escape(dungeon)
             dungeon.statusbar.addNotValid(dungeon)
-        fleechance = ((self.stats['Speed'] - (monster.stats['Speed'])) + 5)/(20.)
-        if fleechance <= .5:
-            fleechance = .5
+        
         fleed = random.random() < fleechance
         if fleed:
             return self.escape(dungeon)
@@ -755,7 +763,7 @@ class Player(Mob):
             opts.remove(r)
         opts.append('Accuracy + Speed')
         
-        if self.stats['Level']%3 != 0 and 'Armor' in opts:
+        if 'Armor' in opts and (self.stats['Level']%3 != 0 or self.stats['Class'] != 'Knight'):
             opts.remove('Armor')
 
         inpt = dungeon.statusbar.addOptionList(dungeon, opts, 

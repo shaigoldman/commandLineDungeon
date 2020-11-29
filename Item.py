@@ -240,31 +240,36 @@ class Armor(Item):
                     '%s\'s armor: %d + %d = %d.' % (mob.name, mob.stats['Armor']-armr,
                     armr, mob.stats['Armor']), dungeon, waitForResp=True)
         self.usefunc = func
-        
+            
 
-class Rusty_Armor(Armor):
-    def __init__(self, dungeon=None):
+    def init_rusty(self, dungeon=None):
         self.name = 'Rusty Armor'
-        self.rarity = 4
         self.initialize(1, dungeon=dungeon)
 
-class Iron_Armor(Armor):
-    def __init__(self, dungeon=None):
+    def init_iron(self, dungeon=None):
         self.name = 'Iron Armor'
-        self.rarity = 6
         self.initialize(3, dungeon=dungeon)
 
-class Diamond_Armor(Armor):
-    def __init__(self, dungeon=None):
+    def init_diamond(self, dungeon=None):
         self.name = 'Diamond Armor'
-        self.rarity = 10
         self.initialize(15, dungeon=dungeon)
 
-class Terrible_Armor(Armor):
-    def __init__(self, dungeon=None):
+    def init_terrible(self, dungeon=None):
         self.name = '??? Armor'
-        self.rarity = 4
         self.initialize(-1, dungeon=dungeon)
+
+    def __init__(self, dungeon=None):
+    	self.rarity=4
+        if random.random() > .7:
+            if random.random() > .9:
+                if random.random() > .5:
+                    self.init_diamond(dungeon)
+                else:
+                    self.init_terrible(dungeon)
+            else:
+                self.init_iron(dungeon)
+        else:
+            self.init_rusty(dungeon)
 
 class Golem_Armor(Armor):
     def __init__(self, dungeon=None):
@@ -454,8 +459,8 @@ def itemList():
         Throwing_Knife, Javelin, Bomb, Ballistic_Missile, 
         Nuke, Nuke_Shield,
         Sword, Spear, Axe, 
-        Wind_Tome, Fire_Tome, Water_Tome,
-        Rusty_Armor, Iron_Armor, Diamond_Armor, Terrible_Armor,
+        Magic_Staff,
+        Armor,
         Hand]
     return items
 
@@ -482,6 +487,9 @@ def randItem(zlevel=0):
             maxer = 99
         for j in range(0, 100 - maxer):
             rars.append(i)
+
+    #return random.choice([Mystery_Tome, Mana_Potion])
+
     return random.choice(rarityItems()[random.choice(rars)])
 
 

@@ -311,34 +311,31 @@ class Mystery_Tome(Tome):
 
         def giveItem(player, dungeon):
             def randLoc(player):
-                rnge = player.sightrange
-                if rnge > 10:
-                    rnge = 10
-                x = player.x + (randInt(rnge) * (-1 * randInt(2)))
-                y = player.x + (randInt(rnge) * (-1 * randInt(2)))
-                print x >= dungeon.legnth or y >= dungeon.height
-                while x >= dungeon.legnth or y >= dungeon.height:
-                    x = player.x + (randInt(rnge) * (-1 * randInt(2)))
-                    y = player.x + (randInt(rnge) * (-1 * randInt(2)))
-                print x, y, dungeon.legnth, dungeon.height
+                #rnge = player.sightrange
+                rnge = 2
+                x = player.x + ((randInt(rnge)) * (random.choice([1,-1])))
+                y = player.y + ((randInt(rnge)) * (random.choice([1,-1])))
+                num_tries = 0
+                while (x >= dungeon.legnth or y >= dungeon.height
+                       or (x==player.x and y==player.y)
+                       or dungeon.dung[y,x].ID !=0):
+                    num_tries += 1
+                    if num_tries > 10000:
+                        dungeon.statusbar.addText('The spell failed!', dungeon)
+                        return -1, -1
+                    x = player.x + ((randInt(rnge)) * (random.choice([1,-1])))
+                    y = player.y + ((randInt(rnge)) * (random.choice([1,-1])))
                 return x, y
 
             from Item import randItem
 
-            y, x = randLoc(player)
-
-
-
-            try:
-                while dungeon.dung[x, y].ID!=0:
-                    x, y = randLoc(player)
-            except:
-                while dungeon.dung[y, x].opaque:
-                    x, y = randLoc(player)
-
+            x, y = randLoc(player)
+            if x == -1:
+                return
 
             item = randItem(dungeon.zlevel)()
-            dungeon.setInst(y, x, item)
+            dungeon.statusbar.addText('An %s magically appeared!' % item.name)
+            dungeon.setInst(x, y, item)
 
         def Mystery(player, dungeon):
             if random.random() > .75:
@@ -346,7 +343,7 @@ class Mystery_Tome(Tome):
             else:
                 giveItem(player, dungeon)
 
-        Mystery = Spell(name='Mystery', when_use='Noncombat', cost=10, magicReq=1,
+        Mystery = Spell(name='Mystery', when_use='Noncombat', cost=5, magicReq=1,
                         usefunc=Mystery, disc='Unknown Effect.')
 
         self.spells = [Mystery]

@@ -151,14 +151,12 @@ class Spell(object):
         strng += '\nMagic Level Required: %d' % self.magicReq
         return strng
 
+class Magic_Staff(Tome):
 
-class Wind_Tome(Tome):
-    def __init__(self, dungeon=None):
+    def init_wind(self, dungeon):
+
         self.initialize(attack=5, affn='Wind', luck=3, dungeon=dungeon)
-        self.rarity = 4
-        self.inity()
 
-    def inity(self):
         def Teleport(player, dungeon):
             player.assignRandomXY(dungeon)
             dungeon.revMatrix = dungeon.getRevMatrix()
@@ -185,14 +183,9 @@ class Wind_Tome(Tome):
         self.spells = [Teleport, Gust, Healing_Winds]
 
 
-class Fire_Tome(Tome):
-    def __init__(self, dungeon=None):
+    def init_fire(self, dungeon):
+
         self.initialize(attack=6, affn='Fire', luck=10, dungeon=dungeon)
-        self.rarity = 5
-
-        self.inity()
-
-    def inity(self):
 
         def Light(player, dungeon):
             x = int(random.random() * dungeon.legnth)
@@ -232,16 +225,13 @@ class Fire_Tome(Tome):
         self.spells = [Light, Burn, Annihilate]
 
 
-class Water_Tome(Tome):
-    def __init__(self, dungeon=None):
+    def init_water(self, dungeon):
+
         self.initialize(attack=4, affn='Water', luck=5, dungeon=dungeon)
-        self.rarity = 4
 
-        self.inity()
-
-    def inity(self):
         def Cleanse(player, dungeon):
             player.stats['Effects'] = {}
+            dungeon.statusbar.addText('Status effects cleansed!', dungeon)
 
         Cleanse = Spell(name='Cleanse', when_use='Noncombat', cost=4, magicReq=5,
                         usefunc=Cleanse, disc='Removes all status effects.')
@@ -264,3 +254,18 @@ class Water_Tome(Tome):
         #     disc='Heals health equal to your magic power.')
 
         self.spells = [Cleanse, Heal, Grow]
+
+
+    def __init__(self, dungeon=None, element=None):
+        self.rarity = 4
+
+        if element == 'wind':
+            inity = self.init_wind
+        elif element == 'fire':
+            inity = self.init_fire
+        elif element == 'water':
+            inity = self.init_water
+        else:
+            inity = random.choice([self.init_wind, self.init_fire, self.init_water])
+
+        inity(dungeon)

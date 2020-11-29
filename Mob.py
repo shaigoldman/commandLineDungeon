@@ -137,9 +137,11 @@ class Mob(Instance):
                          max100=False):
         stats = self.getAttackStats(usingWeapons=usingWeapons, usingTome=False)
         enemy_stats = enemy.getAttackStats(usingWeapons=bool(enemy.weapons), usingTome=False)
-        hitRate = stats['Accuracy'] + stats['Speed'] - (enemy_stats['Speed'] * 1.5)
+        hitRate = stats['Accuracy'] + stats['Speed'] - (enemy_stats['Speed'] * 1.2)
+        if hitRate < 40:
+        	hitRate = 40
         if printCalculation:
-            dungeon.statusbar.addText('Hit chance = Accuracy + Speed - (Enemy Speed * 1.5).', dungeon)
+            dungeon.statusbar.addText('Hit chance = Acc. + Spd - (Enemy Spd * 1.2) [Min: 40%].', dungeon)
         if printRate:
             hitdisp = str(hitRate)
             if '.' in hitdisp:
@@ -168,6 +170,7 @@ class Mob(Instance):
                 usingWeapon.append(w)
 
         if usingWeapon and self.ID == 3:
+            not_using = []
             for t in [usingWeapon, usingTome]:
                 for w in t:
                     while 1:
@@ -181,10 +184,15 @@ class Mob(Instance):
                         if inpt == 'y':
                             break
                         elif inpt == 'n':
-                            t.remove(w)
+                            not_using.append(w)
                             break
                         else:
                             dungeon.statusbar.addNotValid(dungeon)
+            for w in not_using:
+                if w in usingWeapon:
+                    usingWeapon.remove(w)
+                elif w in usingTome:
+                    usingTome.remove(w)
 
         strng = '%s attacked %s' % (self.name, enemy.name)
         for w in range(len(usingWeapon)):
