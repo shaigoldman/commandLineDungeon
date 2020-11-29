@@ -215,7 +215,10 @@ class Mob(Instance):
 
             dmg = stats['Attack']
 
-            if random.random() * random.random() > 1 - (stats['Luck'] * .01):
+            critical_chance = stats['Luck'] * .01
+            if critical_chance > .70:
+            	critical_chance = .70
+            if random.random() * random.random() > 1 - critical_chance:
                 dungeon.statusbar.addText('Critical hit!', dungeon)
                 dmg *= 3
 
