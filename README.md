@@ -1,18 +1,22 @@
 # dungeonGame
 
 How to play:
-go to terminal in mac: space + enter will open spotlight search, then type terminal, press enter, then you are there.
+1 open terminal in mac
 
-Zoom in with command+ (on some computers, command shift +).
+2 Zoom in with command+ (on some computers, command shift +).
 
-Go to desktop folder by typing this:
+3 change into desktop directory:
 
 	cd Desktop
 
-Install the game by typing this:
+4 Install the game:
 
-	git clone https://github.com/shaigoldman/dungeonGame.git
+	git clone https://github.com/shaigoldman/commandLineDungeon.git
+	cd commandLineDungeon
 
-Play by typing this:
+5 Play:
 
 	python game.py
+
+
+NOTE: This game was designed in Python 2 and hasn't been updated to python 3 yet. It can only be run using python 2.
