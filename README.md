@@ -2,7 +2,7 @@
 
 How to play:
 
-1. open terminal in mac
+1. Open terminal in mac
 
 2. Zoom in with command+ (on some computers, command shift +).
 
