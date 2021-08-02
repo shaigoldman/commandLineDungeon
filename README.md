@@ -1,4 +1,4 @@
-# dungeonGame
+# commandLineDungeon
 
 How to play:
 1 open terminal in mac
