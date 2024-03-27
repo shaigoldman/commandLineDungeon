@@ -12,8 +12,7 @@ How to play:
 
 4. Install the game:
 
-	git clone https://github.com/shaigoldman/commandLineDungeon.git
-	cd commandLineDungeon
+	git clone https://github.com/shaigoldman/commandLineDungeon.git && cd commandLineDungeon
 
 5. Play:
 
