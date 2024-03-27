@@ -15,7 +15,7 @@ class Weapon(Item):
                 (player.name, self.name), dungeon)
         player.weapons.remove(self)
         if keep:
-            player.items.append(self)
+            player.items.append(self) 
 
     def usefunc(self, player, dungeon, when='Noncombat'):
 

@@ -82,7 +82,6 @@ def randInt(mx):
 
 def randFromList(lis):
     if not lis:
-      print 'No list here!'
       return None
     return lis[randInt(len(lis))]
 

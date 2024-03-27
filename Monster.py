@@ -7,6 +7,7 @@ import Instance
 import Classes
 from Mob import Mob
 from Misc_funcs import *
+from Item import *
 
 class Monster(Mob):
 
@@ -74,18 +75,16 @@ class Monster(Mob):
             #print dungeon.Ms
             #print 'removed'
         except ValueError:
-            print 'ahh'
             uniqueIDs = [m.uniqueID for m in dungeon.Ms]
-            print self.uniqueID
+            print (self.uniqueID)
             for m in dungeon.Ms:
-                print m.name, m.uniqueID
+                print (m.name, m.uniqueID)
             try:
                 dungeon.Ms.remove(dungeon.Ms[uniqueIDs.index(self.uniqueID)])
             except Exception:
                 pass
 
         if not source == 'Deal':
-            from Item import *
             if self.item:
                 item = self.item
                 if item.itemtype == 'Key':
@@ -195,7 +194,7 @@ class Monster(Mob):
 
 class Zombie(Monster):
     
-    def __init__(self, dungeon=None, level=None, putInDungeon=True):
+    def __init__(self, dungeon=None, level=1, putInDungeon=True):
 
         self.name = 'Zombie'
 
@@ -220,7 +219,7 @@ class Zombie(Monster):
 
 class Spider(Monster):
 
-    def __init__(self, dungeon=None, level=None, putInDungeon=True):
+    def __init__(self, dungeon=None, level=1, putInDungeon=True):
 
         self.name = 'Spider'
 
@@ -246,7 +245,7 @@ class Spider(Monster):
 
 class Snake(Monster):
 
-    def __init__(self, dungeon=None, level=None, putInDungeon=True):
+    def __init__(self, dungeon=None, level=1, putInDungeon=True):
 
         self.name = 'Snake'
 
@@ -280,7 +279,7 @@ class Snake(Monster):
 
 class Parasite(Monster):
 
-    def __init__(self, dungeon=None, level=None, putInDungeon=True):
+    def __init__(self, dungeon=None, level=1, putInDungeon=True):
 
         self.name = 'Parasite'
 
@@ -312,7 +311,7 @@ class Parasite(Monster):
 
 class Golem(Monster):
 
-    def __init__(self, dungeon=None, level=None, putInDungeon=True):
+    def __init__(self, dungeon=None, level=1, putInDungeon=True):
 
         self.name = 'Golem'
 
@@ -340,7 +339,7 @@ class Golem(Monster):
 
 class Dragon(Monster):
 
-    def __init__(self, dungeon=None, level=None, putInDungeon=True):
+    def __init__(self, dungeon=None, level=1, putInDungeon=True):
 
         self.name = 'Snake'
 

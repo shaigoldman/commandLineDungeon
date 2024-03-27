@@ -139,7 +139,7 @@ class Mob(Instance):
         enemy_stats = enemy.getAttackStats(usingWeapons=bool(enemy.weapons), usingTome=False)
         hitRate = stats['Accuracy'] + stats['Speed'] - (enemy_stats['Speed'] * 1.2)
         if hitRate < 40:
-        	hitRate = 40
+            hitRate = 40
         if printCalculation:
             dungeon.statusbar.addText('Hit chance = Acc. + Spd - (Enemy Spd * 1.2) [Min: 40%].', dungeon)
         if printRate:
@@ -225,7 +225,7 @@ class Mob(Instance):
 
             critical_chance = stats['Luck'] * .01
             if critical_chance > .70:
-            	critical_chance = .70
+                critical_chance = .70
             if random.random() * random.random() > 1 - critical_chance:
                 dungeon.statusbar.addText('Critical hit!', dungeon)
                 dmg *= 3

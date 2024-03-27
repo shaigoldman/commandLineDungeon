@@ -12,7 +12,6 @@ def getCurOptions():
         f.close()
         return saving.loadDict(optstring)
     except IOError:
-        print 'eerr'
         opts = getDefaultOptions()
         savestr = saving.saveDict(opts)
         f = open('Options.opt', 'w')

@@ -75,7 +75,7 @@ class Player(Mob):
 
     def get_name(self, statusbar):
         statusbar.addText('What is your name?')
-        self.name = raw_input()
+        self.name = input()
         self.name = ' '.join(word[0].upper() + word[1:] for word in self.name.split())
         if self.name == '':
             self.name = 'Test'

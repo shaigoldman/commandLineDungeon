@@ -18,6 +18,3 @@ How to play:
 5. Play:
 
 	python game.py
-
-
-NOTE: This game was designed in Python 2 and hasn't been updated to python 3 yet. It can only be run using python 2.

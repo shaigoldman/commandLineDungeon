@@ -21,9 +21,6 @@ class Statusbar(object):
         delay=0.04, endsegment=False, clearable=True,
         waitForResp=False):
 
-        if '~' in text:
-            print text, 'found em'
-
         if endsegment and not self.text[len(self.text)-2] == '~':
             text+='\n~\n'
             newline = False
@@ -70,7 +67,7 @@ class Statusbar(object):
     
     def endSegment(self, dungeon, printCont=True, includeArrows=True, specificLetter=None):
         self.addBreak(dungeon, clearable=False)
-        if not 'to continue' in self.text[len(self.text)/2:] and not specificLetter:
+        if not 'to continue' in self.text[len(self.text)//2:] and not specificLetter:
             nonArrow = ''
             if not includeArrows:
                 nonArrow = '(non arrow) '
@@ -149,6 +146,6 @@ class Statusbar(object):
                 self.text = self.text[self.text.index('~')+1:]
             except ValueError:
                 break
-        print ''
+        print ('')
 
 

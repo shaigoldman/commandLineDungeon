@@ -259,7 +259,7 @@ class Armor(Item):
         self.initialize(-1, dungeon=dungeon)
 
     def __init__(self, dungeon=None):
-    	self.rarity=4
+        self.rarity=4
         if random.random() > .7:
             if random.random() > .9:
                 if random.random() > .5:

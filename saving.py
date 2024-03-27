@@ -22,15 +22,15 @@ def saveItem(item):
         type(item) == type(np.int32(4))):
         return str(item)
     elif (type(item) == str or
-        type(item) == unicode or
+        type(item) == bytes or
         type(item) == np.string_ or
         type(item) == bool):
         try:
-            return unicode(item.decode('utf8'))
+            return str(item.decode('utf8'))
         except AttributeError:
             return item
         except UnicodeEncodeError:
-            return unicode(item)
+            return str(item)
         else:
             pass
             #print item
@@ -46,8 +46,11 @@ def saveItem(item):
     elif type(item) == type(None):
         return str(None)
     else:
-        return ('\\%s-' % (getTypeString(item)) 
-            + '%s/' % saveDict(vars(item)))
+        try:
+            return ('\\%s-' % (getTypeString(item)) 
+                + '%s/' % saveDict(vars(item)))
+        except TypeError:
+            return str(None)
 
 
 def saveDict(dictionary):
@@ -81,7 +84,7 @@ def saveFunc(func):
     # import marshal
     # saved = marshal.dumps(func.func_code)
     # return '#%s$' % saved
-    return 'FUNC%s' % func.func_name
+    return 'FUNC%s' % func.__name__
 
 
 def findEnder(string, begchar, endchar):
@@ -198,14 +201,14 @@ def loadDict(dictstring):
 
 
 def loadObj(objstring):
-    print objstring
+    print (objstring)
     import Player, Dungeon, Monster, Npc
     import Instance, Item, Weapon, Tome, Boosters, Replenisher
     import Statusbar
     try:
         location = objstring[1:objstring.index('.')] #skip the \\
     except ValueError:
-        print objstring
+        print (objstring)
     objtype = objstring[objstring.index('.')+1:objstring.index('-')]
     variables = loadDict(objstring[objstring.index('{'):-1]) # skip the /
     obj = getattr(locals()[location], objtype)
@@ -237,7 +240,7 @@ def loadFunc(funcstring):
 def saveGame(dungeon, savefile):
     dungeon.statusbar.clear()
     savestr = saveItem(dungeon)
-    f=open(savefile, 'w')
+    f=open(savefile, 'wb')
     savestr=savestr.encode('utf8')
     f.write(savestr)
     f.close()

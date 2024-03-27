@@ -45,11 +45,8 @@ if not sysIsWindows():
                     return ch
                 if interpSymb(ch):
                     return interpSymb(ch)
-                
-
-
-            except (KeyboardInterrupt, EOFError):
-                print 'error'
+            except (EOFError):
+                print ('error')
                 return 0
     def breakIfKey(method=None, maxiter=float('inf')):
         import sys
