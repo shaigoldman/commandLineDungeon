@@ -54,3 +54,7 @@ The 24×32 shaded unit sprites and retained monster silhouette patterns in `src/
 ## Simulation follow-up
 
 See `SIMULATION.md` for reproducible seeded playthroughs and focused regressions. Nuke deaths now retain original non-deal key/item drops without combat EXP. Turn rounding resolves deaths immediately. Unrequested level bonuses, overflowing unequips, and distant treasure pickups are rejected. NPC Health transfers preserve a positive maximum and valid current HP. Combat formulas and balance remain unchanged.
+
+## Mobile interaction additions
+
+The `use-floor` action applies the normal consumable effect to a reachable pending floor item, then removes it from the floor without taking inventory space or advancing a turn. Equipment and reusable teleport/trash items retain pickup-first behavior. The new enemy-damage forecast is read-only and uses the existing attack mode, boosters, armor, critical multiplier and initiative formula; it does not change combat or consume RNG. Threshold health cues and action animations are presentation only.

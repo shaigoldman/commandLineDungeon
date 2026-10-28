@@ -14,7 +14,7 @@ Android uses `LocalGameAPI` to run the shared engine locally. All successful gam
 
 Android progress is **separate from server progress**. A device journey code works only on the same installation. It does not retrieve a web save or transfer to another phone. The save panel makes this distinction explicit. Closing/reopening the app resumes the current journey; uninstalling or clearing app data removes local saves. This build does not implement cloud synchronization or cross-device save transfer.
 
-The package ID is `com.shaigoldman.commandlinedungeon.test`, version `0.1.0-test`, version code `1`, launcher name **Dungeon Test**. This is a debug-signed test package, distinct from any future store release. Native permissions are the normal Internet permission used by the WebView shell and an AndroidX internal signature permission; the game does not request contacts, location, or shared-storage access.
+The package ID is `com.shaigoldman.commandlinedungeon.test`, version `0.2.0-test`, version code `2`, launcher name **Dungeon Test**. This is a debug-signed test package, distinct from any future store release. Native permissions are the normal Internet permission used by the WebView shell and an AndroidX internal signature permission; the game does not request contacts, location, or shared-storage access.
 
 The workspace signing key is ignored under `work/android-user/`. Keep it for compatible rebuilds. A fresh checkout or CI may use a different test signing key; Android will reject an in-place update signed by that other key. Uninstalling to switch keys removes local progress. Release signing and Google Play publication need a separate owner-controlled production key and are not performed here.
 
@@ -55,3 +55,13 @@ npm run test:android:browser
 npm run build
 npm run test:browser
 ```
+
+## Phone UX update (0.2.0-test)
+
+The play screen fits a single viewport in portrait and landscape. Tap Bag, Spells, Log, or Character to open a panel; close it to return to the map. The map follows the hero; Overview shows the floor while retaining fog. Direction controls and adjacent map tiles move; encounters replace movement with relevant choices. Quick Heal uses the smallest sufficient healing potion. Android Back closes panels, then opens the saved-game/pause panel. Native system bars use dark backgrounds and light icons.
+
+Critical health is labeled at 10% or less; Last Breath is labeled at 1% or less. These are persistent text/border cues, with no flashing. Combat warns about a potentially lethal normal or critical next hit, subtracts armor, and explains initiative. This is a possibility warning, not a prediction of a hit: misses, kills before retaliation, poison, later buff expiry and spell outcomes can change an exchange.
+
+Use from floor consumes usable items in place, even with a full bag. Equipment and reusable teleport/trash items must first be picked up; their existing inventory behavior is retained. Movement slides between cells, attacks lunge and slash, pickups sparkle, and restoration has rising numbers and an energy ring. Reduced-motion preferences disable travel, lunges and particle motion while retaining result labels.
+
+Automated Chromium checks cover 60 combinations of five viewport sizes (320×480 through landscape 844×390) and twelve game states. Primary buttons are checked for clipping and occlusion as well as visibility. The package uses the same signing certificate as version 0.1, allowing an in-place update that retains device saves.

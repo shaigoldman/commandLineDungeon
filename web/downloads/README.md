@@ -11,4 +11,6 @@ Open that link in your Android phone's browser, download the APK, open it from D
 - Uninstalling or clearing app storage removes these local saves.
 - This is a debug-signed test APK, not a Google Play release. Future updates retain saves when signed with the same key. A build signed by a different local/CI key cannot replace it without uninstalling.
 
-File: `command-line-dungeon-android-test.apk` (6,989,960 bytes). SHA-256 is recorded in `SHA256SUMS.txt`. See [Android build and verification details](../docs/ANDROID.md).
+Version **0.2.0-test** adds the single-screen phone layout, direct floor-item use, low-health and lethal-hit warnings, and clearer sprites/action animations. Install over the existing test app to retain saves.
+
+File: `command-line-dungeon-android-test.apk`. SHA-256 is recorded in `SHA256SUMS.txt`. See [Android build and verification details](../docs/ANDROID.md).

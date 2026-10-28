@@ -486,6 +486,28 @@ export function combatAttackStats(a: Actor, consume = false, unarmed = false) {
     !unarmed && a.weapons.some((w) => w.kind === "tome") && a.stats.Mana >= 2;
   return attackStats(a, consume, physical, magical);
 }
+/** Preview only: no RNG, durability, mana or effect duration is consumed. */
+export function incomingDamage(enemy: Actor, player: Actor) {
+  const s = combatAttackStats(enemy);
+  const armor = Math.max(0, player.stats.Armor || 0);
+  const normal = Math.max(0, Math.trunc(s.Attack - armor));
+  const critical =
+    s.Luck > 0 ? Math.max(0, Math.trunc(s.Attack * 3 - armor)) : normal;
+  return {
+    normal,
+    critical,
+    lethal: normal >= player.hp,
+    criticalLethal: critical >= player.hp,
+    enemyFirst:
+      player.stats.Speed -
+        player.weapons.reduce((n, w) => n + (w.weight || 0) / 4, 0) <
+      enemy.stats.Speed,
+  };
+}
+/** Floor use consumes an item in place without using an inventory slot. */
+export function canUseFromFloor(item: Item) {
+  return !["weapon", "tome", "teleport", "trash"].includes(item.kind);
+}
 export function hitRate(a: Actor, b: Actor) {
   const s = attackStats(a),
     e = attackStats(b);
@@ -835,6 +857,20 @@ export function act(input: Game, a: Action): Game {
       const loot = g.loot.find((i) => i.x === x && i.y === y);
       if (loot) g.pendingLoot = loot.item;
       monsterTurn(g);
+      break;
+    }
+    case "use-floor": {
+      const i = g.pendingLoot;
+      if (
+        !i ||
+        !g.loot.some((l) => l.item.id === i.id && l.x === p.x && l.y === p.y)
+      )
+        throw Error("That treasure is no longer within reach.");
+      if (!canUseFromFloor(i))
+        throw Error("Pick up this item before using it.");
+      use(g, i);
+      g.loot = g.loot.filter((l) => l.item.id !== i.id);
+      g.pendingLoot = undefined;
       break;
     }
     case "pickup": {

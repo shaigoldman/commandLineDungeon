@@ -77,6 +77,7 @@ export type Action =
         | "ascend"
         | "continue"
         | "pickup"
+        | "use-floor"
         | "ignore"
         | "talk";
     }

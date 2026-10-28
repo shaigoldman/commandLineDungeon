@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
+import { App as NativeApp } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
 import { createRoot } from "react-dom/client";
 import type { Game, Action } from "../shared/types";
 import { classes, describe } from "../shared/catalog";
@@ -7,13 +9,33 @@ import {
   combatAttackStats,
   hitRate,
   fleeChance,
+  incomingDamage,
+  canUseFromFloor,
 } from "../shared/engine";
 import { DungeonView } from "./DungeonView";
 import { Portrait } from "./Portrait";
 import "./style.css";
+import "./mobile.css";
 import { requestGame, isDeviceGame } from "./game-api";
 function App() {
   const [highScore, setHighScore] = useState(0);
+  const [compact, setCompact] = useState(
+    window.matchMedia(
+      "(max-width:700px), (max-height:500px) and (pointer:coarse)",
+    ).matches,
+  );
+  const [mobilePanel, setMobilePanel] = useState(false);
+  const [mobileHint, setMobileHint] = useState("");
+  const [overview, setOverview] = useState(false);
+  const [lastAction, setLastAction] = useState<{
+    type: string;
+    revision: number;
+  }>();
+  const drawer = useRef<HTMLElement>(null);
+  function openPanel(next: string) {
+    setTab(next);
+    if (compact) setMobilePanel(true);
+  }
   const [game, setGame] = useState<Game>(),
     [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
@@ -37,6 +59,70 @@ function App() {
       .then(({ data }) => setHighScore(data.score || 0))
       .catch(() => {});
   }, [game?.status]);
+  useEffect(() => {
+    const media = window.matchMedia(
+      "(max-width:700px), (max-height:500px) and (pointer:coarse)",
+    );
+    const update = () => {
+      setCompact(media.matches);
+      if (!media.matches) setMobilePanel(false);
+    };
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+  useEffect(() => {
+    document.body.classList.toggle("playing-compact", compact && !!game);
+    if (compact && game) window.scrollTo(0, 0);
+    return () => document.body.classList.remove("playing-compact");
+  }, [compact, !!game]);
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const listener = NativeApp.addListener("backButton", () => {
+      if (!game) {
+        void NativeApp.exitApp();
+        return;
+      }
+      if (help) setHelp(false);
+      else if (save) setSave(false);
+      else if (mobilePanel) setMobilePanel(false);
+      else setSave(true);
+    });
+    return () => {
+      void listener.then((h) => h.remove());
+    };
+  }, [help, save, mobilePanel, !!game]);
+  useEffect(() => {
+    if (!compact || !mobilePanel) return;
+    const old = document.activeElement as HTMLElement;
+    drawer.current?.querySelector<HTMLButtonElement>(".drawer-close")?.focus();
+    const trap = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const controls = Array.from(
+        drawer.current?.querySelectorAll<HTMLElement>(
+          'button:not(:disabled),select,input,textarea,[tabindex="0"]',
+        ) || [],
+      ).filter((el) => el.getClientRects().length);
+      const first = controls[0],
+        last = controls.at(-1);
+      if (!drawer.current?.contains(document.activeElement)) {
+        e.preventDefault();
+        first?.focus();
+        return;
+      }
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last?.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first?.focus();
+      }
+    };
+    document.addEventListener("keydown", trap);
+    return () => {
+      document.removeEventListener("keydown", trap);
+      if (old?.isConnected) old.focus();
+    };
+  }, [compact, mobilePanel]);
   async function api(path: string, body?: unknown, key?: string) {
     const { ok, data } = await requestGame(path, body, key);
     if (data.game) setGame(data.game);
@@ -54,11 +140,36 @@ function App() {
     setBusy(true);
     setError("");
     try {
-      await api(
+      const outcome = await api(
         "action",
         { action: a, revision: game.revision },
         recovery || undefined,
       );
+      const after = outcome.game;
+      if (after) setLastAction({ type: a.type, revision: after.revision });
+      if (a.type === "move" && after && !after.combat && !after.pendingLoot) {
+        if (
+          after.player.x === game.player.x &&
+          after.player.y === game.player.y
+        )
+          setMobileHint("Stone wall. Try another direction.");
+        else if (after.log.at(-1) === game.log.at(-1))
+          setMobileHint(
+            "Moved " +
+              (a.dx === 1
+                ? "east"
+                : a.dx === -1
+                  ? "west"
+                  : a.dy === 1
+                    ? "south"
+                    : "north") +
+              ".",
+          );
+        else setMobileHint("");
+      } else if (a.type === "wait")
+        setMobileHint("You wait a turn. Enemies may move.");
+      else setMobileHint("");
+      if (compact && ["use", "cast"].includes(a.type)) setMobilePanel(false);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -68,10 +179,17 @@ function App() {
   }
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMobilePanel(false);
+        setHelp(false);
+        setSave(false);
+        return;
+      }
       if (
         (e.target as HTMLElement).matches("input,select,textarea") ||
         help ||
-        save
+        save ||
+        mobilePanel
       )
         return;
       const k = e.key.toLowerCase();
@@ -87,16 +205,16 @@ function App() {
       } else if (k === " ") {
         e.preventDefault();
         void act({ type: "wait" });
-      } else if (k === "i") setTab("inventory");
-      else if (k === "m") setTab("spells");
-      else if (k === "s") setTab("stats");
+      } else if (k === "i") openPanel("inventory");
+      else if (k === "m") openPanel("spells");
+      else if (k === "s") openPanel("stats");
       else if (k === "h") setHelp(true);
       else if (k === "v") setSave(true);
       else if (k === "enter" && game?.combat) void act({ type: "attack" });
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [game, help, save, recovery]);
+  }, [game, help, save, recovery, compact, mobilePanel]);
   useEffect(() => {
     journal.current?.scrollTo({
       top: journal.current.scrollHeight,
@@ -123,7 +241,16 @@ function App() {
     setBusy(false);
   }
   const button = (text: string, a: Action, kind = "") => (
-    <button className={kind} disabled={busy} onClick={() => void act(a)}>
+    <button
+      className={kind}
+      disabled={
+        busy ||
+        game?.status === "dead" ||
+        (game?.status === "won" && a.type !== "continue") ||
+        (!!game?.pendingLevels && a.type !== "level")
+      }
+      onClick={() => void act(a)}
+    >
       {text}
     </button>
   );
@@ -257,8 +384,46 @@ function App() {
     enemy = game.monsters.find((m) => m.id === game.combat),
     stats = combatAttackStats(p),
     cast = availableSpells(game);
+  const danger = enemy ? incomingDamage(enemy, p) : undefined;
+  const healthRatio = p.hp / p.stats.Health;
+  const healthWarning =
+    p.hp > 0 && healthRatio <= 0.01
+      ? "LAST BREATH · 1% HP or less"
+      : p.hp > 0 && healthRatio <= 0.1
+        ? "CRITICAL · 10% HP or less"
+        : "";
+  const hasContext =
+    game.status !== "playing" ||
+    !!enemy ||
+    !!game.pendingLoot ||
+    !!game.pendingLevels;
+  const canExplore = !hasContext && !busy && !mobilePanel && !help && !save;
+  const potions = game.inventory
+    .filter((i) => i.kind === "heal")
+    .sort((a, b) => a.value - b.value);
+  const quickPotion =
+    potions.find((i) => i.value >= p.stats.Health - p.hp) || potions.at(-1);
+  const latestMessage =
+    error ||
+    mobileHint ||
+    (game.turn === 0 && !hasContext
+      ? "Tap an outlined tile or use arrows. Red tiles start encounters."
+      : game.log.at(-1)) ||
+    "Find the guardian and the stairs.";
   return (
-    <div className="shell">
+    <div
+      className={
+        "shell" +
+        (compact ? " compact-game" : "") +
+        (mobilePanel ? " panel-open" : "") +
+        (hasContext ? " has-context" : "") +
+        (healthWarning
+          ? healthRatio <= 0.01
+            ? " health-last-breath"
+            : " health-critical"
+          : "")
+      }
+    >
       <header>
         <a className="brand" href="/">
           ◈{" "}
@@ -277,6 +442,49 @@ function App() {
           </button>
         </nav>
       </header>
+      {compact && (
+        <button
+          className="mobile-hud"
+          aria-label="Character details"
+          aria-haspopup="dialog"
+          onClick={() => openPanel("stats")}
+        >
+          <Portrait type={p.className} />
+          <span className="hud-identity">
+            <strong>{p.name}</strong>
+            <small>
+              {healthWarning ||
+                `Lv ${p.level} ${p.className} · XP ${game.xp}/100`}
+            </small>
+            {p.effects.Poison && (
+              <small className="poison-label">
+                Poison {p.effects.Poison[1]} × {p.effects.Poison[0]} moves
+              </small>
+            )}
+          </span>
+          <span className="hud-vitals">
+            <span className={p.hp / p.stats.Health < 0.4 ? "low-health" : ""}>
+              HP{" "}
+              <b>
+                {Math.floor(p.hp)} / {Math.floor(p.stats.Health)}
+              </b>
+            </span>
+            <span className="hud-meter hp">
+              <i
+                style={{
+                  width: Math.max(0, (p.hp / p.stats.Health) * 100) + "%",
+                }}
+              />
+            </span>
+            <span>
+              MP <b>{p.stats.Mana} / 10</b>
+            </span>
+            <span className="hud-meter mana">
+              <i style={{ width: p.stats.Mana * 10 + "%" }} />
+            </span>
+          </span>
+        </button>
+      )}
       <main className="game-layout">
         <aside className="character panel">
           <div className="panel-caption">
@@ -290,7 +498,7 @@ function App() {
             Level {p.level} {p.className}
           </p>
           <div className="bar-label">
-            HEALTH{" "}
+            {healthWarning || "HEALTH"}{" "}
             <b>
               {Math.floor(p.hp)} / {Math.floor(p.stats.Health)}
             </b>
@@ -389,15 +597,37 @@ function App() {
             <div className="map-toolbar">
               <span>
                 <i className="dot" />{" "}
-                {enemy ? "ENCOUNTER IN PROGRESS" : "EXPLORING THE DUNGEON"}
+                {healthWarning ||
+                  (enemy ? "ENCOUNTER IN PROGRESS" : "EXPLORING THE DUNGEON")}
               </span>
               <span>
                 TURN {String(game.turn).padStart(3, "0")} · {game.keys} KEYS
               </span>
+              <button
+                className="map-zoom"
+                aria-label={overview ? "Follow hero" : "Show floor overview"}
+                aria-pressed={overview}
+                onClick={() => {
+                  setOverview((v) => !v);
+                  setMobileHint(
+                    overview
+                      ? "Following your hero."
+                      : "Floor overview. Areas outside your sight stay dark.",
+                  );
+                }}
+              >
+                {overview ? "Follow hero" : "Overview"}
+              </button>
             </div>
             <DungeonView
               game={game}
-              onMove={(dx, dy) => void act({ type: "move", dx, dy })}
+              action={lastAction}
+              overview={overview}
+              onMove={(dx, dy) => {
+                if (canExplore) void act({ type: "move", dx, dy });
+              }}
+              movementEnabled={canExplore}
+              onHint={setMobileHint}
             />
             <div className="map-footer">
               <span>
@@ -426,6 +656,7 @@ function App() {
             <div className="controls">
               <button
                 aria-label="Move left"
+                disabled={!canExplore}
                 onClick={() => void act({ type: "move", dx: -1, dy: 0 })}
               >
                 ←
@@ -433,12 +664,14 @@ function App() {
               <div>
                 <button
                   aria-label="Move up"
+                  disabled={!canExplore}
                   onClick={() => void act({ type: "move", dx: 0, dy: -1 })}
                 >
                   ↑
                 </button>
                 <button
                   aria-label="Move down"
+                  disabled={!canExplore}
                   onClick={() => void act({ type: "move", dx: 0, dy: 1 })}
                 >
                   ↓
@@ -446,25 +679,65 @@ function App() {
               </div>
               <button
                 aria-label="Move right"
+                disabled={!canExplore}
                 onClick={() => void act({ type: "move", dx: 1, dy: 0 })}
               >
                 →
               </button>
               <button
                 className="wait"
+                disabled={!canExplore}
                 onClick={() => void act({ type: "wait" })}
               >
                 Wait<kbd>SPACE</kbd>
               </button>
+              {compact && (
+                <button
+                  className="quick-heal"
+                  aria-label="Use healing potion"
+                  disabled={
+                    busy ||
+                    !quickPotion ||
+                    p.hp >= p.stats.Health ||
+                    !!game.pendingLevels ||
+                    game.status !== "playing"
+                  }
+                  onClick={() => {
+                    if (quickPotion)
+                      void act({ type: "use", id: quickPotion.id });
+                  }}
+                >
+                  Heal
+                  <small>
+                    {potions.length
+                      ? `${potions.length} potion${potions.length === 1 ? "" : "s"}`
+                      : "No potions"}
+                  </small>
+                </button>
+              )}
             </div>
           </div>
+          {compact && (
+            <div
+              className={"mobile-message" + (error ? " is-error" : "")}
+              role={error ? "alert" : "status"}
+            >
+              <span>{latestMessage}</span>
+              <button
+                onClick={() => openPanel("journal")}
+                aria-label="Open adventure log"
+              >
+                Log ›
+              </button>
+            </div>
+          )}
           {error && (
-            <p className="error" role="alert">
+            <p className="error desktop-error" role="alert">
               {error}
             </p>
           )}
           {game.status === "dead" ? (
-            <div className="encounter">
+            <div className="encounter game-end">
               <h2>Your journey ends</h2>
               <p>
                 You reached floor {game.floor + 1} with {game.score} points.
@@ -474,13 +747,13 @@ function App() {
               </button>
             </div>
           ) : game.status === "won" ? (
-            <div className="encounter">
+            <div className="encounter game-end">
               <h2>Victory over Ruthagor</h2>
               <p>The dungeon is conquered. Will you venture beyond?</p>
               {button("Continue exploring", { type: "continue" }, "primary")}
             </div>
           ) : game.pendingLevels ? (
-            <div className="encounter">
+            <div className="encounter level-up">
               <p className="eyebrow">LEVEL UP</p>
               <h2>Choose your next strength</h2>
               <div className="actions">
@@ -523,10 +796,31 @@ function App() {
                   {Math.min(100, hitRate(p, enemy)).toFixed(0)}% · Escape{" "}
                   {(fleeChance(p, enemy) * 100).toFixed(0)}%
                 </p>
+                {danger && (danger.lethal || danger.criticalLethal) && (
+                  <p className="lethal-warning" role="alert">
+                    ⚠{" "}
+                    {danger.lethal
+                      ? "NEXT HIT CAN KILL YOU"
+                      : "A CRITICAL HIT CAN KILL YOU"}
+                    <span>
+                      Enemy hit: {danger.normal} HP
+                      {danger.critical !== danger.normal
+                        ? ` · Critical: ${danger.critical} HP`
+                        : ""}{" "}
+                      · You: {Math.ceil(p.hp)} HP.
+                      {danger.enemyFirst
+                        ? " Enemy first."
+                        : " Retaliates if alive."}{" "}
+                      Heal or flee.
+                    </span>
+                  </p>
+                )}
                 <div className="actions">
-                  {button("⚔ Attack", { type: "attack" }, "primary")}
-                  {p.weapons.length > 0 &&
-                    button("Attack unarmed", { type: "attack", unarmed: true })}
+                  {button(
+                    enemy.npc ? "Fight" : "Attack",
+                    { type: "attack" },
+                    "primary",
+                  )}
                   {enemy.npc && (
                     <>
                       {button("Talk", { type: "talk" })}
@@ -553,28 +847,61 @@ function App() {
                     </>
                   )}
                   {button("Flee", { type: "flee" })}
-                  {button("End encounter", { type: "leave" })}
+                  {compact &&
+                    quickPotion &&
+                    p.hp < p.stats.Health &&
+                    button(
+                      "Use potion",
+                      { type: "use", id: quickPotion.id },
+                      "quick-combat-heal",
+                    )}
+                  <details className="combat-more">
+                    <summary>More options</summary>
+                    {p.weapons.length > 0 &&
+                      button("Attack unarmed", {
+                        type: "attack",
+                        unarmed: true,
+                      })}
+                    {button("Back to dungeon", { type: "leave" })}
+                  </details>
                 </div>
               </div>
             </div>
           ) : game.pendingLoot ? (
-            <div className="encounter">
+            <div className="encounter treasure">
               <div>
                 <p className="eyebrow">DISCOVERED TREASURE</p>
                 <h2>{game.pendingLoot.name}</h2>
                 <p>{describe(game.pendingLoot)}</p>
                 <div className="actions">
-                  {button(
-                    game.pendingLoot.auto ? "Use" : "Pick up",
-                    { type: "pickup" },
-                    "primary",
-                  )}
+                  <button
+                    className="primary"
+                    disabled={
+                      busy ||
+                      (!game.pendingLoot.auto &&
+                        game.inventory.length + Number(p.weapons.length > 0) >=
+                          game.capacity)
+                    }
+                    onClick={() => void act({ type: "pickup" })}
+                  >
+                    {game.pendingLoot.auto ? "Use now" : "Take item"}
+                  </button>
+                  {!game.pendingLoot.auto &&
+                    canUseFromFloor(game.pendingLoot) &&
+                    button("Use from floor", { type: "use-floor" })}
+                  {!game.pendingLoot.auto &&
+                    game.inventory.length + Number(p.weapons.length > 0) >=
+                      game.capacity && (
+                      <button onClick={() => openPanel("inventory")}>
+                        Bag full · Manage items
+                      </button>
+                    )}
                   {button("Leave it", { type: "ignore" })}
                 </div>
               </div>
             </div>
           ) : p.x === game.stairs.x && p.y === game.stairs.y ? (
-            <div className="encounter">
+            <div className="encounter stairs-prompt">
               <h2>A staircase awaits</h2>
               {button(
                 game.stairs.locked
@@ -585,18 +912,48 @@ function App() {
               )}
             </div>
           ) : null}
-          <section className="journal panel">
+          {compact && mobilePanel && (
+            <button
+              className="drawer-backdrop"
+              aria-label="Close panel"
+              onClick={() => setMobilePanel(false)}
+            />
+          )}
+          <section
+            ref={drawer}
+            className="journal panel"
+            role={compact && mobilePanel ? "dialog" : undefined}
+            aria-modal={compact && mobilePanel ? true : undefined}
+            aria-label={
+              tab === "stats"
+                ? "Character"
+                : tab === "journal"
+                  ? "Adventure log"
+                  : tab === "spells"
+                    ? "Magic"
+                    : "Inventory"
+            }
+          >
             <div className="tabs">
               {["journal", "inventory", "spells", "stats"].map((t) => (
                 <button
                   className={tab === t ? "active" : ""}
                   key={t}
-                  onClick={() => setTab(t)}
+                  onClick={() => openPanel(t)}
                 >
                   {t}
                   {t === "inventory" && <span>{game.inventory.length}</span>}
                 </button>
               ))}
+              {compact && (
+                <button
+                  className="drawer-close"
+                  aria-label="Return to dungeon"
+                  onClick={() => setMobilePanel(false)}
+                >
+                  ×
+                </button>
+              )}
               <span className="autosave">
                 {busy ? "Saving…" : "✓ Autosaved"}
               </span>
@@ -673,6 +1030,28 @@ function App() {
                 </>
               ) : (
                 <div className="full-stats">
+                  <div>
+                    <span>Hero</span>
+                    <b>{p.name}</b>
+                  </div>
+                  <div>
+                    <span>Class · Level</span>
+                    <b>
+                      {p.className} · {p.level}
+                    </b>
+                  </div>
+                  <div>
+                    <span>Current HP</span>
+                    <b>
+                      {Math.floor(p.hp)} / {Math.floor(p.stats.Health)}
+                    </b>
+                  </div>
+                  <div>
+                    <span>Score · Keys</span>
+                    <b>
+                      {game.score} · {game.keys}
+                    </b>
+                  </div>
                   {Object.entries(p.stats).map(([s, n]) => (
                     <div key={s}>
                       <span>{s}</span>
@@ -693,6 +1072,33 @@ function App() {
           </section>
         </section>
       </main>
+      {compact && (
+        <nav className="mobile-nav" aria-label="Game panels">
+          {[
+            ["inventory", "Bag", "▣"],
+            ["spells", "Magic", "✧"],
+            ["journal", "Log", "≡"],
+            ["stats", "Hero", "♙"],
+          ].map(([t, label, icon]) => (
+            <button
+              key={t}
+              aria-label={
+                t === "spells" ? "Spells" : t === "stats" ? "Character" : label
+              }
+              aria-expanded={mobilePanel && tab === t}
+              className={mobilePanel && tab === t ? "active" : ""}
+              onClick={() => {
+                if (mobilePanel && tab === t) setMobilePanel(false);
+                else openPanel(t);
+              }}
+            >
+              <span aria-hidden="true">{icon}</span>
+              {label}
+              {t === "inventory" && <small>{game.inventory.length}</small>}
+            </button>
+          ))}
+        </nav>
+      )}
       <footer>
         <span>
           ◈ An original adventure by Shai Goldman ·{" "}
@@ -722,8 +1128,9 @@ function App() {
                 <p className="eyebrow">DUNGEON FIELD GUIDE</p>
                 <h2>Every step is a decision.</h2>
                 <p>
-                  Explore with arrow keys, the touch pad, or by tapping the map.
-                  Walk into a monster to begin an encounter. Attack resolves one
+                  Explore with arrow keys, the touch pad, or by tapping an
+                  outlined neighboring tile. Red outlines start encounters. Walk
+                  into a monster to begin an encounter. Attack resolves one
                   exchange, with the faster fighter striking first.
                 </p>
                 <p>
@@ -790,6 +1197,25 @@ function App() {
                   Starting a new adventure keeps this save accessible with its
                   recovery key.
                 </p>
+                {compact && (
+                  <button
+                    className="primary"
+                    onClick={() => {
+                      setHelp(false);
+                      setSave(false);
+                    }}
+                  >
+                    Continue playing
+                  </button>
+                )}
+                {Capacitor.isNativePlatform() && (
+                  <button
+                    disabled={busy}
+                    onClick={() => void NativeApp.exitApp()}
+                  >
+                    Close game
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     setSave(false);
