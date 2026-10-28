@@ -1,0 +1,68 @@
+{
+  "Warrior": {
+    "x": 0,
+    "y": 0,
+    "width": 16,
+    "height": 16
+  },
+  "Knight": {
+    "x": 16,
+    "y": 0,
+    "width": 16,
+    "height": 16
+  },
+  "Scout": {
+    "x": 32,
+    "y": 0,
+    "width": 16,
+    "height": 16
+  },
+  "Mage": {
+    "x": 48,
+    "y": 0,
+    "width": 16,
+    "height": 16
+  },
+  "Zombie": {
+    "x": 64,
+    "y": 0,
+    "width": 16,
+    "height": 16
+  },
+  "Spider": {
+    "x": 80,
+    "y": 0,
+    "width": 16,
+    "height": 16
+  },
+  "Snake": {
+    "x": 96,
+    "y": 0,
+    "width": 16,
+    "height": 16
+  },
+  "Parasite": {
+    "x": 112,
+    "y": 0,
+    "width": 16,
+    "height": 16
+  },
+  "Golem": {
+    "x": 128,
+    "y": 0,
+    "width": 16,
+    "height": 16
+  },
+  "Dragon": {
+    "x": 144,
+    "y": 0,
+    "width": 16,
+    "height": 16
+  },
+  "Chieftan": {
+    "x": 160,
+    "y": 0,
+    "width": 16,
+    "height": 16
+  }
+}
