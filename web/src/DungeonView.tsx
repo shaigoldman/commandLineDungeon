@@ -2,9 +2,7 @@ import { useEffect, useRef } from "react";
 import { Application, Container, Graphics, Sprite, Texture } from "pixi.js";
 import type { Game } from "../shared/types";
 import { sprite, patterns } from "./art";
-const TILE = 48,
-  COLS = 20,
-  ROWS = 10;
+const TILE = 48;
 const noise = (x: number, y: number, s = 0) =>
   Math.abs(Math.imul(x + 71 + s, 374761393) ^ Math.imul(y + 13, 668265263)) >>>
   0;
@@ -22,11 +20,13 @@ export function DungeonView({
   moveRef.current = onMove;
   useEffect(() => {
     let disposed = false;
+    let cols = window.innerWidth <= 700 ? 12 : 20;
+    let rows = window.innerWidth <= 700 ? 8 : 10;
     const app = new Application();
     void app
       .init({
-        width: TILE * COLS,
-        height: TILE * ROWS,
+        width: TILE * cols,
+        height: TILE * rows,
         background: "#121c28",
         antialias: false,
         resolution: 1,
@@ -53,7 +53,15 @@ export function DungeonView({
           torches: { x: number; y: number }[] = [];
         const render = () => {
           const g = gameRef.current;
-          if (last === g.revision) return;
+          const nextCols = window.innerWidth <= 700 ? 12 : 20,
+            nextRows = window.innerWidth <= 700 ? 8 : 10;
+          const resized = cols !== nextCols || rows !== nextRows;
+          if (last === g.revision && !resized) return;
+          if (resized) {
+            cols = nextCols;
+            rows = nextRows;
+            app.renderer.resize(cols * TILE, rows * TILE);
+          }
           const previous = last;
           last = g.revision;
           if (
@@ -69,11 +77,11 @@ export function DungeonView({
           camera = {
             x: Math.max(
               0,
-              Math.min(30 - COLS, g.player.x - Math.floor(COLS / 2)),
+              Math.min(30 - cols, g.player.x - Math.floor(cols / 2)),
             ),
             y: Math.max(
               0,
-              Math.min(15 - ROWS, g.player.y - Math.floor(ROWS / 2)),
+              Math.min(15 - rows, g.player.y - Math.floor(rows / 2)),
             ),
           };
           app.stage
@@ -99,8 +107,8 @@ export function DungeonView({
             c: number,
             alpha = 1,
           ) => tiles.rect(x, y, w, h).fill({ color: c, alpha });
-          for (let y = camera.y; y < camera.y + ROWS; y++)
-            for (let x = camera.x; x < camera.x + COLS; x++) {
+          for (let y = camera.y; y < camera.y + rows; y++)
+            for (let x = camera.x; x < camera.x + cols; x++) {
               const xx = x * TILE,
                 yy = y * TILE,
                 n = noise(x, y),
@@ -371,8 +379,8 @@ export function DungeonView({
           const r = app.canvas.getBoundingClientRect(),
             p = gameRef.current.player;
           const x =
-              Math.floor(((e.clientX - r.left) / r.width) * COLS) + camera.x,
-            y = Math.floor(((e.clientY - r.top) / r.height) * ROWS) + camera.y,
+              Math.floor(((e.clientX - r.left) / r.width) * cols) + camera.x,
+            y = Math.floor(((e.clientY - r.top) / r.height) * rows) + camera.y,
             dx = x - p.x,
             dy = y - p.y;
           if (Math.abs(dx) > Math.abs(dy)) moveRef.current(Math.sign(dx), 0);

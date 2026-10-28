@@ -11,9 +11,17 @@
     "migrate": "tsx server/migrate.ts",
     "dev:client": "vite --host 0.0.0.0",
     "test:browser": "python3 tests/browser.py",
-    "simulate": "tsx scripts/simulate.ts"
+    "simulate": "tsx scripts/simulate.ts",
+    "build:android:web": "tsc --noEmit && vite build --mode android --outDir dist/android",
+    "android:sync": "npm run build:android:web && cap sync android",
+    "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug",
+    "android:open": "cap open android",
+    "test:android:browser": "python3 tests/android-browser.py"
   },
   "dependencies": {
+    "@capacitor/android": "^7.6.9",
+    "@capacitor/core": "^7.6.9",
+    "@capacitor/preferences": "^7.0.4",
     "express": "^5.1.0",
     "pg": "^8.16.0",
     "pixi.js": "^8.10.0",
@@ -21,6 +29,7 @@
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.6.9",
     "@electric-sql/pglite": "^0.5.12",
     "@types/express": "^5.0.0",
     "@types/node": "^24.0.0",

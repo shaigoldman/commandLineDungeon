@@ -41,6 +41,10 @@ The suite executes the unchanged Python methods, compares 80 Python-generated cl
 
 GitHub Actions runs these checks on pushes and PRs. `npm run build` performs strict TypeScript checking, Vite frontend compilation, and backend bundling. See [source review and compatibility notes](docs/PORTING.md) for formula details and intentional fixes.
 
+## Android phone testing
+
+A directly installable, offline Android test APK is available in [downloads](downloads/README.md). It includes the complete game and original art, with phone-sized touch controls and persistent device saves. Android progress is separate from the web version’s server saves. See [Android installation/build instructions](docs/ANDROID.md) for the download, Android 8+ requirement, verification, and save/signing limitations.
+
 ## Deployment
 
 [Render deployment instructions](docs/DEPLOYMENT.md) include every remaining step, environment variables, database migration behavior, backup/recovery, and exact push/PR commands. `web/render.yaml` provisions a Node service and PostgreSQL database; use that path when creating the Blueprint. No live Render deployment is claimed by this checkout.

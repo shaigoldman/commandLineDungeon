@@ -11,6 +11,7 @@ import {
 import { DungeonView } from "./DungeonView";
 import { Portrait } from "./Portrait";
 import "./style.css";
+import { requestGame, isDeviceGame } from "./game-api";
 function App() {
   const [highScore, setHighScore] = useState(0);
   const [game, setGame] = useState<Game>(),
@@ -32,23 +33,14 @@ function App() {
   const lock = useRef(false),
     journal = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    void fetch("/api/high-score")
-      .then((r) => r.json())
-      .then((d) => setHighScore(d.score))
+    void requestGame("high-score")
+      .then(({ data }) => setHighScore(data.score || 0))
       .catch(() => {});
   }, [game?.status]);
   async function api(path: string, body?: unknown, key?: string) {
-    const r = await fetch("/api/" + path, {
-      method: body ? "POST" : "GET",
-      headers: {
-        "Content-Type": "application/json",
-        ...(key ? { Authorization: "Bearer " + key } : {}),
-      },
-      ...(body ? { body: JSON.stringify(body) } : {}),
-    });
-    const data = await r.json();
+    const { ok, data } = await requestGame(path, body, key);
     if (data.game) setGame(data.game);
-    if (!r.ok) throw Error(data.error || "Request failed");
+    if (!ok) throw Error(data.error || "Request failed");
     return data;
   }
   useEffect(() => {
@@ -121,6 +113,7 @@ function App() {
         element,
         difficulty,
       });
+      if (!d.recoveryKey) throw Error("The journey could not be created.");
       localStorage.setItem("dungeon-key", d.recoveryKey);
       setRecovery(d.recoveryKey);
       setError("");
@@ -153,7 +146,9 @@ function App() {
           </p>
           <div className="runes">◆ ━━━━━━━ ◈ ━━━━━━━ ◆</div>
           <p className="small">
-            The original Python adventure, reimagined in pixels.
+            {isDeviceGame
+              ? "ANDROID TEST EDITION · Play offline. Saves stay on this phone."
+              : "The original Python adventure, reimagined in pixels."}
           </p>
         </div>
         <form className="creation" onSubmit={start}>
@@ -230,9 +225,13 @@ function App() {
             </p>
           )}
           <details>
-            <summary>Restore a saved journey</summary>
+            <summary>
+              {isDeviceGame
+                ? "Reopen a journey on this phone"
+                : "Restore a saved journey"}
+            </summary>
             <input
-              aria-label="Recovery key"
+              aria-label={isDeviceGame ? "Device journey code" : "Recovery key"}
               placeholder="Paste your recovery key"
               value={recover}
               onChange={(e) => setRecover(e.target.value)}
@@ -273,7 +272,8 @@ function App() {
             How to play <kbd>H</kbd>
           </button>
           <button onClick={() => setSave(true)}>
-            Saved journey <span className="dot" />
+            {isDeviceGame ? "Saved on phone" : "Saved journey"}{" "}
+            <span className="dot" />
           </button>
         </nav>
       </header>
@@ -694,7 +694,10 @@ function App() {
         </section>
       </main>
       <footer>
-        <span>◈ An original adventure by Shai Goldman · Browser edition</span>
+        <span>
+          ◈ An original adventure by Shai Goldman ·{" "}
+          {isDeviceGame ? "Android test edition · Offline" : "Browser edition"}
+        </span>
         <span>ARROWS move · ENTER attack · I inventory · M magic · V save</span>
       </footer>
       {(help || save) && (
@@ -748,24 +751,40 @@ function App() {
                 <p className="eyebrow">YOUR JOURNEY IS SAFE</p>
                 <h2>Saved after every action</h2>
                 <p>
-                  Your game is stored on the server. Keep this private recovery
-                  key to continue on another device. Anyone holding it can
-                  access this journey.
+                  {isDeviceGame
+                    ? "This Android test build works offline. Progress is saved on this phone. Device journey codes only reopen games on this installation; they do not transfer saves to another phone. Uninstalling the app clears these saves."
+                    : "Your game is stored on the server. Keep this private recovery key to continue on another device. Anyone holding it can access this journey."}
                 </p>
                 <textarea
-                  aria-label="Private recovery key"
+                  aria-label={
+                    isDeviceGame
+                      ? "Device journey code"
+                      : "Private recovery key"
+                  }
                   readOnly
                   value={recovery}
                 />
                 <button
                   onClick={() =>
-                    void navigator.clipboard
-                      .writeText(recovery)
-                      .then(() => setError("Recovery key copied."))
+                    void Promise.resolve()
+                      .then(() => {
+                        if (!navigator.clipboard)
+                          throw Error("Clipboard unavailable");
+                        return navigator.clipboard.writeText(recovery);
+                      })
+                      .then(() =>
+                        setError(
+                          isDeviceGame
+                            ? "Device journey code copied."
+                            : "Recovery key copied.",
+                        ),
+                      )
                       .catch(() => setError("Select and copy the key above."))
                   }
                 >
-                  Copy recovery key
+                  {isDeviceGame
+                    ? "Copy device journey code"
+                    : "Copy recovery key"}
                 </button>
                 <p className="muted">
                   Starting a new adventure keeps this save accessible with its

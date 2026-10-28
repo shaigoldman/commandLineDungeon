@@ -1270,3 +1270,45 @@ summary {
     height: 64px;
   }
 }
+/* Android WebView and phone ergonomics. */
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+button {
+  touch-action: manipulation;
+}
+@media (max-width: 700px) {
+  .map {
+    aspect-ratio: 1.5;
+  }
+  .under-map {
+    flex-wrap: wrap;
+  }
+  .objective {
+    flex: 1 0 100%;
+  }
+  .objective p:last-child {
+    max-width: none;
+  }
+  .controls {
+    width: 100%;
+    justify-content: center;
+    margin-top: 6px;
+  }
+  .controls button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .tabs button {
+    min-height: 44px;
+  }
+  .item button,
+  .encounter button {
+    min-height: 44px;
+  }
+  .modal button,
+  .creation > button {
+    min-height: 44px;
+  }
+}
