@@ -45,7 +45,7 @@ GitHub Actions runs these checks on pushes and PRs. `npm run build` performs str
 
 ## Art
 
-All sprites, portraits, tiles, and effects are original designs authored for this port. No Fire Emblem graphics, fonts, music, or extracted assets are included. The direction uses a restrained handheld-era palette and hard-edged pixels. Sprite source is `src/art.ts`; the renderer draws dungeon tiles and combat slash/spark animations in `src/DungeonView.tsx`. `npx tsx scripts/export-art.ts` regenerates the standalone SVG sprite atlas and metadata in `public/assets/`. Portraits are generated from those authored pixels. The application has no external image/font/CDN dependency.
+All sprites, portraits, tiles, and effects are original designs authored for this port. No Fire Emblem graphics, fonts, music, or extracted assets are included. The direction uses a restrained handheld-era palette and hard-edged pixels. Sprite source is `src/art.ts`; the renderer draws dungeon tiles and combat slash/spark animations in `src/DungeonView.tsx`. `npx tsx scripts/export-art.ts` regenerates the standalone SVG sprite atlas and metadata in `public/assets/`. Detailed original character busts are generated artwork in `public/assets/portraits.png`, displayed through `src/Portrait.tsx`; monster portraits use the authored map sprites. The map uses 24×32 shaded units, layered masonry, torch animation, and a player-following camera. The application has no external image/font/CDN dependency.
 
 ## Storage and architecture
 

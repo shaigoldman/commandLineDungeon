@@ -1,4 +1,4 @@
-// Original 16 × 16 pixel designs, authored for this port. No third-party art.
+// Original 24 × 32 shaded map units, with retained monster silhouette patterns.
 export const palette: Record<string, string> = {
   o: "#121c29",
   s: "#efc79b",
@@ -215,30 +215,199 @@ export const patterns: Record<string, string[]> = {
     "................",
   ],
 };
-export function sprite(type: string, scale = 4) {
-  const pattern = patterns[type] || patterns.Warrior;
+export function sprite(type: string, scale = 2) {
   const c = document.createElement("canvas");
-  c.width = 16 * scale;
-  c.height = 16 * scale;
+  c.width = 24 * scale;
+  c.height = 32 * scale;
   const ctx = c.getContext("2d")!;
-  pattern.forEach((r, y) =>
-    [...r].forEach((p, x) => {
-      if (palette[p]) {
-        ctx.fillStyle = palette[p];
-        ctx.fillRect(x * scale, y * scale, scale, scale);
+  ctx.scale(scale, scale);
+  const r = (x: number, y: number, w: number, h: number, color: string) => {
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, w, h);
+  };
+  const outline = "#182134",
+    skin = "#edbc90",
+    shade = "#bd806a",
+    light = "#ffddb0";
+  const colors: Record<string, string[]> = {
+    Warrior: ["#244470", "#4275a0", "#83b8d0"],
+    Knight: ["#48607e", "#89abc2", "#d5e6df"],
+    Scout: ["#335c48", "#568565", "#9db778"],
+    Mage: ["#4b386d", "#8268a2", "#c4a2cb"],
+    Chieftan: ["#775335", "#bd9253", "#efcb86"],
+  };
+  const col = colors[type];
+  if (col) {
+    const [dark, mid, bright] = col;
+    // Cape, layered pauldrons, boots, belt and polished trim.
+    r(6, 14, 13, 13, outline);
+    r(5, 17, 3, 11, dark);
+    r(17, 17, 3, 11, dark);
+    r(6, 18, 2, 8, mid);
+    r(17, 20, 2, 6, mid);
+    r(8, 25, 4, 6, outline);
+    r(14, 25, 4, 6, outline);
+    r(9, 25, 2, 3, "#6d594b");
+    r(15, 25, 2, 3, "#6d594b");
+    r(7, 30, 6, 2, "#18212b");
+    r(14, 30, 6, 2, "#18212b");
+    r(8, 30, 3, 1, "#576374");
+    r(15, 30, 3, 1, "#576374");
+    r(8, 14, 10, 13, dark);
+    r(9, 15, 8, 10, mid);
+    r(10, 15, 2, 9, bright);
+    r(13, 17, 3, 7, dark);
+    r(8, 24, 10, 2, "#5c4438");
+    r(12, 24, 3, 2, "#e7c782");
+    r(13, 24, 1, 1, "#fff0bd");
+    r(5, 15, 4, 7, outline);
+    r(5, 15, 4, 4, mid);
+    r(5, 15, 3, 1, bright);
+    r(6, 21, 2, 3, skin);
+    r(7, 21, 1, 2, light);
+    r(17, 15, 4, 7, outline);
+    r(17, 15, 4, 4, mid);
+    r(17, 15, 3, 1, bright);
+    r(18, 21, 2, 3, shade);
+    r(18, 21, 1, 2, skin);
+    // Three-tone face, visible eyes, hair highlights and neck shadow.
+    r(8, 4, 10, 9, outline);
+    r(9, 5, 8, 7, shade);
+    r(9, 5, 7, 6, skin);
+    r(10, 7, 5, 3, light);
+    r(10, 9, 1, 1, outline);
+    r(14, 9, 1, 1, outline);
+    r(12, 11, 2, 1, shade);
+    r(11, 12, 4, 2, shade);
+    r(11, 12, 3, 1, skin);
+    if (type === "Mage") {
+      r(5, 7, 15, 2, outline);
+      r(6, 6, 13, 2, dark);
+      r(8, 3, 9, 4, mid);
+      r(10, 1, 5, 3, mid);
+      r(11, 0, 3, 2, bright);
+      r(8, 6, 9, 1, "#d0ae67");
+      r(11, 5, 2, 2, "#efd897");
+      r(8, 9, 2, 6, dark);
+      r(16, 9, 2, 6, dark);
+      r(8, 26, 10, 3, dark);
+      r(9, 26, 2, 2, bright);
+      r(12, 16, 3, 2, "#dbb66f");
+      r(13, 17, 1, 2, "#8cd6d6");
+      r(21, 6, 1, 25, "#4a3434");
+      r(22, 6, 1, 25, "#c99d60");
+      r(20, 5, 4, 5, "#534f71");
+      r(21, 4, 2, 5, "#71c9cd");
+      r(21, 5, 1, 2, "#e1fff0");
+      r(20, 9, 4, 1, "#e8c77b");
+    } else if (type === "Knight") {
+      r(8, 3, 10, 3, "#c8d0c8");
+      r(9, 2, 8, 2, "#eee5ce");
+      r(8, 5, 3, 2, "#e5e0ce");
+      r(15, 4, 3, 3, "#b7bbc0");
+      r(8, 15, 10, 2, "#d9bf77");
+      r(10, 17, 6, 5, bright);
+      r(11, 17, 1, 4, "#f6f1dc");
+      r(16, 17, 2, 6, mid);
+      r(2, 19, 6, 9, outline);
+      r(3, 19, 4, 8, "#667e9c");
+      r(3, 19, 4, 1, "#e6c26d");
+      r(4, 21, 2, 4, "#d0aa63");
+      r(4, 27, 2, 1, "#d0aa63");
+      r(21, 10, 1, 17, "#b2c9d0");
+      r(22, 10, 1, 15, "#f0f4dc");
+      r(20, 24, 4, 1, "#d9b36b");
+    } else {
+      const hair =
+        type === "Scout"
+          ? "#8c4937"
+          : type === "Chieftan"
+            ? "#62524a"
+            : "#57352e";
+      r(8, 3, 10, 4, hair);
+      r(7, 4, 3, 5, hair);
+      r(16, 5, 2, 4, hair);
+      r(10, 2, 6, 2, hair);
+      r(10, 3, 5, 1, "#ab7351");
+      r(9, 4, 3, 1, "#c48c5e");
+      r(8, 6, 4, 1, hair);
+      if (type === "Scout") {
+        r(7, 13, 11, 3, "#274b3d");
+        r(8, 14, 8, 1, "#94ac73");
+        r(18, 5, 1, 14, "#694333");
+        r(18, 4, 2, 3, "#e4d3a7");
+        r(20, 12, 1, 12, "#c99b63");
+        r(21, 15, 1, 6, "#9c7752");
+      } else {
+        r(8, 14, 10, 3, "#368393");
+        r(10, 16, 3, 4, "#427e90");
+        r(18, 10, 1, 16, "#46546e");
+        r(19, 9, 1, 16, "#e5e9d6");
+        r(20, 9, 1, 14, "#99bfc5");
+        r(17, 24, 5, 1, "#e9bf70");
+        r(18, 25, 2, 3, "#714830");
       }
-    }),
-  );
+      if (type === "Chieftan") {
+        r(8, 3, 10, 2, "#e8c16b");
+        r(8, 1, 2, 3, "#e8c16b");
+        r(12, 0, 2, 4, "#e8c16b");
+        r(16, 1, 2, 3, "#e8c16b");
+        r(12, 3, 2, 1, "#e18773");
+      }
+    }
+  } else {
+    // Retain each monster's original silhouette, now with bevels, shadow pixels and eyes.
+    const pattern = patterns[type] || patterns.Zombie;
+    pattern.forEach((row, y) =>
+      [...row].forEach((p, x) => {
+        const color = palette[p];
+        if (!color) return;
+        const xx = x + 4,
+          yy = y * 2 + 1;
+        r(xx, yy, 1, 2, color);
+        if (pattern[y - 1]?.[x] === ".") r(xx, yy, 1, 1, "#c1b89a");
+        if (pattern[y + 1]?.[x] === ".") r(xx, yy + 1, 1, 1, outline);
+      }),
+    );
+    if (type === "Zombie") {
+      r(10, 10, 1, 1, "#ffce72");
+      r(14, 10, 1, 1, "#ffce72");
+      r(9, 20, 2, 2, "#7c424d");
+      r(13, 25, 1, 2, "#a5956d");
+    }
+    if (type === "Spider") {
+      r(9, 13, 7, 6, "#8d405b");
+      r(10, 13, 3, 2, "#c9757c");
+      for (const x of [10, 12, 14]) r(x, 18, 1, 1, "#ffce7e");
+    }
+    if (type === "Snake") {
+      r(13, 9, 5, 2, "#c1c476");
+      r(14, 10, 1, 1, "#f5b06b");
+      r(17, 10, 1, 1, "#f5b06b");
+      r(18, 13, 2, 1, "#be6a73");
+    }
+    if (type === "Dragon") {
+      r(9, 14, 2, 1, "#ffe29c");
+      r(14, 14, 2, 1, "#ffe29c");
+      r(11, 18, 5, 2, "#edac79");
+      r(12, 21, 4, 4, "#c69d76");
+    }
+  }
   return c;
 }
+const portraitCache = new Map<string, string>();
 export function portrait(type: string) {
+  const existing = portraitCache.get(type);
+  if (existing) return existing;
   const c = document.createElement("canvas");
-  c.width = 80;
-  c.height = 80;
+  c.width = 96;
+  c.height = 96;
   const ctx = c.getContext("2d")!;
   ctx.fillStyle = "#223646";
-  ctx.fillRect(0, 0, 80, 80);
+  ctx.fillRect(0, 0, 96, 96);
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(sprite(type, 1), 3, 0, 10, 10, 0, 0, 80, 80);
-  return c.toDataURL();
+  ctx.drawImage(sprite(type, 1), 0, 0, 24, 32, 12, 0, 72, 96);
+  const url = c.toDataURL();
+  portraitCache.set(type, url);
+  return url;
 }

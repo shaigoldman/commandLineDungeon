@@ -49,4 +49,4 @@ All actively generated content is available. Historical references to non-existe
 
 ## Asset provenance
 
-The 16×16 character/monster patterns and palette in `src/art.ts`, generated portraits, stone tiles, staircase, pods, chests, and slash/spark effects were authored for this port. `public/assets/sprites.svg` and `atlas.json` are regenerable standalone assets. No copyrighted Fire Emblem assets are copied or downloaded.
+The 24×32 shaded unit sprites and retained monster silhouette patterns in `src/art.ts`, stone tiles, staircase, pods, chests, and slash/spark effects were authored for this port. The four character busts in `public/assets/portraits.png` are original generated artwork, using a handheld tactical-RPG pixel-art brief and unrelated character designs. `public/assets/sprites.svg` and `atlas.json` are regenerable standalone assets. No copyrighted Fire Emblem assets are copied or downloaded.

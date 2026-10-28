@@ -9,7 +9,7 @@ import {
   fleeChance,
 } from "../shared/engine";
 import { DungeonView } from "./DungeonView";
-import { portrait } from "./art";
+import { Portrait } from "./Portrait";
 import "./style.css";
 function App() {
   const [highScore, setHighScore] = useState(0);
@@ -177,7 +177,7 @@ function App() {
                 onClick={() => setCls(c)}
                 key={c}
               >
-                <img src={portrait(c)} />
+                <Portrait type={c} />
                 <strong>{c}</strong>
                 <small>
                   {c === "Warrior"
@@ -283,7 +283,7 @@ function App() {
             THE ADVENTURER <span>Ⅰ</span>
           </div>
           <div className="portrait">
-            <img src={portrait(p.className)} alt={p.className} />
+            <Portrait type={p.className} />
           </div>
           <h2>{p.name}</h2>
           <p className="subtitle">
@@ -506,11 +506,7 @@ function App() {
             </div>
           ) : enemy ? (
             <div className="encounter">
-              <img
-                className="enemy-portrait"
-                src={portrait(enemy.className)}
-                alt=""
-              />
+              <Portrait className="enemy-portrait" type={enemy.className} />
               <div>
                 <p className="eyebrow">
                   {enemy.boss

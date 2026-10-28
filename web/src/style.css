@@ -1142,3 +1142,131 @@ summary {
     margin-bottom: 4px;
   }
 }
+/* Original handheld tactical-RPG art pass. */
+.portrait-art {
+  display: block;
+  flex-shrink: 0;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  background-color: #1c2d3b;
+}
+.portrait {
+  width: 178px;
+  height: 178px;
+  padding: 4px;
+  border: 2px solid #a28e62;
+  box-shadow:
+    inset 0 0 0 1px #243342,
+    0 3px 0 #0c1820;
+  margin: 23px auto 16px;
+}
+.portrait .portrait-art {
+  width: 100%;
+  height: 100%;
+}
+.class .portrait-art {
+  width: 68px;
+  height: 68px;
+  margin: 0 auto 7px;
+  border: 1px solid #756c51;
+}
+.class.selected {
+  box-shadow: inset 0 0 0 1px #d0b77e;
+  background: #354c58;
+}
+.enemy-portrait {
+  width: 96px;
+  height: 96px;
+  border: 2px solid #b79c65;
+  box-shadow: 0 3px 0 #0d1c27;
+}
+.map-frame {
+  border: 2px solid #8d815f;
+  outline: 1px solid #172836;
+  outline-offset: 3px;
+  box-shadow:
+    0 10px 40px #0005,
+    inset 0 0 0 1px #d0b778;
+}
+.map-toolbar {
+  background: linear-gradient(#314858, #1a3042);
+  border-bottom: 2px solid #a08f62;
+  color: #d1d4be;
+}
+.map-footer {
+  background: linear-gradient(#233a4b, #192d3c);
+  border-top: 2px solid #897950;
+}
+.character {
+  background: linear-gradient(110deg, #253b4b, #182a39 65%);
+  border-color: #687364;
+  box-shadow: inset 0 0 0 3px #152633;
+}
+.panel-caption {
+  color: #d0c2a2;
+  border-bottom: 1px solid #796f52;
+  text-shadow: 1px 1px #0c1a24;
+}
+.tabs {
+  background: linear-gradient(#2b4051, #1e3344);
+  border-bottom-color: #897b57;
+}
+.bar {
+  height: 8px;
+  border-color: #6d7566;
+  box-shadow: 0 1px #0d1a24;
+}
+.bar i {
+  height: 6px;
+  box-shadow: inset 0 2px #ffffff25;
+}
+.hp i {
+  background: #88af79;
+}
+.mana i {
+  background: #80accc;
+}
+.exp i {
+  background: #d2b571;
+}
+.encounter {
+  background: linear-gradient(100deg, #33495c, #23384a);
+  border: 2px solid #ac9362;
+  box-shadow:
+    inset 0 0 0 2px #172d3d,
+    0 5px 14px #0003;
+}
+@media (max-width: 1000px) {
+  .portrait {
+    width: 160px;
+    height: 160px;
+  }
+  .class .portrait-art {
+    width: 55px;
+    height: 55px;
+  }
+}
+@media (max-width: 700px) {
+  .character .portrait {
+    width: 70px;
+    height: 70px;
+    padding: 2px;
+  }
+  .character {
+    grid-template-columns: 70px 1fr 1fr;
+  }
+  .map {
+    aspect-ratio: 2;
+  }
+  .map canvas {
+    object-fit: fill;
+  }
+  .class .portrait-art {
+    width: 58px;
+    height: 58px;
+  }
+  .enemy-portrait {
+    width: 64px;
+    height: 64px;
+  }
+}
