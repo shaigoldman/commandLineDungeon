@@ -85,6 +85,7 @@ export type Action =
         | "continue"
         | "pickup"
         | "use-floor"
+        | "equip-floor"
         | "ignore"
         | "talk";
     }

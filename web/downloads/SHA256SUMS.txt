@@ -1,1 +1,1 @@
-cdf6f4078a6c2f80693d0084522f45e9cf18367b2ffb3cdd33c2a4735377e055  command-line-dungeon-android-test.apk
+967859b495f0c3a8bdd2487ef934179a8053ad84d880c1a1fd3138bfce1efa1d  command-line-dungeon-android-test.apk

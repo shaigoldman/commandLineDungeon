@@ -151,7 +151,8 @@ export function DungeonView({
             (g.player.hp > before.player.hp ||
               g.player.stats.Mana > before.player.stats.Mana);
           const acquired =
-            changed && ["pickup", "use-floor"].includes(actionType);
+            changed &&
+            ["pickup", "use-floor", "equip-floor"].includes(actionType);
           const attacked =
             changed &&
             (actionType === "attack" ||
@@ -556,9 +557,11 @@ export function DungeonView({
               );
             else if (acquired && !restored)
               label(
-                actionType === "use-floor" || before.pendingLoot?.auto
-                  ? "ITEM USED"
-                  : "ACQUIRED",
+                actionType === "equip-floor"
+                  ? "EQUIPPED"
+                  : actionType === "use-floor" || before.pendingLoot?.auto
+                    ? "ITEM USED"
+                    : "ACQUIRED",
                 g.player.x,
                 g.player.y,
                 "#ffe199",

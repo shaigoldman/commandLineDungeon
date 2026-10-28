@@ -83,7 +83,7 @@ describe("attack order and item readiness", () => {
       "Axe",
     ];
     const keys = names.map((name) => itemArtKey(makeItem(g, name)));
-    expect(new Set(keys).size).toBe(9); // Javelins and spears share a spear silhouette.
+    expect(new Set(keys).size).toBe(10); // Throwing javelins now have their own silhouette.
     const knife = makeItem(g, "Throwing Knife");
     expect(itemArtKey(knife)).toBe(itemArtKey(structuredClone(knife)));
   });

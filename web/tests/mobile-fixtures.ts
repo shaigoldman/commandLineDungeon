@@ -99,9 +99,50 @@ for (const name of [
 bagReadiness.capacity = 8;
 const combatLowHealth = structuredClone(combat);
 combatLowHealth.player.hp = 1;
+const floorWeapon = structuredClone(explore);
+const groundSword = makeItem(floorWeapon, "Sword");
+groundSword.name = "Steel Sword";
+groundSword.weight = 2;
+floorWeapon.player.stats.Power = 30;
+floorWeapon.pendingLoot = groundSword;
+floorWeapon.loot = [
+  { x: floorWeapon.player.x, y: floorWeapon.player.y, item: groundSword },
+];
+const floorSwap = structuredClone(floorWeapon);
+const oldAxe = makeItem(floorSwap, "Axe");
+oldAxe.name = "Iron Axe";
+floorSwap.player.weapons = [oldAxe];
+while (floorSwap.inventory.length < floorSwap.capacity - 1)
+  floorSwap.inventory.push(makeItem(floorSwap, "Small Health Potion"));
+const floorWeak = structuredClone(floorWeapon);
+floorWeak.player.stats.Power = 1;
+const armory = structuredClone(explore);
+armory.player.stats.Power = 100;
+armory.capacity = 10;
+armory.inventory = [];
+for (const name of [
+  "Fragile Sword",
+  "Iron Sword",
+  "Steel Sword",
+  "Lucky Sword",
+  "Magic Sword",
+  "Obsidian Sword",
+  "Obsidian Axe",
+  "Steel Spear",
+  "Awathons Broadsword",
+]) {
+  const w = makeItem(armory, "Sword");
+  w.name = name;
+  w.weight = 2;
+  armory.inventory.push(w);
+}
 console.log(
   JSON.stringify({
     explore,
+    floorWeapon,
+    floorSwap,
+    floorWeak,
+    armory,
     combatLowHealth,
     bagReadiness,
     enemyFirst,

@@ -525,6 +525,21 @@ export function canUseFromFloor(item: Item) {
     "xp",
   ].includes(item.kind);
 }
+/** Floor equipment never disappears: a displaced weapon stays here if the bag is full. */
+export function floorEquipPlan(g: Game, item: Item) {
+  const replaced =
+    item.kind === "weapon" && g.player.weapons.length >= g.hands
+      ? g.player.weapons[0]
+      : undefined;
+  const leaveOnFloor = !!replaced && g.inventory.length + 2 > g.capacity;
+  const problem = !["weapon", "tome"].includes(item.kind)
+    ? "This item cannot be equipped."
+    : itemUseProblem(g, item) ||
+      (g.inventory.length + 1 > g.capacity
+        ? "Free one bag slot for equipped gear first."
+        : undefined);
+  return { replaced, leaveOnFloor, problem };
+}
 /** Read-only availability shared by item menus; use() remains authoritative. */
 export function itemUseProblem(g: Game, i: Item): string | undefined {
   if (g.status === "dead") return "This journey has ended.";
@@ -925,6 +940,28 @@ export function act(input: Game, a: Action): Game {
       const loot = g.loot.find((i) => i.x === x && i.y === y);
       if (loot) g.pendingLoot = loot.item;
       monsterTurn(g);
+      break;
+    }
+    case "equip-floor": {
+      const i = g.pendingLoot;
+      if (
+        !i ||
+        !g.loot.some((l) => l.item.id === i.id && l.x === p.x && l.y === p.y)
+      )
+        throw Error("That equipment is no longer within reach.");
+      const plan = floorEquipPlan(g, i);
+      if (plan.problem) throw Error(plan.problem);
+      use(g, i);
+      if (plan.leaveOnFloor && plan.replaced) {
+        g.inventory = g.inventory.filter((a) => a.id !== plan.replaced!.id);
+        g.loot.push({ x: p.x, y: p.y, item: plan.replaced });
+        log(
+          g,
+          `Equipped ${i.name}. ${plan.replaced.name} was left on the floor because your bag is full.`,
+        );
+      }
+      g.loot = g.loot.filter((l) => l.item.id !== i.id);
+      g.pendingLoot = undefined;
       break;
     }
     case "use-floor": {

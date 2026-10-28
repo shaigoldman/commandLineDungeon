@@ -12,6 +12,7 @@ import {
   incomingDamage,
   canUseFromFloor,
   itemUseProblem,
+  floorEquipPlan,
   attackInitiative,
 } from "../shared/engine";
 import { DungeonView } from "./DungeonView";
@@ -431,6 +432,13 @@ function App() {
     : readyThrow
       ? "Throw ready"
       : "";
+  const floorGear =
+    game.pendingLoot && ["weapon", "tome"].includes(game.pendingLoot.kind)
+      ? floorEquipPlan(game, game.pendingLoot)
+      : undefined;
+  const equippedName = p.weapons.length
+    ? p.weapons.map((i) => i.name).join(" + ")
+    : "Unarmed";
   const hasContext =
     game.status !== "playing" ||
     !!enemy ||
@@ -490,16 +498,32 @@ function App() {
         >
           <Portrait type={p.className} />
           <span className="hud-identity">
-            <strong>{p.name}</strong>
-            <small>
+            <strong>
+              {p.name}
+              {p.effects.Poison && (
+                <small className="hud-poison">
+                  {" "}
+                  · Poison {p.effects.Poison[1]}×{p.effects.Poison[0]}
+                </small>
+              )}
+            </strong>
+            <small className="hud-status">
               {healthWarning ||
                 `Lv ${p.level} ${p.className} · XP ${game.xp}/100`}
             </small>
-            {p.effects.Poison && (
-              <small className="poison-label">
-                Poison {p.effects.Poison[1]} × {p.effects.Poison[0]} moves
-              </small>
-            )}
+            <span
+              className="hud-equipped"
+              title={equippedName}
+              aria-label={"Equipped: " + equippedName}
+            >
+              {p.weapons.slice(0, 2).map((i) => (
+                <ItemIcon key={i.id} item={i} />
+              ))}
+              <span>
+                Weapon: {p.weapons[0]?.name || "Unarmed"}
+                {p.weapons.length > 1 ? ` +${p.weapons.length - 1}` : ""}
+              </span>
+            </span>
           </span>
           <span className="hud-vitals">
             <span className={p.hp / p.stats.Health < 0.4 ? "low-health" : ""}>
@@ -585,7 +609,7 @@ function App() {
           {p.weapons.length ? (
             p.weapons.map((w) => (
               <div className="equipped" key={w.id}>
-                <span>{w.kind === "tome" ? "✧" : "⚔"}</span>
+                <ItemIcon item={w} />
                 <div>
                   <b>{w.name}</b>
                   <small>
@@ -996,32 +1020,48 @@ function App() {
                     Pick up this throwing weapon to use it against an enemy.
                   </p>
                 )}
-                {game.pendingLoot.kind === "weapon" && (
-                  <p
-                    className={
-                      itemUseProblem(game, game.pendingLoot)
-                        ? "item-restriction"
-                        : "muted"
-                    }
-                  >
-                    Pick up to carry.{" "}
-                    {itemUseProblem(game, game.pendingLoot) ||
-                      "Equip it from your bag."}
+                {floorGear?.replaced && (
+                  <p className="floor-swap-note">
+                    Replaces {floorGear.replaced.name}.{" "}
+                    {floorGear.leaveOnFloor
+                      ? "Bag full: the old weapon stays on this floor."
+                      : "The old weapon goes into your bag."}
                   </p>
                 )}
+                {floorGear?.problem && (
+                  <p className="item-restriction">{floorGear.problem}</p>
+                )}
                 <div className="actions">
-                  <button
-                    className="primary"
-                    disabled={
-                      busy ||
-                      (!game.pendingLoot.auto &&
-                        game.inventory.length + Number(p.weapons.length > 0) >=
-                          game.capacity)
-                    }
-                    onClick={() => void act({ type: "pickup" })}
-                  >
-                    {game.pendingLoot.auto ? "Use now" : "Take item"}
-                  </button>
+                  {floorGear &&
+                    button(
+                      floorGear.leaveOnFloor
+                        ? "Equip & swap on floor"
+                        : "Equip from ground",
+                      { type: "equip-floor" },
+                      "primary",
+                      floorGear.problem,
+                    )}
+                  {(!floorGear ||
+                    !floorGear.leaveOnFloor ||
+                    !!floorGear.problem) && (
+                    <button
+                      className={floorGear ? "" : "primary"}
+                      disabled={
+                        busy ||
+                        (!game.pendingLoot.auto &&
+                          game.inventory.length +
+                            Number(p.weapons.length > 0) >=
+                            game.capacity)
+                      }
+                      onClick={() => void act({ type: "pickup" })}
+                    >
+                      {game.pendingLoot.auto
+                        ? "Use now"
+                        : floorGear
+                          ? "Store in bag"
+                          : "Take item"}
+                    </button>
+                  )}
                   {!game.pendingLoot.auto &&
                     canUseFromFloor(game.pendingLoot) &&
                     button(
@@ -1031,6 +1071,7 @@ function App() {
                       itemUseProblem(game, game.pendingLoot),
                     )}
                   {!game.pendingLoot.auto &&
+                    (!floorGear || !!floorGear.problem) &&
                     game.inventory.length + Number(p.weapons.length > 0) >=
                       game.capacity && (
                       <button onClick={() => openPanel("inventory")}>
@@ -1354,6 +1395,10 @@ function App() {
                     <b>
                       {game.score} · {game.keys}
                     </b>
+                  </div>
+                  <div className="stats-equipped">
+                    <span>Equipped</span>
+                    <b>{equippedName}</b>
                   </div>
                   {Object.entries(p.stats).map(([s, n]) => (
                     <div key={s}>

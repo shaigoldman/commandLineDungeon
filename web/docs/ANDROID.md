@@ -14,7 +14,7 @@ Android uses `LocalGameAPI` to run the shared engine locally. All successful gam
 
 Android progress is **separate from server progress**. A device journey code works only on the same installation. It does not retrieve a web save or transfer to another phone. The save panel makes this distinction explicit. Closing/reopening the app resumes the current journey; uninstalling or clearing app data removes local saves. This build does not implement cloud synchronization or cross-device save transfer.
 
-The package ID is `com.shaigoldman.commandlinedungeon.test`, version `0.4.0-test`, version code `4`, launcher name **Dungeon Test**. This is a debug-signed test package, distinct from any future store release. Native permissions are the normal Internet permission used by the WebView shell and an AndroidX internal signature permission; the game does not request contacts, location, or shared-storage access.
+The package ID is `com.shaigoldman.commandlinedungeon.test`, version `0.5.0-test`, version code `5`, launcher name **Dungeon Test**. This is a debug-signed test package, distinct from any future store release. Native permissions are the normal Internet permission used by the WebView shell and an AndroidX internal signature permission; the game does not request contacts, location, or shared-storage access.
 
 The workspace signing key is ignored under `work/android-user/`. Keep it for compatible rebuilds. A fresh checkout or CI may use a different test signing key; Android will reject an in-place update signed by that other key. Uninstalling to switch keys removes local progress. Release signing and Google Play publication need a separate owner-controlled production key and are not performed here.
 
@@ -83,3 +83,13 @@ The bag groups Ready Now and Unavailable Now items, showing a readiness badge an
 Original transparent 32×32 pixel icons identify floor loot directly, replacing generic chests. The same artwork appears in the bag, equipped items, loot prompts and combat items. Floor and menu art share the same item-kind/silhouette keys. Six additional tests cover initiative ties/weight, equipment changes, readiness, floor eligibility and sprite identity; the phone matrix now has 80 viewport/state checks.
 
 The combat Items button shows a persistent green Heal Ready cue when a potion is available and health is at or below 40%, or a normal/critical next hit could be lethal. Otherwise, available throwing items get a gold Throw Ready cue. These cues open the existing combat item list; they never consume an item automatically. Bag, stats and item panels open at the top; the adventure log alone scrolls to the latest entry. The phone matrix includes this low-health state for 85 viewport/state checks.
+
+## Ground equipment and weapon HUD (0.5.0-test)
+
+Weapons/staves offer Equip from ground separately from Store in bag. The action validates reachability and the original weapon Power requirement, then equips without a world turn or temporary pickup. All equipped items still share the original single bag slot. If equipping would displace a weapon, it goes into inventory when there is room. Otherwise Equip & swap on floor explicitly leaves that old weapon on the same floor; it is never deleted. An unequipped character whose bag has no gear slot must first free a slot. The UI previews the replacement and explains disabled actions.
+
+The compact top HUD identifies the equipped weapon using its custom icon and name, or Unarmed, and a +N count for additional equipped gear. Character details show all names. The field updates from saved state on equips, swaps, breakage, trading, and reloads. Poison remains visible on the name line.
+
+Six physical materials now have distinct pixel palettes and details: chipped Fragile, silver Iron, blue Steel, gold/emerald Lucky, violet/cyan Magic, and serrated dark Obsidian. The named broadsword has a broader relic blade, axes and spears have material details, and elemental staffs use flame/trident/wing/crescent heads. The same images remain shared between the dungeon, inventory and equipped views. Tests cover seven new equipment/art cases and 95 phone viewport/state combinations, including floor equipping and full-bag swaps.
+
+Two raster tests verify continuous visible sword blades, filled spearheads and pill bodies using the production pixel drawing commands. Layered outlines are painted before the filled segments to prevent overlap from erasing artwork. The complete TypeScript suite now has 64 tests.
