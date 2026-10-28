@@ -81,9 +81,31 @@ floorKnife.pendingLoot = knife;
 floorKnife.loot = [
   { x: floorKnife.player.x, y: floorKnife.player.y, item: knife },
 ];
+const enemyFirst = structuredClone(combat);
+enemyFirst.monsters[0].stats.Speed = 100;
+const floorRope = structuredClone(loot);
+const rope = makeItem(floorRope, "Escape Rope");
+floorRope.pendingLoot = rope;
+floorRope.loot = [{ x: floorRope.player.x, y: floorRope.player.y, item: rope }];
+const bagReadiness = structuredClone(explore);
+bagReadiness.player.hp = bagReadiness.player.stats.Health;
+for (const name of [
+  "Small Health Potion",
+  "Mana Potion",
+  "Poison Antidote",
+  "Power Boost",
+])
+  bagReadiness.inventory.push(makeItem(bagReadiness, name));
+bagReadiness.capacity = 8;
+const combatLowHealth = structuredClone(combat);
+combatLowHealth.player.hp = 1;
 console.log(
   JSON.stringify({
     explore,
+    combatLowHealth,
+    bagReadiness,
+    enemyFirst,
+    floorRope,
     enemyInitiated,
     equipment,
     floorKnife,

@@ -9,6 +9,7 @@ import {
 } from "pixi.js";
 import type { Game } from "../shared/types";
 import { sprite, patterns } from "./art";
+import { itemArtKey, itemCanvas } from "./item-art";
 const TILE = 48;
 const noise = (x: number, y: number, s = 0) =>
   Math.abs(Math.imul(x + 71 + s, 374761393) ^ Math.imul(y + 13, 668265263)) >>>
@@ -84,6 +85,7 @@ export function DungeonView({
         const textures = Object.fromEntries(
           Object.keys(patterns).map((k) => [k, Texture.from(sprite(k, 2))]),
         );
+        const itemTextures = new Map<string, Texture>();
         let lastOverview = overviewRef.current;
         let lastEnabled = enabledRef.current;
         let last = -1,
@@ -414,16 +416,17 @@ export function DungeonView({
               const x = l.x * TILE,
                 y = l.y * TILE;
               rect(x + 8, y + 35, 32, 5, 0x344846, 0.6);
-              rect(x + 9, y + 19, 30, 17, 0x392e32);
-              rect(x + 10, y + 21, 28, 13, 0x875b40);
-              rect(x + 10, y + 18, 28, 9, 0xb38550);
-              rect(x + 12, y + 16, 24, 3, 0xd2a96b);
-              rect(x + 12, y + 27, 24, 2, 0x54392e);
-              rect(x + 13, y + 18, 3, 16, 0xe1bc74);
-              rect(x + 32, y + 18, 3, 16, 0xe1bc74);
-              rect(x + 22, y + 25, 6, 7, 0xe6c97b);
-              rect(x + 24, y + 27, 2, 3, 0x534b45);
-              rect(x + 17, y + 21, 12, 1, 0xe0b77a);
+              const key = itemArtKey(l.item);
+              let texture = itemTextures.get(key);
+              if (!texture) {
+                texture = Texture.from(itemCanvas(l.item));
+                texture.source.scaleMode = "nearest";
+                itemTextures.set(key, texture);
+              }
+              const icon = new Sprite(texture);
+              icon.position.set(x + 6, y + 4);
+              icon.width = icon.height = 36;
+              world.addChild(icon);
             }
           for (const a of [...g.monsters, g.player].sort((a, b) => a.y - b.y))
             if (visible(a.x, a.y)) {

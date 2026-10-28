@@ -14,7 +14,7 @@ Android uses `LocalGameAPI` to run the shared engine locally. All successful gam
 
 Android progress is **separate from server progress**. A device journey code works only on the same installation. It does not retrieve a web save or transfer to another phone. The save panel makes this distinction explicit. Closing/reopening the app resumes the current journey; uninstalling or clearing app data removes local saves. This build does not implement cloud synchronization or cross-device save transfer.
 
-The package ID is `com.shaigoldman.commandlinedungeon.test`, version `0.3.0-test`, version code `3`, launcher name **Dungeon Test**. This is a debug-signed test package, distinct from any future store release. Native permissions are the normal Internet permission used by the WebView shell and an AndroidX internal signature permission; the game does not request contacts, location, or shared-storage access.
+The package ID is `com.shaigoldman.commandlinedungeon.test`, version `0.4.0-test`, version code `4`, launcher name **Dungeon Test**. This is a debug-signed test package, distinct from any future store release. Native permissions are the normal Internet permission used by the WebView shell and an AndroidX internal signature permission; the game does not request contacts, location, or shared-storage access.
 
 The workspace signing key is ignored under `work/android-user/`. Keep it for compatible rebuilds. A fresh checkout or CI may use a different test signing key; Android will reject an in-place update signed by that other key. Uninstalling to switch keys removes local progress. Release signing and Google Play publication need a separate owner-controlled production key and are not performed here.
 
@@ -73,3 +73,13 @@ Walking into a monster opens a safe inspection; choosing Attack exchanges blows.
 Enemy stats is a read-only panel. Keyboard Enter on a focused stats/items button activates that button rather than attacking. Items opens the combat consumable list with named actions (Throw, Drink potion, Restore mana, Escape with rope). Items and spells retain their original between-exchange behavior. End encounter remains safe, matching the original End Attack action; Flee can fail and trigger an enemy strike.
 
 Throwing weapons and ropes require pickup rather than floor use. Equipment shows required/current Power and disables Equip until the requirement is met. Combat-restricted items likewise explain why their Use button is unavailable. Five additional mechanics tests and phone checks cover enemy initiation, inspection/Enter behavior, throwing knives, floor-action eligibility and disabled equipment. The layout matrix now covers 70 viewport/state combinations.
+
+## Attack order and item visibility (0.4.0-test)
+
+The On Attack strip numbers the first and second actor. It uses the exact exchange initiative rule: player base Speed minus total equipped Weight / 4, compared to enemy base Speed; the player wins ties. Enemy Stats explains the calculation and notes that dead actors cannot retaliate. This is the order for a normal Attack exchange, not an extra enemy turn after using a consumable.
+
+The bag groups Ready Now and Unavailable Now items, showing a readiness badge and the exact reason a disabled item is unavailable. Full-health potions, full-mana potions and antidotes without poison are disabled in menus to prevent accidental waste. Item effects and engine rules remain unchanged. Escape ropes and all projectiles lack floor-use actions.
+
+Original transparent 32×32 pixel icons identify floor loot directly, replacing generic chests. The same artwork appears in the bag, equipped items, loot prompts and combat items. Floor and menu art share the same item-kind/silhouette keys. Six additional tests cover initiative ties/weight, equipment changes, readiness, floor eligibility and sprite identity; the phone matrix now has 80 viewport/state checks.
+
+The combat Items button shows a persistent green Heal Ready cue when a potion is available and health is at or below 40%, or a normal/critical next hit could be lethal. Otherwise, available throwing items get a gold Throw Ready cue. These cues open the existing combat item list; they never consume an item automatically. Bag, stats and item panels open at the top; the adventure log alone scrolls to the latest entry. The phone matrix includes this low-health state for 85 viewport/state checks.

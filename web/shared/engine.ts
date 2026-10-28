@@ -487,6 +487,12 @@ export function combatAttackStats(a: Actor, consume = false, unarmed = false) {
   return attackStats(a, consume, physical, magical);
 }
 /** Preview only: no RNG, durability, mana or effect duration is consumed. */
+export function attackInitiative(player: Actor) {
+  return (
+    player.stats.Speed -
+    player.weapons.reduce((n, w) => n + (w.weight || 0) / 4, 0)
+  );
+}
 export function incomingDamage(enemy: Actor, player: Actor) {
   const s = combatAttackStats(enemy);
   const armor = Math.max(0, player.stats.Armor || 0);
@@ -498,10 +504,7 @@ export function incomingDamage(enemy: Actor, player: Actor) {
     critical,
     lethal: normal >= player.hp,
     criticalLethal: critical >= player.hp,
-    enemyFirst:
-      player.stats.Speed -
-        player.weapons.reduce((n, w) => n + (w.weight || 0) / 4, 0) <
-      enemy.stats.Speed,
+    enemyFirst: attackInitiative(player) < enemy.stats.Speed,
   };
 }
 /** Floor use consumes an item in place without using an inventory slot. */
@@ -524,6 +527,9 @@ export function canUseFromFloor(item: Item) {
 }
 /** Read-only availability shared by item menus; use() remains authoritative. */
 export function itemUseProblem(g: Game, i: Item): string | undefined {
+  if (g.status === "dead") return "This journey has ended.";
+  if (g.status === "won") return "Continue your journey first.";
+  if (g.pendingLevels) return "Choose your level bonus first.";
   if (i.kind === "weapon" && (i.weight || 0) * 2 > g.player.stats.Power)
     return `Requires ${(i.weight || 0) * 2} Power; you have ${g.player.stats.Power}.`;
   if (
@@ -542,6 +548,12 @@ export function itemUseProblem(g: Game, i: Item): string | undefined {
     return "Use outside combat.";
   if (!g.combat && ["rope", "projectile"].includes(i.kind))
     return "Requires an enemy encounter.";
+  if (i.kind === "heal" && g.player.hp >= g.player.stats.Health)
+    return "Health is already full.";
+  if (i.kind === "mana" && g.player.stats.Mana >= 10)
+    return "Mana is already full.";
+  if (i.kind === "antidote" && !g.player.effects.Poison)
+    return "You are not poisoned.";
 }
 export function hitRate(a: Actor, b: Actor) {
   const s = attackStats(a),
@@ -965,10 +977,7 @@ export function act(input: Game, a: Action): Game {
       };
       g.encounter.exchanges++;
       if (m.npc) log(g, m.name + ": It did not have to end this way…");
-      const first =
-        p.stats.Speed -
-          p.weapons.reduce((n, w) => n + (w.weight || 0) / 4, 0) >=
-        m.stats.Speed;
+      const first = attackInitiative(p) >= m.stats.Speed;
       if (first) strike(g, p, m, a.unarmed);
       if (m.hp > 0 && p.hp > 0) strike(g, m, p);
       if (!first && p.hp > 0 && m.hp > 0) strike(g, p, m, a.unarmed);

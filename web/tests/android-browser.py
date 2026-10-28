@@ -47,13 +47,13 @@ try:
   for width,height in viewport_cases:
    page.set_viewport_size({'width':width,'height':height})
    print(f'Checking {width}x{height}',flush=True)
-   for scene,primary in [('explore','Move up'),('combat','Attack'),('enemyInitiated','Attack'),('floorKnife','Take item'),('loot','Take item'),('fullBag','Bag full · Manage items'),('level','Power +2'),('dead','Begin a new journey'),('won','Continue exploring'),('stairs','Ascend to the next floor'),('critical','Move up'),('lastBreath','Use healing potion'),('lethal','Attack'),('critThreat','Attack')]:
+   for scene,primary in [('explore','Move up'),('combat','Attack'),('enemyInitiated','Attack'),('enemyFirst','Attack'),('combatLowHealth','Attack'),('floorRope','Take item'),('floorKnife','Take item'),('loot','Take item'),('fullBag','Bag full · Manage items'),('level','Power +2'),('dead','Begin a new journey'),('won','Continue exploring'),('stairs','Ascend to the next floor'),('critical','Move up'),('lastBreath','Use healing potion'),('lethal','Attack'),('critThreat','Attack')]:
     load_fixture(page,scene);fits(page)
     try:visible_action(page,primary)
     except Exception:
      page.screenshot(path=str(root/'work/mobile-failure.png'));print('Failed scene',scene,width,height,flush=True);raise
-    if scene in ['combat','enemyInitiated','lethal','critThreat']:
-     visible_action(page,'Enemy stats');visible_action(page,f"Items ({sum(i['kind'] in ['heal','mana','antidote','rope','projectile','armor','boost','xp'] for i in fixtures[scene]['inventory'])})")
+    if scene in ['combat','enemyInitiated','enemyFirst','combatLowHealth','lethal','critThreat']:
+     expect(page.locator('.attack-order')).to_contain_text('1 ·');visible_action(page,'Enemy stats');visible_action(page,f"Items ({sum(i['kind'] in ['heal','mana','antidote','rope','projectile','armor','boost','xp'] for i in fixtures[scene]['inventory'])})")
     if scene=='explore':assert visible_action(page,'Move up').bounding_box()['height']>=44
   page.set_viewport_size({'width':390,'height':760});load_fixture(page,'explore');visible_action(page,'Use healing potion').tap();expect(page.locator('.hud-vitals')).to_contain_text('15 / 15')
   for name,title in [('Bag','Inventory'),('Spells','Magic'),('Open adventure log','Adventure log'),('Character','Character')]:
@@ -64,6 +64,13 @@ try:
   page.get_by_role('button',name='Items (',exact=False).tap();dialog=page.get_by_role('dialog',name='Combat items');expect(dialog).to_contain_text('Throwing Knife');dialog.get_by_role('button',name='Throw',exact=True).tap();expect(dialog).not_to_be_visible();expect(page.locator('.encounter')).to_contain_text('25/30');expect(page.locator('.encounter-notice')).to_contain_text('COMBAT IN PROGRESS');page.get_by_role('button',name='Items (',exact=False).tap();page.get_by_role('dialog',name='Combat items').get_by_role('button',name='Drink potion',exact=True).tap();expect(page.locator('.hud-vitals')).to_contain_text('17 / 17');expect(page.locator('.encounter')).to_contain_text('25/30');visible_action(page,'Enemy stats').focus();page.keyboard.press('Enter');expect(page.get_by_role('dialog',name='Enemy stats')).to_be_visible();visible_action(page,'Return to dungeon').tap();expect(page.locator('.encounter')).to_contain_text('25/30')
   load_fixture(page,'enemyInitiated');expect(page.locator('.encounter-notice')).to_contain_text('approached you');expect(page.locator('.encounter-notice')).to_contain_text('No blow exchanged yet');page.screenshot(path=str(root/'work/combat-ux-v3.png'))
   load_fixture(page,'floorKnife');expect(page.get_by_role('button',name='Use from floor',exact=True)).to_have_count(0);expect(page.get_by_role('button',name='Take item',exact=True)).to_be_enabled()
+  floor_icon=page.locator('.item-icon-large').get_attribute('src');visible_action(page,'Take item').tap();visible_action(page,'Bag').tap();knife=page.get_by_role('dialog',name='Inventory').locator('.item').filter(has_text='Throwing Knife');expect(knife).to_contain_text('UNAVAILABLE NOW');expect(knife).to_contain_text('Requires an enemy encounter');assert knife.locator('.item-icon').get_attribute('src')==floor_icon;visible_action(page,'Return to dungeon').tap()
+  load_fixture(page,'floorRope');expect(page.get_by_role('button',name='Use from floor',exact=True)).to_have_count(0);expect(page.locator('.item-icon-large')).to_be_visible()
+  load_fixture(page,'combatLowHealth');expect(page.locator('.combat-items-button')).to_contain_text('Heal ready');expect(page.locator('.combat-items-button')).to_have_class('combat-items-button heal-ready')
+  load_fixture(page,'combat');expect(page.locator('.combat-items-button')).to_contain_text('Throw ready')
+  load_fixture(page,'enemyFirst');expect(page.locator('.attack-order')).to_contain_text('1 · Zombie');expect(page.locator('.attack-order')).to_contain_text('2 · YOU')
+  load_fixture(page,'combat');expect(page.locator('.attack-order')).to_contain_text('1 · YOU')
+  load_fixture(page,'bagReadiness');visible_action(page,'Bag').tap();inv=page.get_by_role('dialog',name='Inventory');expect(inv).to_contain_text('Ready now');assert page.locator('.tab-content').evaluate('el=>el.scrollTop')==0;expect(inv.get_by_role('heading',name='Ready now',exact=False)).to_be_visible();expect(inv).to_contain_text('Unavailable now');expect(inv).to_contain_text('Health is already full');page.screenshot(path=str(root/'work/item-bag-v4.png'));visible_action(page,'Return to dungeon').tap()
   load_fixture(page,'equipment');visible_action(page,'Bag').tap();weapon=page.get_by_role('dialog',name='Inventory').locator('.item').filter(has_text='Heavy practice sword');expect(weapon).to_contain_text('Requires 40 Power; you have 1.');expect(weapon.get_by_role('button',name='Equip',exact=True)).to_be_disabled();visible_action(page,'Return to dungeon').tap()
   load_fixture(page,'fullBag');visible_action(page,'Bag full · Manage items').tap();page.get_by_role('dialog',name='Inventory').get_by_role('button',name='Drop',exact=True).first.tap();visible_action(page,'Return to dungeon').tap();visible_action(page,'Take item').tap();expect(page.locator('.controls')).to_be_visible();fits(page)
   load_fixture(page,'fullBag');visible_action(page,'Use from floor').tap();expect(page.locator('.hud-vitals')).to_contain_text('15 / 15');expect(page.locator('.controls')).to_be_visible();fits(page)
@@ -76,7 +83,7 @@ try:
   page.emulate_media(reduced_motion='reduce');load_fixture(page,'explore');visible_action(page,'Use healing potion').tap();expect(page.locator('.hud-vitals')).to_contain_text('15 / 15')
   assert not api_requests,api_requests
   assert not errors,errors
-  print(f'PASS: {len(viewport_cases)*14} viewport/scene checks; reduced-motion healing; floor use with full bag; 10%/1% health cues; lethal/critical warnings; no page scrolling; primary actions visible; touch healing; combat magic; full-bag recovery; level-up; drawers; overview; offline save/reload; no browser errors')
+  print(f'PASS: {len(viewport_cases)*17} viewport/scene checks; reduced-motion healing; floor use with full bag; 10%/1% health cues; lethal/critical warnings; no page scrolling; primary actions visible; touch healing; combat magic; full-bag recovery; level-up; drawers; overview; offline save/reload; no browser errors')
   browser.close()
 finally:
  server.terminate();server.wait(timeout=5)

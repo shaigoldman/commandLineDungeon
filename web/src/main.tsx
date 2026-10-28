@@ -12,9 +12,11 @@ import {
   incomingDamage,
   canUseFromFloor,
   itemUseProblem,
+  attackInitiative,
 } from "../shared/engine";
 import { DungeonView } from "./DungeonView";
 import { Portrait } from "./Portrait";
+import { ItemIcon } from "./ItemIcon";
 import "./style.css";
 import "./mobile.css";
 import { requestGame, isDeviceGame } from "./game-api";
@@ -224,10 +226,10 @@ function App() {
   }, [game, help, save, recovery, compact, mobilePanel]);
   useEffect(() => {
     journal.current?.scrollTo({
-      top: journal.current.scrollHeight,
-      behavior: "smooth",
+      top: tab === "journal" ? journal.current.scrollHeight : 0,
+      behavior: "instant",
     });
-  }, [game?.log.length, game?.revision, tab]);
+  }, [game?.log.length, game?.revision, tab, mobilePanel]);
   async function start(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -415,6 +417,20 @@ function App() {
       "xp",
     ].includes(i.kind),
   );
+  const readyHeal = combatItems.find(
+    (i) => i.kind === "heal" && !itemUseProblem(game, i),
+  );
+  const readyThrow = combatItems.find(
+    (i) => i.kind === "projectile" && !itemUseProblem(game, i),
+  );
+  const healingRelevant =
+    !!readyHeal &&
+    (healthRatio <= 0.4 || !!danger?.lethal || !!danger?.criticalLethal);
+  const itemCue = healingRelevant
+    ? "Heal ready"
+    : readyThrow
+      ? "Throw ready"
+      : "";
   const hasContext =
     game.status !== "playing" ||
     !!enemy ||
@@ -840,10 +856,22 @@ function App() {
                     Enemy stats
                   </button>
                 </div>
+                <div
+                  className={
+                    "attack-order " +
+                    (danger?.enemyFirst ? "enemy-first" : "you-first")
+                  }
+                  role="status"
+                  aria-label={`Attack order: ${danger?.enemyFirst ? enemy.name + " first, then you" : "You first, then " + enemy.name}`}
+                >
+                  <small>ON ATTACK</small>
+                  <b>1 · {danger?.enemyFirst ? enemy.name : "YOU"}</b>
+                  <span>→</span>
+                  <b>2 · {danger?.enemyFirst ? "YOU" : enemy.name}</b>
+                </div>
                 <p className="combat-forecast">
                   Your hit chance {Math.min(100, hitRate(p, enemy)).toFixed(0)}%
-                  · Enemy hit {danger?.normal} HP ·{" "}
-                  {danger?.enemyFirst ? "Enemy acts first" : "You act first"}
+                  · Enemy hit {danger?.normal} HP
                 </p>
                 {danger && (danger.lethal || danger.criticalLethal) && (
                   <p className="lethal-warning" role="alert">
@@ -901,9 +929,27 @@ function App() {
                   )}
                   <button
                     disabled={busy}
+                    className={
+                      "combat-items-button " +
+                      (healingRelevant
+                        ? "heal-ready"
+                        : readyThrow
+                          ? "throw-ready"
+                          : "")
+                    }
+                    aria-label={`Items (${combatItems.length})`}
+                    aria-describedby={itemCue ? "combat-item-cue" : undefined}
+                    title={
+                      healingRelevant
+                        ? "A healing potion is ready. Open Items to restore health without spending a combat round."
+                        : readyThrow
+                          ? "A throwing item is ready to use against this enemy."
+                          : "View combat items and availability"
+                    }
                     onClick={() => openPanel("combat-items")}
                   >
                     Items ({combatItems.length})
+                    {itemCue && <small id="combat-item-cue">{itemCue}</small>}
                   </button>
                   {button(
                     encounter?.engaged || encounter?.origin === "enemy"
@@ -937,7 +983,14 @@ function App() {
               <div>
                 <p className="eyebrow">DISCOVERED TREASURE</p>
                 <h2>{game.pendingLoot.name}</h2>
+                <ItemIcon item={game.pendingLoot} large />
                 <p>{describe(game.pendingLoot)}</p>
+                {canUseFromFloor(game.pendingLoot) &&
+                  itemUseProblem(game, game.pendingLoot) && (
+                    <p className="item-restriction">
+                      {itemUseProblem(game, game.pendingLoot)}
+                    </p>
+                  )}
                 {game.pendingLoot.kind === "projectile" && (
                   <p>
                     Pick up this throwing weapon to use it against an enemy.
@@ -971,7 +1024,12 @@ function App() {
                   </button>
                   {!game.pendingLoot.auto &&
                     canUseFromFloor(game.pendingLoot) &&
-                    button("Use from floor", { type: "use-floor" })}
+                    button(
+                      "Use from floor",
+                      { type: "use-floor" },
+                      "",
+                      itemUseProblem(game, game.pendingLoot),
+                    )}
                   {!game.pendingLoot.auto &&
                     game.inventory.length + Number(p.weapons.length > 0) >=
                       game.capacity && (
@@ -1050,6 +1108,13 @@ function App() {
                 enemy ? (
                   <>
                     <h2>{enemy.name} · Enemy stats</h2>
+                    <p className="initiative-explanation">
+                      Attack order uses your base Speed minus equipped weapon
+                      weight ÷ 4, compared with enemy Speed. You:{" "}
+                      {attackInitiative(p)} · Enemy: {enemy.stats.Speed}. Ties
+                      go to you. A defeated opponent cannot retaliate. Items and
+                      spells do not trigger a normal exchange.
+                    </p>
                     <p>
                       Inspecting is safe: no attack, turn, mana or item is
                       spent.
@@ -1097,9 +1162,25 @@ function App() {
                   )}
                   {combatItems.map((i) => (
                     <div className="item" key={i.id}>
+                      <ItemIcon item={i} />
                       <div>
                         <b>{i.name}</b>
+                        <small
+                          className={
+                            "availability-badge " +
+                            (itemUseProblem(game, i) ? "unavailable" : "ready")
+                          }
+                        >
+                          {itemUseProblem(game, i)
+                            ? "UNAVAILABLE NOW"
+                            : "USABLE NOW"}
+                        </small>
                         <small>{describe(i)}</small>
+                        {itemUseProblem(game, i) && (
+                          <small className="item-restriction">
+                            {itemUseProblem(game, i)}
+                          </small>
+                        )}
                       </div>
                       {button(
                         i.kind === "projectile"
@@ -1151,30 +1232,68 @@ function App() {
                     {game.capacity} · Items and spells do not spend a combat
                     round.
                   </p>
-                  {game.inventory.map((i) => (
-                    <div className="item" key={i.id}>
-                      <div>
-                        <b>{i.name}</b>
-                        <small>{describe(i)}</small>
-                        {itemUseProblem(game, i) && (
-                          <small className="item-restriction">
-                            {itemUseProblem(game, i)}
-                          </small>
-                        )}
-                      </div>
-                      <div className="actions">
-                        {button(
-                          ["weapon", "tome"].includes(i.kind) ? "Equip" : "Use",
-                          { type: "use", id: i.id },
-                          "",
-                          itemUseProblem(game, i),
-                        )}
-                        {button("Drop", { type: "drop", id: i.id })}
-                      </div>
-                    </div>
+                  {[
+                    {
+                      label: "Ready now",
+                      items: game.inventory.filter(
+                        (i) => !itemUseProblem(game, i),
+                      ),
+                    },
+                    {
+                      label: "Unavailable now",
+                      items: game.inventory.filter(
+                        (i) => !!itemUseProblem(game, i),
+                      ),
+                    },
+                  ].map(({ label, items }) => (
+                    <section className="inventory-group" key={label}>
+                      <h3>
+                        {label} · {items.length}
+                      </h3>
+                      {items.map((i) => (
+                        <div className="item" key={i.id}>
+                          <ItemIcon item={i} />
+                          <div>
+                            <b>{i.name}</b>
+                            <small
+                              className={
+                                "availability-badge " +
+                                (itemUseProblem(game, i)
+                                  ? "unavailable"
+                                  : "ready")
+                              }
+                            >
+                              {itemUseProblem(game, i)
+                                ? "UNAVAILABLE NOW"
+                                : ["weapon", "tome"].includes(i.kind)
+                                  ? "READY TO EQUIP"
+                                  : "USABLE NOW"}
+                            </small>
+                            <small>{describe(i)}</small>
+                            {itemUseProblem(game, i) && (
+                              <small className="item-restriction">
+                                {itemUseProblem(game, i)}
+                              </small>
+                            )}
+                          </div>
+                          <div className="actions">
+                            {button(
+                              ["weapon", "tome"].includes(i.kind)
+                                ? "Equip"
+                                : "Use",
+                              { type: "use", id: i.id },
+                              "",
+                              itemUseProblem(game, i),
+                            )}
+                            {button("Drop", { type: "drop", id: i.id })}
+                          </div>
+                        </div>
+                      ))}
+                    </section>
                   ))}
                   {p.weapons.map((i) => (
                     <div className="item" key={i.id}>
+                      <ItemIcon item={i} />
                       <div>
                         <b>{i.name} · Equipped</b>
                         <small>{describe(i)}</small>
