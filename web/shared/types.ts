@@ -72,6 +72,7 @@ export interface Game {
   pendingLevels: number;
   status: "playing" | "dead" | "won";
   log: string[];
+  logSerial?: number;
   revision: number;
 }
 export type Action =
@@ -84,11 +85,11 @@ export type Action =
         | "ascend"
         | "continue"
         | "pickup"
-        | "use-floor"
-        | "equip-floor"
         | "ignore"
         | "talk";
     }
+  | { type: "use-floor" | "equip-floor"; id?: string }
+  | { type: "throw-floor"; id: string; target: string }
   | { type: "attack"; unarmed?: boolean }
   | { type: "use" | "drop" | "unequip"; id: string }
   | { type: "deal"; id?: string }

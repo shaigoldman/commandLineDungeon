@@ -19,6 +19,7 @@ const roll = (g: Game, n: number) => Math.floor(random(g) * n);
 const pick = <T>(g: Game, a: T[]) => a[roll(g, a.length)];
 const id = (g: Game) => Math.floor(random(g) * 2 ** 32).toString(36);
 export function log(g: Game, s: string) {
+  g.logSerial = (g.logSerial ?? g.log.length) + 1;
   g.log.push(s);
   g.log = g.log.slice(-100);
 }
@@ -104,7 +105,7 @@ export function makeItem(g: Game, name: string): Item {
     rope: "Guarantee escape from combat.",
     nuke: "Destroy all monsters and yourself unless shielded.",
     shield: "Protect against one nuke.",
-    teleport: "Reusable random teleport outside combat.",
+    teleport: "Reusable teleport to an open tile; also escapes encounters.",
     vision: "Permanently reveal this floor.",
     sight: "Increase sight range by 1.",
     hand: "Add one equipment slot.",
@@ -523,6 +524,7 @@ export function canUseFromFloor(item: Item) {
     "hand",
     "bag",
     "xp",
+    "teleport",
   ].includes(item.kind);
 }
 /** Floor equipment never disappears: a displaced weapon stays here if the bag is full. */
@@ -549,16 +551,9 @@ export function itemUseProblem(g: Game, i: Item): string | undefined {
     return `Requires ${(i.weight || 0) * 2} Power; you have ${g.player.stats.Power}.`;
   if (
     g.combat &&
-    [
-      "stat",
-      "nuke",
-      "shield",
-      "teleport",
-      "vision",
-      "sight",
-      "hand",
-      "bag",
-    ].includes(i.kind)
+    ["stat", "nuke", "shield", "vision", "sight", "hand", "bag"].includes(
+      i.kind,
+    )
   )
     return "Use outside combat.";
   if (!g.combat && ["rope", "projectile"].includes(i.kind))
@@ -695,17 +690,13 @@ function poison(g: Game) {
 }
 function monsterTurn(g: Game) {
   g.turn++;
-  if (g.player.stats.Speed > 5) {
-    g.player.hp = Math.trunc(g.player.hp);
-    if (g.player.hp <= 0) {
-      hurt(g, g.player, 0, "Exhaustion");
-      return;
-    }
+  if (g.player.hp <= 0) {
+    hurt(g, g.player, 0, "Exhaustion");
+    return;
   }
   for (let pass = 0; pass < (g.player.stats.Speed <= 5 ? 2 : 1); pass++)
     for (const m of [...g.monsters]) {
       if (pass === 1 && m.stats.Speed <= 5) continue;
-      m.hp = Math.trunc(m.hp);
       if (m.hp <= 0) {
         kill(g, m);
         continue;
@@ -761,16 +752,9 @@ function use(g: Game, i: Item) {
     m = g.monsters.find((m) => m.id === g.combat);
   if (
     g.combat &&
-    [
-      "stat",
-      "nuke",
-      "shield",
-      "teleport",
-      "vision",
-      "sight",
-      "hand",
-      "bag",
-    ].includes(i.kind)
+    ["stat", "nuke", "shield", "vision", "sight", "hand", "bag"].includes(
+      i.kind,
+    )
   )
     throw Error("Use this outside combat.");
   if (i.kind === "weapon" || i.kind === "tome") {
@@ -841,6 +825,9 @@ function use(g: Game, i: Item) {
     case "teleport":
       Object.assign(p, position(g));
       g.pendingLoot = undefined;
+      g.combat = undefined;
+      g.encounter = undefined;
+      log(g, "Teleported to safety.");
       break;
     case "vision":
       g.light = g.light.map((r) => r.map(() => true));
@@ -942,8 +929,36 @@ export function act(input: Game, a: Action): Game {
       monsterTurn(g);
       break;
     }
+    case "throw-floor": {
+      const ground = g.loot.find(
+        (l) => l.item.id === a.id && l.x === p.x && l.y === p.y,
+      );
+      const target = g.monsters.find((m) => m.id === a.target);
+      if (!ground || ground.item.kind !== "projectile")
+        throw Error("No throwing item at your feet.");
+      if (!target || Math.abs(target.x - p.x) + Math.abs(target.y - p.y) !== 1)
+        throw Error("Choose an adjacent enemy.");
+      if (g.combat && g.combat !== target.id)
+        throw Error("Finish your current encounter first.");
+      g.combat = target.id;
+      g.encounter = {
+        enemyId: target.id,
+        origin: "inspection",
+        engaged: true,
+        exchanges: 0,
+      };
+      use(g, ground.item);
+      g.loot = g.loot.filter((l) => l.item.id !== a.id);
+      g.pendingLoot = undefined;
+      break;
+    }
     case "equip-floor": {
-      const i = g.pendingLoot;
+      const i =
+        a.id !== undefined
+          ? g.loot.find((l) => l.item.id === a.id && l.x === p.x && l.y === p.y)
+              ?.item
+          : g.pendingLoot ||
+            g.loot.find((l) => l.x === p.x && l.y === p.y)?.item;
       if (
         !i ||
         !g.loot.some((l) => l.item.id === i.id && l.x === p.x && l.y === p.y)
@@ -965,7 +980,12 @@ export function act(input: Game, a: Action): Game {
       break;
     }
     case "use-floor": {
-      const i = g.pendingLoot;
+      const i =
+        a.id !== undefined
+          ? g.loot.find((l) => l.item.id === a.id && l.x === p.x && l.y === p.y)
+              ?.item
+          : g.pendingLoot ||
+            g.loot.find((l) => l.x === p.x && l.y === p.y)?.item;
       if (
         !i ||
         !g.loot.some((l) => l.item.id === i.id && l.x === p.x && l.y === p.y)
@@ -1083,6 +1103,9 @@ export function act(input: Game, a: Action): Game {
         case "Teleport":
           Object.assign(p, position(g));
           g.pendingLoot = undefined;
+          g.combat = undefined;
+          g.encounter = undefined;
+          log(g, "Teleported to safety.");
           break;
         case "Gust":
           hurt(g, m!, 10);

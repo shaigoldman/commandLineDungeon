@@ -2,9 +2,11 @@
 
 ## Current access
 
-This workspace has no Render secret or outbound hosting identity. Its enforced network policy does not allow Render API/dashboard domains. The inherited GitHub CLI token fails `gh auth status` as invalid, but the connected GitHub app has repository write access and can publish the branch and PR independently. The source, tests, build, migration, Blueprint, and PR description are prepared. Render deployment remains blocked by hosting access. No public URL has been created.
+This workspace has no Render secret or outbound hosting identity. Its enforced network policy does not allow Render API/dashboard domains. The inherited GitHub CLI token fails `gh auth status` as invalid, but the connected GitHub app has repository write access and can publish the branch and PR independently. The source, tests, build, migration and Blueprint are published in [PR #1](https://github.com/shaigoldman/commandLineDungeon/pull/1) on `feat/browser-rpg`. Render deployment remains blocked by hosting access. No public URL has been created.
 
-## Publish the branch and open the PR
+## GitHub handoff
+
+PR #1 already exists. The following commands are only needed when publishing independently from another checkout; use `gh pr edit 1 --body-file web/docs/PR.md` to update the existing PR instead of creating another.
 
 From an authenticated checkout of `shaigoldman/commandLineDungeon`:
 
@@ -33,14 +35,14 @@ The assigned `onrender.com` hostname is chosen by Render and is not guessed here
 
 ## Environment variables
 
-| Variable | Required | Meaning |
-| --- | --- | --- |
-| `DATABASE_URL` | Production Blueprint | Render PostgreSQL internal connection string. Automatically linked by Blueprint; never expose to the frontend. |
-| `NODE_ENV` | Production | `production` enables Secure save cookies. The Blueprint sets it. |
-| `PORT` | No | Render supplies it; local default is `3000`. Bind address is `0.0.0.0`. |
-| `NODE_VERSION` | Blueprint | `24.19.0`, matching the build/runtime used here. |
-| `DATA_DIR` | JSON fallback only | Default `data`. Without PostgreSQL, mount persistent storage here and run exactly one service instance. The supplied Blueprint uses PostgreSQL instead. |
-| `CHROMIUM_PATH` | Browser tests only | Optional browser executable override. |
+| Variable        | Required             | Meaning                                                                                                                                                 |
+| --------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`  | Production Blueprint | Render PostgreSQL internal connection string. Automatically linked by Blueprint; never expose to the frontend.                                          |
+| `NODE_ENV`      | Production           | `production` enables Secure save cookies. The Blueprint sets it.                                                                                        |
+| `PORT`          | No                   | Render supplies it; local default is `3000`. Bind address is `0.0.0.0`.                                                                                 |
+| `NODE_VERSION`  | Blueprint            | `24.19.0`, matching the build/runtime used here.                                                                                                        |
+| `DATA_DIR`      | JSON fallback only   | Default `data`. Without PostgreSQL, mount persistent storage here and run exactly one service instance. The supplied Blueprint uses PostgreSQL instead. |
+| `CHROMIUM_PATH` | Browser tests only   | Optional browser executable override.                                                                                                                   |
 
 `.env.example` documents names but the application does not auto-load `.env`; supply environment variables with your shell, process manager, or Render dashboard. No frontend environment variables or secrets are needed.
 

@@ -17,23 +17,21 @@ describe("simulation regressions", () => {
     expect(() => act(g, { type: "level", stat: "Power" })).toThrow("pending");
     expect(g).toEqual(before);
   });
-  it("ends a fast player journey when turn rounding reaches zero HP", () => {
+  it("preserves fractional player HP when waiting without damage", () => {
     const g = base("Scout");
     g.player.hp = 0.5;
     const next = act(g, { type: "wait" });
-    expect(next.player.hp).toBe(0);
-    expect(next.status).toBe("dead");
+    expect(next.player.hp).toBe(0.5);
+    expect(next.status).toBe("playing");
     expect(next.combat).toBeUndefined();
   });
-  it("removes monsters whose fractional HP rounds to zero and grants the normal reward", () => {
+  it("preserves fractional monster HP and gives no unearned reward on a turn", () => {
     const g = base();
     g.monsters = [g.monsters[0]];
-    const m = g.monsters[0];
-    m.hp = 0.3;
+    g.monsters[0].hp = 0.3;
     const next = act(g, { type: "wait" });
-    expect(next.monsters).toHaveLength(0);
-    expect(next.xp).toBe(20);
-    expect(next.loot.some((l) => l.x === m.x && l.y === m.y)).toBe(true);
+    expect(next.monsters[0].hp).toBe(0.3);
+    expect(next.xp).toBe(0);
   });
   it("shielded nukes preserve key and loot drops without awarding combat EXP", () => {
     let g = base("Knight");

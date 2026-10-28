@@ -1,94 +1,80 @@
-"""Check the actual offline bundle, including a viewport/encounter UX matrix."""
-import json,os,pathlib,subprocess,time,urllib.request
+"""Verify the bundled phone game offline, including every requested redesign flow."""
+import json,os,pathlib,re,shutil,subprocess,tempfile,time,urllib.request
 from playwright.sync_api import sync_playwright,expect
 root=pathlib.Path(__file__).resolve().parents[1]
 fixtures=json.loads(subprocess.check_output(['node','--import','tsx','tests/mobile-fixtures.ts'],cwd=root,text=True))
-server=subprocess.Popen(['python3','-m','http.server','3191','--bind','127.0.0.1','--directory','dist/android'],cwd=root,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-
-def load_fixture(page,name):
- page.evaluate('''game=>{const storage=Object.keys(localStorage).find(k=>k.endsWith('dungeon.android.saves.v1'));const all=JSON.parse(localStorage.getItem(storage));all.games[localStorage.getItem('dungeon-key')]=game;localStorage.setItem(storage,JSON.stringify(all));}''',fixtures[name])
- page.reload();page.wait_for_selector('canvas');expect(page.locator('.mobile-nav')).to_be_visible()
-
+bundle=tempfile.TemporaryDirectory(prefix='dungeon-phone-test-')
+shutil.copytree(root/'dist/android',bundle.name,dirs_exist_ok=True)
+server=subprocess.Popen(['python3','-m','http.server','3191','--bind','127.0.0.1','--directory',bundle.name],cwd=root,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+def saved(page):
+ return page.evaluate('''()=>{const k=Object.keys(localStorage).find(k=>k.endsWith('dungeon.android.saves.v1'));return JSON.parse(localStorage.getItem(k)).games[localStorage.getItem('dungeon-key')];}''')
+def load(page,name):
+ page.evaluate('''game=>{const k=Object.keys(localStorage).find(k=>k.endsWith('dungeon.android.saves.v1'));const all=JSON.parse(localStorage.getItem(k));all.games[localStorage.getItem('dungeon-key')]=game;localStorage.setItem(k,JSON.stringify(all));}''',fixtures[name]);page.reload();page.wait_for_selector('canvas');expect(page.locator('.inventory-ribbon')).to_be_visible()
+def visible(page,name):
+ b=page.get_by_role('button',name=name,exact=True);expect(b).to_be_visible()
+ if b.evaluate("el=>!!el.closest('.item-carousel,.spell-carousel')"):b.scroll_into_view_if_needed();page.wait_for_timeout(80)
+ r=b.bounding_box();assert r['y']>=0 and r['y']+r['height']<=page.evaluate('innerHeight')+1,(name,r)
+ assert b.evaluate('''el=>{const r=el.getBoundingClientRect();const h=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return h===el||el.contains(h);}'''),('Obscured',name,r)
+ return b
 def fits(page):
- expect(page.locator('body')).to_have_class('playing-compact')
- bounds=page.evaluate('''()=>{const box=s=>{const r=document.querySelector(s).getBoundingClientRect();return {top:r.top,bottom:r.bottom,height:r.height};};return {height:innerHeight,width:innerWidth,scrollHeight:document.documentElement.scrollHeight,scrollWidth:document.documentElement.scrollWidth,nav:box('.mobile-nav'),hud:box('.mobile-hud'),map:box('canvas')};}''')
- assert bounds['scrollHeight']<=bounds['height']+1,bounds
- assert bounds['scrollWidth']<=bounds['width'],bounds
- assert 0<=bounds['hud']['top']<bounds['hud']['bottom']<=bounds['height'],bounds
- assert bounds['nav']['bottom']<=bounds['height']+1,bounds
- weapon=page.locator('.hud-equipped').bounding_box();assert weapon['height']>=10 and weapon['y']+weapon['height']<=bounds['hud']['bottom']+1,(weapon,bounds)
- assert bounds['map']['height']>=70,bounds
+ state=page.evaluate('''()=>{const box=s=>{const b=document.querySelector(s)?.getBoundingClientRect();return b?{top:b.top,bottom:b.bottom,height:b.height}:null;};return {h:innerHeight,w:innerWidth,sh:document.documentElement.scrollHeight,sw:document.documentElement.scrollWidth,map:box('canvas'),bag:box('.inventory-ribbon'),magic:box('.magic-ribbon'),actors:box('.actor-panels')};}''')
+ assert state['sh']<=state['h']+1 and state['sw']<=state['w'],state
+ assert state['map']['height']>=64,state
+ for key in ['bag','magic','actors']:
+  b=state[key]
+  if b:assert 0<=b['top'] and b['bottom']<=state['h']+1,(key,state)
+ assert page.get_by_role('button',name=re.compile('^Flee')).count()==0
+ assert page.get_by_role('button',name='Log',exact=True).count()==0
+ assert page.get_by_role('button',name='Move up',exact=True).count()==0
 
-def visible_action(page,name):
- button=page.get_by_role('button',name=name,exact=True);expect(button).to_be_visible();b=button.bounding_box();assert b['y']>=0 and b['y']+b['height']<=page.evaluate('innerHeight'),(name,b)
- assert button.evaluate('''el=>{const r=el.getBoundingClientRect();const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);if(hit!==el&&!el.contains(hit))return false;for(let p=el.parentElement;p;p=p.parentElement){if(['hidden','auto','scroll','clip'].includes(getComputedStyle(p).overflowY)){const b=p.getBoundingClientRect();if(r.top<b.top-1||r.bottom>b.bottom+1)return false;}}return true;}'''),('Obscured action',name,b)
- return button
-
+def swipe_map(page,dx,dy):
+ b=page.locator('canvas').bounding_box();x=b['x']+b['width']*.5;y=b['y']+b['height']*.5
+ page.mouse.move(x,y);page.mouse.down();page.mouse.move(x+dx,y+dy,steps=6);page.mouse.up()
 try:
  for _ in range(100):
   try:urllib.request.urlopen('http://127.0.0.1:3191',timeout=1);break
   except Exception:time.sleep(.1)
  with sync_playwright() as p:
-  executable=os.environ.get('CHROMIUM_PATH')
-  if not executable and pathlib.Path('/usr/bin/chromium').exists():executable='/usr/bin/chromium'
-  browser=p.chromium.launch(executable_path=executable,headless=True,args=['--no-sandbox'])
-  context=browser.new_context(viewport={'width':390,'height':760},is_mobile=True,has_touch=True)
-  page=context.new_page();errors=[];api_requests=[]
+  exe=os.environ.get('CHROMIUM_PATH') or ('/usr/bin/chromium' if pathlib.Path('/usr/bin/chromium').exists() else None)
+  browser=p.chromium.launch(executable_path=exe,headless=True,args=['--no-sandbox']);context=browser.new_context(viewport={'width':390,'height':760},is_mobile=True,has_touch=True,reduced_motion="no-preference");page=context.new_page();errors=[];api=[]
   page.on('pageerror',lambda e:errors.append(str(e)))
   def route(r):
-   if '/api/' in r.request.url:api_requests.append(r.request.url);r.abort()
+   if '/api/' in r.request.url:api.append(r.request.url);r.abort()
    elif not r.request.url.startswith('http://127.0.0.1:3191/'):r.abort()
    else:r.continue_()
-  page.route('**/*',route)
-  page.goto('http://127.0.0.1:3191');page.get_by_placeholder('Adventurer').fill('Android Elara');page.get_by_role('button',name='Mage').tap();page.get_by_role('button',name='Enter the dungeon').tap();page.wait_for_selector('canvas')
-  visible_action(page,'Spells').tap();dialog=page.get_by_role('dialog',name='Magic');expect(dialog).to_be_visible();dialog.get_by_role('button',name='Cast · 1 MP').tap();expect(page.locator('.hud-vitals')).to_contain_text('9 / 10');expect(dialog).not_to_be_visible()
-  page.get_by_role('button',name='Saved on phone').tap();page.get_by_role('dialog').wait_for();expect(page.get_by_role('dialog')).to_contain_text('saved on this phone');assert len(page.get_by_label('Device journey code').input_value())==64
-  page.get_by_role('button',name='✕').tap();page.reload();page.wait_for_selector('canvas');expect(page.locator('.mobile-hud')).to_contain_text('Android Elara');expect(page.locator('.hud-vitals')).to_contain_text('9 / 10')
-  viewport_cases=[] if os.environ.get('MOBILE_SKIP_MATRIX') else [(320,480),(360,560),(390,760),(430,915),(844,390)]
-  for width,height in viewport_cases:
-   page.set_viewport_size({'width':width,'height':height})
-   print(f'Checking {width}x{height}',flush=True)
-   for scene,primary in [('explore','Move up'),('combat','Attack'),('enemyInitiated','Attack'),('enemyFirst','Attack'),('combatLowHealth','Attack'),('floorRope','Take item'),('floorWeapon','Equip from ground'),('floorSwap','Equip & swap on floor'),('floorKnife','Take item'),('loot','Take item'),('fullBag','Bag full · Manage items'),('level','Power +2'),('dead','Begin a new journey'),('won','Continue exploring'),('stairs','Ascend to the next floor'),('critical','Move up'),('lastBreath','Use healing potion'),('lethal','Attack'),('critThreat','Attack')]:
-    load_fixture(page,scene);fits(page)
-    try:visible_action(page,primary)
-    except Exception:
-     page.screenshot(path=str(root/'work/mobile-failure.png'));print('Failed scene',scene,width,height,flush=True);raise
-    if scene in ['combat','enemyInitiated','enemyFirst','combatLowHealth','lethal','critThreat']:
-     expect(page.locator('.attack-order')).to_contain_text('1 ·');visible_action(page,'Enemy stats');visible_action(page,f"Items ({sum(i['kind'] in ['heal','mana','antidote','rope','projectile','armor','boost','xp'] for i in fixtures[scene]['inventory'])})")
-    if scene=='explore':assert visible_action(page,'Move up').bounding_box()['height']>=44
-  page.set_viewport_size({'width':390,'height':760});load_fixture(page,'explore');visible_action(page,'Use healing potion').tap();expect(page.locator('.hud-vitals')).to_contain_text('15 / 15')
-  for name,title in [('Bag','Inventory'),('Spells','Magic'),('Open adventure log','Adventure log'),('Character','Character')]:
-   visible_action(page,name).tap();expect(page.get_by_role('dialog',name=title)).to_be_visible();visible_action(page,'Return to dungeon').tap();fits(page)
-  visible_action(page,'Show floor overview').tap();expect(page.get_by_role('button',name='Follow hero')).to_have_attribute('aria-pressed','true');fits(page);visible_action(page,'Follow hero').tap()
-  load_fixture(page,'combat');visible_action(page,'Spells').tap();page.get_by_role('dialog',name='Magic').get_by_role('button',name='Cast · 5 MP').tap();expect(page.get_by_role('dialog',name='Magic')).not_to_be_visible();fits(page);expect(page.locator('.encounter')).to_contain_text('20/30')
-  load_fixture(page,'combat');expect(page.locator('.encounter-notice')).to_contain_text('INSPECTING ENEMY');visible_action(page,'Enemy stats').focus();page.keyboard.press('Enter');expect(page.get_by_role('dialog',name='Enemy stats')).to_be_visible();expect(page.get_by_role('dialog',name='Enemy stats')).to_contain_text('Inspecting is safe');visible_action(page,'Return to dungeon').tap();expect(page.locator('.encounter-notice')).to_contain_text('NO ATTACK YET')
-  page.get_by_role('button',name='Items (',exact=False).tap();dialog=page.get_by_role('dialog',name='Combat items');expect(dialog).to_contain_text('Throwing Knife');dialog.get_by_role('button',name='Throw',exact=True).tap();expect(dialog).not_to_be_visible();expect(page.locator('.encounter')).to_contain_text('25/30');expect(page.locator('.encounter-notice')).to_contain_text('COMBAT IN PROGRESS');page.get_by_role('button',name='Items (',exact=False).tap();page.get_by_role('dialog',name='Combat items').get_by_role('button',name='Drink potion',exact=True).tap();expect(page.locator('.hud-vitals')).to_contain_text('17 / 17');expect(page.locator('.encounter')).to_contain_text('25/30');visible_action(page,'Enemy stats').focus();page.keyboard.press('Enter');expect(page.get_by_role('dialog',name='Enemy stats')).to_be_visible();visible_action(page,'Return to dungeon').tap();expect(page.locator('.encounter')).to_contain_text('25/30')
-  load_fixture(page,'enemyInitiated');expect(page.locator('.encounter-notice')).to_contain_text('approached you');expect(page.locator('.encounter-notice')).to_contain_text('No blow exchanged yet');page.screenshot(path=str(root/'work/combat-ux-v3.png'))
-  load_fixture(page,'floorKnife');expect(page.get_by_role('button',name='Use from floor',exact=True)).to_have_count(0);expect(page.get_by_role('button',name='Take item',exact=True)).to_be_enabled()
-  floor_icon=page.locator('.item-icon-large').get_attribute('src');visible_action(page,'Take item').tap();visible_action(page,'Bag').tap();knife=page.get_by_role('dialog',name='Inventory').locator('.item').filter(has_text='Throwing Knife');expect(knife).to_contain_text('UNAVAILABLE NOW');expect(knife).to_contain_text('Requires an enemy encounter');assert knife.locator('.item-icon').get_attribute('src')==floor_icon;visible_action(page,'Return to dungeon').tap()
-  load_fixture(page,'floorRope');expect(page.get_by_role('button',name='Use from floor',exact=True)).to_have_count(0);expect(page.locator('.item-icon-large')).to_be_visible()
-  load_fixture(page,'floorWeapon');floor_sprite=page.locator('.item-icon-large').get_attribute('src');visible_action(page,'Equip from ground').tap();expect(page.locator('.hud-equipped')).to_contain_text('Steel Sword');assert page.locator('.hud-equipped .item-icon').first.get_attribute('src')==floor_sprite;fits(page);page.reload();page.wait_for_selector('canvas');expect(page.locator('.hud-equipped')).to_contain_text('Steel Sword')
-  load_fixture(page,'floorSwap');expect(page.locator('.floor-swap-note')).to_contain_text('old weapon stays');visible_action(page,'Equip & swap on floor').tap();expect(page.locator('.hud-equipped')).to_contain_text('Steel Sword');fits(page)
-  load_fixture(page,'floorWeak');expect(page.get_by_role('button',name='Equip from ground',exact=True)).to_be_disabled();expect(page.locator('.encounter.treasure')).to_contain_text('Requires 4 Power; you have 1')
-  load_fixture(page,'armory');visible_action(page,'Bag').tap();sprites=page.locator('.inventory-group .item-icon').evaluate_all('els=>els.map(e=>e.src)');assert len(set(sprites))==9;page.screenshot(path=str(root/'work/custom-weapons-v5.png'));visible_action(page,'Return to dungeon').tap()
-  load_fixture(page,'combatLowHealth');expect(page.locator('.combat-items-button')).to_contain_text('Heal ready');expect(page.locator('.combat-items-button')).to_have_class('combat-items-button heal-ready')
-  load_fixture(page,'combat');expect(page.locator('.combat-items-button')).to_contain_text('Throw ready')
-  load_fixture(page,'enemyFirst');expect(page.locator('.attack-order')).to_contain_text('1 · Zombie');expect(page.locator('.attack-order')).to_contain_text('2 · YOU')
-  load_fixture(page,'combat');expect(page.locator('.attack-order')).to_contain_text('1 · YOU')
-  load_fixture(page,'bagReadiness');visible_action(page,'Bag').tap();inv=page.get_by_role('dialog',name='Inventory');expect(inv).to_contain_text('Ready now');assert page.locator('.tab-content').evaluate('el=>el.scrollTop')==0;expect(inv.get_by_role('heading',name='Ready now',exact=False)).to_be_visible();expect(inv).to_contain_text('Unavailable now');expect(inv).to_contain_text('Health is already full');page.screenshot(path=str(root/'work/item-bag-v4.png'));visible_action(page,'Return to dungeon').tap()
-  load_fixture(page,'equipment');visible_action(page,'Bag').tap();weapon=page.get_by_role('dialog',name='Inventory').locator('.item').filter(has_text='Heavy practice sword');expect(weapon).to_contain_text('Requires 40 Power; you have 1.');expect(weapon.get_by_role('button',name='Equip',exact=True)).to_be_disabled();visible_action(page,'Return to dungeon').tap()
-  load_fixture(page,'fullBag');visible_action(page,'Bag full · Manage items').tap();page.get_by_role('dialog',name='Inventory').get_by_role('button',name='Drop',exact=True).first.tap();visible_action(page,'Return to dungeon').tap();visible_action(page,'Take item').tap();expect(page.locator('.controls')).to_be_visible();fits(page)
-  load_fixture(page,'fullBag');visible_action(page,'Use from floor').tap();expect(page.locator('.hud-vitals')).to_contain_text('15 / 15');expect(page.locator('.controls')).to_be_visible();fits(page)
-  load_fixture(page,'critical');expect(page.locator('.mobile-hud')).to_contain_text('CRITICAL');expect(page.locator('.shell')).to_have_class('shell compact-game health-critical')
-  load_fixture(page,'lastBreath');expect(page.locator('.mobile-hud')).to_contain_text('LAST BREATH');page.screenshot(path=str(root/'work/last-breath-v3.png'))
-  load_fixture(page,'lethal');expect(page.locator('.lethal-warning')).to_contain_text('NEXT HIT CAN KILL YOU');page.screenshot(path=str(root/'work/lethal-warning-v3.png'))
-  load_fixture(page,'critThreat');expect(page.locator('.lethal-warning')).to_contain_text('A CRITICAL HIT CAN KILL YOU')
-  load_fixture(page,'level');visible_action(page,'Power +2').tap();expect(page.locator('.controls')).to_be_visible();fits(page)
-  load_fixture(page,'explore');page.screenshot(path=str(root/'work/mobile-ux-v2.png'),full_page=True)
-  page.emulate_media(reduced_motion='reduce');load_fixture(page,'explore');visible_action(page,'Use healing potion').tap();expect(page.locator('.hud-vitals')).to_contain_text('15 / 15')
-  assert not api_requests,api_requests
+  page.route('**/*',route);page.goto('http://127.0.0.1:3191');page.get_by_placeholder('Adventurer').fill('Android Shai');page.get_by_role('button',name='Mage',exact=False).tap();page.get_by_role('button',name='Enter the dungeon').tap();page.wait_for_selector('canvas')
+  visible(page,'Cast Teleport · 1 MP').tap();expect(page.locator('.hero-vitals')).to_contain_text('9/10');page.reload();page.wait_for_selector('canvas');expect(page.locator('.player-panel')).to_contain_text('Android Shai')
+  cases=[] if os.environ.get('MOBILE_SKIP_MATRIX') else [(320,480),(360,560),(390,760),(430,915),(844,390)]
+  scenes=[('swipe','Wait'),('poisonMove','Wait'),('staffLow','Attack'),('staffEmpty','Attack'),('combat','Attack'),('enemyInitiated','Attack'),('floorWeapon','Compare / equip'),('floorSwap','Compare / equip'),('groundThrow','Inspect / use'),('groundTeleport','Ground item'),('npcTalk','Talk / trade'),('level','Power +2'),('dead','Begin a new journey'),('won','Continue exploring'),('stairs','Ascend'),('moss','Wait'),('ice','Wait'),('ember','Wait')]
+  for width,height in cases:
+   page.set_viewport_size({'width':width,'height':height});print(f'Checking {width}x{height}',flush=True)
+   for scene,action in scenes:
+    load(page,scene)
+    try:fits(page);visible(page,action)
+    except Exception:page.screenshot(path=str(root/'work/redesign-failure.png'));print('Failed',scene,width,height,flush=True);raise
+  page.set_viewport_size({'width':390,'height':760});load(page,'swipe');assert page.locator('.magic-ribbon').count()==0;before=saved(page);swipe_map(page,65,0);page.wait_for_timeout(250);after=saved(page);assert after['player']['x']==before['player']['x']+1 and after['turn']==before['turn']+1
+  visible(page,'Wait').tap();page.wait_for_timeout(100);assert saved(page)['turn']==after['turn']+1;swipe_map(page,-60,0);page.wait_for_timeout(150);assert saved(page)['player']['x']==before['player']['x']
+  load(page,'poisonMove');swipe_map(page,0,60);page.wait_for_timeout(100);expect(page.locator('.poison-chip').first).to_contain_text('2 steps');expect(page.locator('[data-testid="poison-flash"]')).to_have_count(1);page.wait_for_function("()=>{const e=document.querySelector('[data-testid=poison-flash]');return e&&Number(getComputedStyle(e).opacity)>0}",timeout=4000);assert saved(page)['player']['hp']==9;page.screenshot(path=str(root/'work/poison-v6.png'))
+  visible(page,'Expand full player stats').tap();dialog=page.get_by_role('dialog',name='Full player stats');expect(dialog).to_contain_text('Poison');visible(page,'Close details').tap()
+  load(page,'critical');expect(page.locator('.hero-vitals')).to_contain_text('CRITICAL · ≤10% HP');fits(page)
+  load(page,'lastBreath');expect(page.locator('.hero-vitals')).to_contain_text('LAST BREATH · ≤1% HP');fits(page)
+  load(page,'staffEmpty');assert page.locator('.magic-ribbon').count()==0;expect(page.locator('.mana-warning')).to_contain_text('UNARMED');expect(page.get_by_label('Your damage forecast')).to_contain_text('1 damage')
+  load(page,'staffLow');expect(page.locator('.mana-warning')).to_contain_text('Staff inactive');visible(page,'Expand enemy stats').tap();expect(page.get_by_role('dialog',name='Enemy stats')).to_contain_text('Zombie');visible(page,'Close details').tap();visible(page,'Item: Mana Potion').tap();visible(page,'Use item').tap();expect(page.locator('.mana-warning')).to_have_count(0);expect(page.get_by_label('Your damage forecast')).to_contain_text('18 damage')
+  visible(page,'Cast Teleport · 1 MP').tap();expect(page.locator('.enemy-panel')).to_have_count(0)
+  load(page,'criticalHit');visible(page,'Attack').tap();expect(page.locator('.critical-notice')).to_contain_text('CRITICAL HIT!');page.screenshot(path=str(root/'work/critical-v6.png'))
+  load(page,'floorWeapon');revision=saved(page)['revision'];visible(page,'Compare / equip').tap();dialog=page.get_by_role('dialog',name='Equipment comparison');expect(dialog).to_contain_text('Attack');expect(dialog).to_contain_text('Initiative');expect(dialog).to_contain_text('Power required');assert saved(page)['revision']==revision;page.screenshot(path=str(root/'work/equip-compare-v6.png'));visible(page,'Confirm equip from ground').tap();expect(page.locator('.held-line')).to_contain_text('Steel Sword');expect(page.get_by_role('button',name='Equipped: Steel Sword')).to_have_class('item-card is-equipped');expect(page.locator('.weapon-uses')).to_contain_text('uses');page.reload();page.wait_for_selector('canvas');expect(page.locator('.held-line')).to_contain_text('Steel Sword');page.screenshot(path=str(root/'work/explore-v6.png'))
+  load(page,'floorSwap');visible(page,'Compare / equip').tap();expect(page.get_by_role('dialog')).to_contain_text('old gear stays');visible(page,'Equip & leave old gear here').tap();assert saved(page)['loot'][0]['item']['name']=='Iron Axe'
+  load(page,'groundThrow');visible(page,'Inspect / use').tap();visible(page,'Throw at Zombie').tap();expect(page.locator('.enemy-panel')).to_contain_text('25/30');assert not saved(page)['loot']
+  load(page,'groundTeleport');visible(page,'Ground item').tap();visible(page,'Use once & teleport').tap();expect(page.locator('.enemy-panel')).to_have_count(0);assert not saved(page)['loot']
+  load(page,'carriedTeleport');visible(page,'Item: Teleporter').tap();visible(page,'Teleport to safety').tap();expect(page.locator('.enemy-panel')).to_have_count(0);assert any(i['kind']=='teleport' for i in saved(page)['inventory'])
+  visible(page,'Item: Teleporter').tap();visible(page,'Drop').tap();visible(page,'Ground: Teleporter').tap();visible(page,'Use once & teleport').tap();assert not any(i['kind']=='teleport' for i in saved(page)['inventory']);assert not any(l['item']['kind']=='teleport' for l in saved(page)['loot'])
+  load(page,'npcTalk');expect(page.get_by_label('Chieftain speech bubble')).to_contain_text('Curious traveler');visible(page,'Talk / trade').tap();expect(page.get_by_role('dialog',name='Chieftain dialogue')).to_contain_text('Health Gain');page.screenshot(path=str(root/'work/chieftain-v6.png'));visible(page,'Accept deal: Health Gain').tap();expect(page.locator('.enemy-panel')).to_have_count(0);assert saved(page)['player']['hp']>5
+  load(page,'armory');row=page.locator('.item-carousel');assert row.evaluate('e=>e.scrollWidth>e.clientWidth');assert len(set(row.locator('img').evaluate_all('els=>els.map(e=>e.src)')))==9;page.screenshot(path=str(root/'work/item-ribbon-v6.png'))
+  for scene in ['moss','ice','ember']:load(page,scene);page.screenshot(path=str(root/f'work/{scene}-v6.png'));fits(page)
+  visible(page,'Saved on phone ●').tap();expect(page.get_by_role('dialog',name='Saved journey')).to_contain_text('saved on this phone');assert len(page.get_by_label('Device journey code').input_value())==64;visible(page,'Close details').tap()
+  page.emulate_media(reduced_motion='reduce');load(page,'poisonMove');swipe_map(page,60,0);page.wait_for_timeout(100);assert saved(page)['player']['hp']==9
   assert not errors,errors
-  print(f'PASS: {len(viewport_cases)*19} viewport/scene checks; reduced-motion healing; floor use with full bag; 10%/1% health cues; lethal/critical warnings; no page scrolling; primary actions visible; touch healing; combat magic; full-bag recovery; level-up; drawers; overview; offline save/reload; no browser errors')
+  assert not api,api
+  print(f'PASS: {len(cases)*len(scenes)} viewport/state checks; swipe movement; no arrows/log/flee UI; top enemy and poison/mana states; forecasts/criticals; pure equipment comparisons and persistence; floor throws/teleports; teleport escapes; chieftain speech/trades; shared item art; themed floors; offline saves; no browser exceptions',flush=True)
   browser.close()
-finally:
- server.terminate();server.wait(timeout=5)
+finally:server.terminate();server.wait(timeout=5);bundle.cleanup()

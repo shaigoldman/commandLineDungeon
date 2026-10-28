@@ -6,7 +6,7 @@ The Android app packages the existing React/Pixi game with Capacitor 7. It conta
 
 Open the [direct APK download](https://github.com/shaigoldman/commandLineDungeon/raw/refs/heads/feat/browser-rpg/web/downloads/command-line-dungeon-android-test.apk) in Android Chrome or another phone browser. Open the downloaded file, allow that browser or Files app to install downloaded apps if prompted, and install it. Launch **Dungeon Test**.
 
-Requirements: Android **8.0 / API 26 or later**, with a current Android System WebView. Target/compile SDK is 35. The APK is universal and does not require a Play Store account or a game server. Touch arrows, map taps, combat controls, inventory, spells, and both orientations are supported. Phone screens use a closer 12×8 camera and buttons at least 44 CSS pixels high in the main touch controls; wider screens use the desktop camera.
+Requirements: Android **8.0 / API 26 or later**, with a current Android System WebView. Target/compile SDK is 35. The APK is universal and does not require a Play Store account or a game server. Swipes, adjacent map taps, combat controls, scrolling inventory/spell cards, and both orientations are supported. Phone screens use a closer 12×8 camera and buttons at least 44 CSS pixels high in the main touch controls; wider screens use the desktop camera.
 
 ## Saves and test-build boundaries
 
@@ -14,7 +14,7 @@ Android uses `LocalGameAPI` to run the shared engine locally. All successful gam
 
 Android progress is **separate from server progress**. A device journey code works only on the same installation. It does not retrieve a web save or transfer to another phone. The save panel makes this distinction explicit. Closing/reopening the app resumes the current journey; uninstalling or clearing app data removes local saves. This build does not implement cloud synchronization or cross-device save transfer.
 
-The package ID is `com.shaigoldman.commandlinedungeon.test`, version `0.5.0-test`, version code `5`, launcher name **Dungeon Test**. This is a debug-signed test package, distinct from any future store release. Native permissions are the normal Internet permission used by the WebView shell and an AndroidX internal signature permission; the game does not request contacts, location, or shared-storage access.
+The package ID is `com.shaigoldman.commandlinedungeon.test`, version `0.6.0-test`, version code `6`, launcher name **Dungeon Test**. This is a debug-signed test package, distinct from any future store release. Native permissions are the normal Internet permission used by the WebView shell and an AndroidX internal signature permission; the game does not request contacts, location, or shared-storage access.
 
 The workspace signing key is ignored under `work/android-user/`. Keep it for compatible rebuilds. A fresh checkout or CI may use a different test signing key; Android will reject an in-place update signed by that other key. Uninstalling to switch keys removes local progress. Release signing and Google Play publication need a separate owner-controlled production key and are not performed here.
 
@@ -56,6 +56,8 @@ npm run build
 npm run test:browser
 ```
 
+Earlier release notes below describe historical behavior; the [v0.6 checklist](FEATURES-V0.6.md) documents the current interface and superseding ground-item rules.
+
 ## Phone UX update (0.2.0-test)
 
 The play screen fits a single viewport in portrait and landscape. Tap Bag, Spells, Log, or Character to open a panel; close it to return to the map. The map follows the hero; Overview shows the floor while retaining fog. Direction controls and adjacent map tiles move; encounters replace movement with relevant choices. Quick Heal uses the smallest sufficient healing potion. Android Back closes panels, then opens the saved-game/pause panel. Native system bars use dark backgrounds and light icons.
@@ -93,3 +95,9 @@ The compact top HUD identifies the equipped weapon using its custom icon and nam
 Six physical materials now have distinct pixel palettes and details: chipped Fragile, silver Iron, blue Steel, gold/emerald Lucky, violet/cyan Magic, and serrated dark Obsidian. The named broadsword has a broader relic blade, axes and spears have material details, and elemental staffs use flame/trident/wing/crescent heads. The same images remain shared between the dungeon, inventory and equipped views. Tests cover seven new equipment/art cases and 95 phone viewport/state combinations, including floor equipping and full-bag swaps.
 
 Two raster tests verify continuous visible sword blades, filled spearheads and pill bodies using the production pixel drawing commands. Layered outlines are painted before the filled segments to prevent overlap from erasing artwork. The complete TypeScript suite now has 64 tests.
+
+## Swipe interface and original action sprites (0.6.0-test)
+
+The play screen now uses a fixed viewport, top player/enemy panels, a small map-corner Wait button, and horizontal inventory/spell cards. Magic takes no space when nothing can be cast. Full stats expand from the player panel; the log and old bottom navigation are removed. Original portrait-matched heroes have idle, walking and attack poses and carry the actual equipped weapon. Four floor themes and three distinct chieftains share original pixel artwork.
+
+The complete [request checklist](FEATURES-V0.6.md) covers every behavior and deliberate mechanics change. Verification includes 81 TypeScript tests, six original Python tests, production-server browser recovery/restart checks, 90 phone viewport/state combinations plus direct interaction flows, and native package/signature/asset checks. Chromium checks are automated browser checks, not physical Android device testing.

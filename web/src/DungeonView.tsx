@@ -9,7 +9,9 @@ import {
 } from "pixi.js";
 import type { Game } from "../shared/types";
 import { sprite, patterns } from "./art";
+import { heroCanvas } from "./hero-art";
 import { itemArtKey, itemCanvas } from "./item-art";
+import { swipeDirection, floorTheme } from "../shared/presentation";
 const TILE = 48;
 const noise = (x: number, y: number, s = 0) =>
   Math.abs(Math.imul(x + 71 + s, 374761393) ^ Math.imul(y + 13, 668265263)) >>>
@@ -78,13 +80,37 @@ export function DungeonView({
         }
         host.current!.appendChild(app.canvas);
         app.ticker.maxFPS = 30;
+        app.canvas.tabIndex = 0;
         app.canvas.setAttribute(
           "aria-label",
-          "Dungeon map. Use arrow keys or directional buttons to move.",
+          "Dungeon map. Swipe to move, tap an adjacent tile, or use arrow keys.",
         );
         const textures = Object.fromEntries(
           Object.keys(patterns).map((k) => [k, Texture.from(sprite(k, 2))]),
         );
+        for (const name of [
+          "Warrior",
+          "Knight",
+          "Scout",
+          "Mage",
+          "D",
+          "Over9000",
+        ])
+          for (const pose of [
+            "idle",
+            "left-step",
+            "right-step",
+            "attack",
+          ] as const) {
+            textures["hero-" + name + "-" + pose] = Texture.from(
+              heroCanvas(name, pose),
+            );
+            textures["hero-" + name + "-" + pose].source.scaleMode = "nearest";
+          }
+        for (const tribe of ["Pallu", "Awa", "Vraskii"])
+          textures["chief-" + tribe] = Texture.from(
+            sprite("Chieftan", 2, tribe),
+          );
         const itemTextures = new Map<string, Texture>();
         let lastOverview = overviewRef.current;
         let lastEnabled = enabledRef.current;
@@ -107,10 +133,13 @@ export function DungeonView({
             lungeX: number;
             lungeY: number;
             hurt: boolean;
+            gear?: { s: Sprite; dx: number; dy: number }[];
+            hero?: string;
           }[] = [],
           torches: { x: number; y: number }[] = [];
         const render = () => {
           const g = gameRef.current;
+          const theme = floorTheme(g.floor);
           const aspect = (available.width || 1) / (available.height || 1);
           const nextCols = overviewRef.current
             ? Math.max(30, Math.ceil(15 * aspect))
@@ -232,7 +261,21 @@ export function DungeonView({
             h: number,
             c: number,
             alpha = 1,
-          ) => tiles.rect(x, y, w, h).fill({ color: c, alpha });
+          ) =>
+            tiles.rect(x, y, w, h).fill({
+              color:
+                (
+                  {
+                    [0x637779]: theme.wall[0],
+                    [0x4f6269]: theme.wall[1],
+                    [0x727f7a]: theme.base,
+                    [0x647b67]: theme.base,
+                    [0xa1ab94]: theme.trim,
+                    [0x34464f]: theme.shadow,
+                  } as Record<number, number>
+                )[c] ?? c,
+              alpha,
+            });
           for (
             let y = Math.max(0, Math.floor(camera.y));
             y < Math.min(15, Math.ceil(camera.y + viewHeight / TILE));
@@ -263,9 +306,16 @@ export function DungeonView({
               if (wall) {
                 rect(xx, yy, TILE, TILE, 0x202b37);
                 for (let row = 0; row < 2; row++)
-                  for (let col = -1; col < 2; col++) {
-                    const left = Math.max(0, col * 32 + (row % 2) * 16),
-                      right = Math.min(48, col * 32 + (row % 2) * 16 + 30);
+                  for (let col = -1; col < 3; col++) {
+                    const brick = [32, 24, 48, 16][g.floor % 4];
+                    const left = Math.max(
+                        0,
+                        col * brick + (row % 2) * (brick / 2),
+                      ),
+                      right = Math.min(
+                        48,
+                        col * brick + (row % 2) * (brick / 2) + brick - 2,
+                      );
                     if (right <= left) continue;
                     const top = yy + row * 15;
                     rect(
@@ -291,7 +341,7 @@ export function DungeonView({
                   rect(xx + 12, yy + 5, 2, 8, 0x40575c);
                   rect(xx + 14, yy + 11, 6, 2, 0x40575c);
                 }
-                if (n % 4 === 0) {
+                if (n % 4 === 0 && g.floor % 4 === 1) {
                   for (let j = 0; j < 6; j++)
                     rect(
                       xx + ((j * 7 + n) % 21) * 2,
@@ -316,9 +366,7 @@ export function DungeonView({
                       right = Math.min(48, col * 24 + shift + 23);
                     if (left >= right) continue;
                     const top = yy + row * 16,
-                      c = [0x79877b, 0x718277, 0x849183, 0x6d7b73][
-                        (n + row + col + 4) % 4
-                      ];
+                      c = theme.floor[(n + row + col + 4) % 4];
                     rect(xx + left, top, right - left, 15, c);
                     rect(
                       xx + left + 1,
@@ -340,7 +388,7 @@ export function DungeonView({
                   rect(xx + 10, yy + 25, 6, 2, 0x526b63);
                   rect(xx + 14, yy + 27, 2, 5, 0x526b63);
                 }
-                if (n % 5 === 0) {
+                if (n % 5 === 0 && g.floor % 4 === 1) {
                   rect(xx + 30, yy + 34, 6, 2, 0x4b705c);
                   rect(xx + 34, yy + 32, 4, 2, 0x738d66);
                   rect(xx + 38, yy + 34, 4, 2, 0x4b705c);
@@ -350,6 +398,42 @@ export function DungeonView({
                   rect(xx + 14, yy + 32, 12, 2, 0x8eafb0);
                   rect(xx + 22, yy + 34, 4, 1, 0xbac8b8);
                 }
+              }
+            }
+          // Floor-specific details are deterministic decoration, never gameplay state.
+          for (
+            let y = Math.max(0, Math.floor(camera.y));
+            y < Math.min(15, Math.ceil(camera.y + viewHeight / TILE));
+            y++
+          )
+            for (
+              let x = Math.max(0, Math.floor(camera.x));
+              x < Math.min(30, Math.ceil(camera.x + cols));
+              x++
+            ) {
+              if (!visible(x, y)) continue;
+              const n = noise(x, y),
+                xx = x * TILE,
+                yy = y * TILE;
+              if (g.floor % 4 === 1 && n % 3 === 0) {
+                for (let i = 0; i < 5; i++)
+                  rect(
+                    xx + 4 + i * 6,
+                    yy + (g.tiles[y][x] ? 5 : 34) + (i % 2) * 3,
+                    5,
+                    3,
+                    i % 2 ? 0x8eaa63 : 0x3a6044,
+                  );
+              }
+              if (g.floor % 4 === 2 && n % 4 === 0) {
+                rect(xx + 8, yy + 3, 3, 12, 0xd7f1f1);
+                rect(xx + 12, yy + 5, 2, 7, 0x9ed7e6);
+                rect(xx + 9, yy + 14, 1, 4, 0xd7f1f1);
+              }
+              if (g.floor % 4 === 3 && n % 5 === 0 && !g.tiles[y][x]) {
+                rect(xx + 10, yy + 30, 20, 2, 0xa54e3e);
+                rect(xx + 16, yy + 28, 3, 7, 0xe7a15e);
+                if (n % 10 === 0) torches.push({ x: xx + 22, y: yy + 26 });
               }
             }
           if (enabledRef.current)
@@ -443,10 +527,37 @@ export function DungeonView({
                   : a.className === "Over9000"
                     ? "Warrior"
                     : a.className;
-              const s = new Sprite(textures[design] || textures.Warrior);
+              const s = new Sprite(
+                a.id === "player"
+                  ? textures["hero-" + a.className + "-idle"] ||
+                    textures["hero-Warrior-idle"]
+                  : a.npc
+                    ? textures["chief-" + a.npc.tribe] || textures.Chieftan
+                    : textures[design] || textures.Warrior,
+              );
               s.x = x;
               s.y = y - 19;
               world.addChild(s);
+              const gear: { s: Sprite; dx: number; dy: number }[] = [];
+              if (a.id === "player")
+                for (const [i, item] of a.weapons.slice(-2).entries()) {
+                  const key = itemArtKey(item);
+                  let texture = itemTextures.get(key);
+                  if (!texture) {
+                    texture = Texture.from(itemCanvas(item));
+                    texture.source.scaleMode = "nearest";
+                    itemTextures.set(key, texture);
+                  }
+                  const held = new Sprite(texture);
+                  held.anchor.set(0.23, 0.84);
+                  held.width = held.height = 25;
+                  const dx = i === 0 ? 36 : 12,
+                    dy = 44;
+                  if (i === 1) held.scale.x *= -1;
+                  held.position.set(s.x + dx, s.y + dy);
+                  world.addChild(held);
+                  gear.push({ s: held, dx, dy });
+                }
               const old =
                 changed && before?.floor === g.floor
                   ? [before.player, ...before.monsters].find(
@@ -477,6 +588,8 @@ export function DungeonView({
                     ? Math.sign(opponent.y - a.y) * 10
                     : 0,
                 hurt: !!old && old.hp > a.hp,
+                gear,
+                hero: a.id === "player" ? a.className : undefined,
               });
               const mark = new Graphics();
               if (a.id === "player") {
@@ -598,6 +711,39 @@ export function DungeonView({
               u.dy * (1 - progress) +
               u.lungeY * lunge +
               (reduced ? 0 : Math.floor(Math.sin(now / 350 + u.phase)));
+            const mirrored =
+              !!u.hero &&
+              ((progress < 1 && u.dx > 0) || (lunge > 0.15 && u.lungeX < 0));
+            if (u.hero) {
+              u.s.anchor.x = mirrored ? 1 : 0;
+              u.s.scale.x = mirrored ? -1 : 1;
+              const pose =
+                !reduced && lunge > 0.15 && (u.lungeX || u.lungeY)
+                  ? "attack"
+                  : !reduced && progress < 1 && (u.dx || u.dy)
+                    ? progress < 0.5
+                      ? "left-step"
+                      : "right-step"
+                    : "idle";
+              u.s.texture =
+                textures["hero-" + u.hero + "-" + pose] ||
+                textures["hero-Warrior-idle"];
+            }
+            for (const held of u.gear || []) {
+              held.s.position.set(
+                u.s.x +
+                  (mirrored ? 48 - held.dx : held.dx) +
+                  (u.lungeX ? lunge * (mirrored ? -3 : 3) : 0),
+                u.s.y + held.dy,
+              );
+              held.s.scale.x =
+                Math.abs(held.s.scale.x) *
+                (held.dx < 24 ? -1 : 1) *
+                (mirrored ? -1 : 1);
+              held.s.rotation = reduced
+                ? 0
+                : lunge * (u.lungeX || u.lungeY ? (mirrored ? 0.6 : -0.6) : 0);
+            }
             u.s.tint =
               !reduced && u.hurt && now - moveStart < 220 ? 0xff9e8c : 0xffffff;
           }
@@ -672,7 +818,28 @@ export function DungeonView({
             }
           }
         });
+        let pointer: { id: number; x: number; y: number } | undefined;
+        app.canvas.style.touchAction = "none";
         app.canvas.addEventListener("pointerdown", (e) => {
+          if (!e.isPrimary || !enabledRef.current) return;
+          pointer = { id: e.pointerId, x: e.clientX, y: e.clientY };
+          app.canvas.setPointerCapture(e.pointerId);
+        });
+        app.canvas.addEventListener("pointercancel", () => {
+          pointer = undefined;
+        });
+        app.canvas.addEventListener("pointerup", (e) => {
+          const start = pointer;
+          pointer = undefined;
+          if (!start || start.id !== e.pointerId || !enabledRef.current) return;
+          const swipe = swipeDirection(
+            e.clientX - start.x,
+            e.clientY - start.y,
+          );
+          if (swipe) {
+            moveRef.current(swipe.dx, swipe.dy);
+            return;
+          }
           const r = app.canvas.getBoundingClientRect(),
             p = gameRef.current.player;
           const x = Math.floor(
@@ -683,11 +850,10 @@ export function DungeonView({
             ),
             dx = x - p.x,
             dy = y - p.y;
-          if (!enabledRef.current) return;
           if (Math.abs(dx) + Math.abs(dy) === 1) moveRef.current(dx, dy);
-          else if (dx || dy)
+          else
             hintRef.current?.(
-              "Tap an outlined neighboring tile, or use the arrows.",
+              "Swipe anywhere on the dungeon to move one tile.",
             );
         });
       });

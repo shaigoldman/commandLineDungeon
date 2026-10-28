@@ -90,8 +90,8 @@ export const spells: Spell[] = [
     element: "Wind",
     cost: 1,
     req: 1,
-    when: "peace",
-    description: "Teleport to a random open tile.",
+    when: "any",
+    description: "Teleport to an open tile and escape the current encounter.",
   },
   {
     name: "Gust",

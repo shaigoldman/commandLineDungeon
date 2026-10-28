@@ -215,7 +215,12 @@ export const patterns: Record<string, string[]> = {
     "................",
   ],
 };
-export function sprite(type: string, scale = 2) {
+export function sprite(
+  type: string,
+  scale = 2,
+  tribe = "Pallu",
+  showWeapon = true,
+) {
   type = type === "D" ? "Scout" : type === "Over9000" ? "Warrior" : type;
   const c = document.createElement("canvas");
   c.width = 24 * scale;
@@ -303,12 +308,14 @@ export function sprite(type: string, scale = 2) {
       r(9, 26, 2, 2, bright);
       r(12, 16, 3, 2, "#dbb66f");
       r(13, 17, 1, 2, "#8cd6d6");
-      r(21, 6, 1, 25, "#4a3434");
-      r(22, 6, 1, 25, "#c99d60");
-      r(20, 5, 4, 5, "#534f71");
-      r(21, 4, 2, 5, "#71c9cd");
-      r(21, 5, 1, 2, "#e1fff0");
-      r(20, 9, 4, 1, "#e8c77b");
+      if (showWeapon) {
+        r(21, 6, 1, 25, "#4a3434");
+        r(22, 6, 1, 25, "#c99d60");
+        r(20, 5, 4, 5, "#534f71");
+        r(21, 4, 2, 5, "#71c9cd");
+        r(21, 5, 1, 2, "#e1fff0");
+        r(20, 9, 4, 1, "#e8c77b");
+      }
     } else if (type === "Knight") {
       // White swept hair, warm skin, silver armor and crimson mantle.
       r(5, 17, 3, 11, "#722b40");
@@ -332,9 +339,11 @@ export function sprite(type: string, scale = 2) {
       r(3, 19, 4, 1, "#e6c26d");
       r(4, 21, 2, 4, "#d0aa63");
       r(4, 27, 2, 1, "#d0aa63");
-      r(21, 10, 1, 17, "#b2c9d0");
-      r(22, 10, 1, 15, "#f0f4dc");
-      r(20, 24, 4, 1, "#d9b36b");
+      if (showWeapon) {
+        r(21, 10, 1, 17, "#b2c9d0");
+        r(22, 10, 1, 15, "#f0f4dc");
+        r(20, 24, 4, 1, "#d9b36b");
+      }
     } else {
       const hair =
         type === "Scout"
@@ -362,8 +371,10 @@ export function sprite(type: string, scale = 2) {
         r(8, 14, 8, 1, "#94ac73");
         r(18, 5, 1, 14, "#694333");
         r(18, 4, 2, 3, "#e4d3a7");
-        r(20, 12, 1, 12, "#c99b63");
-        r(21, 15, 1, 6, "#9c7752");
+        if (showWeapon) {
+          r(20, 12, 1, 12, "#c99b63");
+          r(21, 15, 1, 6, "#9c7752");
+        }
         r(19, 8, 3, 9, "#5a4034");
         r(20, 5, 1, 7, "#e7d9b4");
         r(22, 6, 1, 7, "#d8cba7");
@@ -378,11 +389,13 @@ export function sprite(type: string, scale = 2) {
           r(16, 4, 3, 2, hair);
           r(18, 2, 2, 2, hair);
         }
-        r(18, 10, 1, 16, "#46546e");
-        r(19, 9, 1, 16, "#e5e9d6");
-        r(20, 9, 1, 14, "#99bfc5");
-        r(17, 24, 5, 1, "#e9bf70");
-        r(18, 25, 2, 3, "#714830");
+        if (showWeapon) {
+          r(18, 10, 1, 16, "#46546e");
+          r(19, 9, 1, 16, "#e5e9d6");
+          r(20, 9, 1, 14, "#99bfc5");
+          r(17, 24, 5, 1, "#e9bf70");
+          r(18, 25, 2, 3, "#714830");
+        }
       }
       if (type === "Chieftan") {
         r(8, 3, 10, 2, "#e8c16b");
@@ -428,6 +441,45 @@ export function sprite(type: string, scale = 2) {
       r(14, 14, 2, 1, "#ffe29c");
       r(11, 18, 5, 2, "#edac79");
       r(12, 21, 4, 4, "#c69d76");
+    }
+  }
+  if (type === "Chieftan") {
+    const coat =
+      tribe === "Awa" ? "#397f83" : tribe === "Vraskii" ? "#76558f" : "#a67a4e";
+    r(4, 15, 5, 13, coat);
+    r(17, 15, 5, 13, coat);
+    r(6, 16, 2, 11, "#e6cc8e");
+    r(19, 16, 1, 10, "#e6cc8e");
+    r(6, 4, 13, 3, coat);
+    r(8, 2, 9, 3, coat);
+    r(5, 6, 3, 5, coat);
+    r(17, 5, 3, 7, coat);
+    r(9, 8, 3, 3, "#f8e0ad");
+    r(14, 8, 3, 3, "#f8e0ad");
+    r(10, 9, 1, 2, "#243347");
+    r(15, 9, 1, 2, "#243347");
+    r(9, 7, 3, 1, "#574c43");
+    r(15, 6, 3, 1, "#574c43");
+    r(11, 12, 5, 2, "#a6948b");
+    r(12, 14, 4, 4, "#d3c5a7");
+    r(13, 16, 2, 3, "#e5d7b8");
+    r(2, 4, 2, 22, "#76563b");
+    r(1, 3, 4, 3, "#e3c87c");
+    r(1, 5, 4, 3, tribe === "Awa" ? "#8bd9d1" : "#d8a2c8");
+    for (let i = 0; i < 3; i++) {
+      r(8 + i * 4, 19, 2, 2, "#edd99c");
+      r(9 + i * 4, 20, 1, 1, coat);
+    }
+    if (tribe === "Vraskii") {
+      r(5, 0, 2, 5, "#c594b9");
+      r(7, 1, 2, 4, "#b5cab6");
+      r(9, 0, 2, 4, "#d4b96d");
+    } else if (tribe === "Awa") {
+      r(16, 2, 5, 2, "#b8e1d7");
+      r(19, 4, 2, 3, "#e7d59d");
+    } else {
+      r(9, 3, 7, 1, "#e5bf71");
+      r(12, 1, 2, 4, "#bd8d60");
     }
   }
   return c;

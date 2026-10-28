@@ -18,7 +18,7 @@ Local saves are atomically written to `web/data/`. No database setup is needed l
 
 ## Play
 
-Choose Warrior, Knight, Scout, or Mage and a staff element for the Mage. The hidden `Over9000` name and `D` API class retain the original debug characters. Move with arrow keys, directional touch buttons, or taps on the map. Walk into enemies to encounter them. Enter attacks; Space waits; I opens inventory, M spells, S stats, H help, and V your saved journey. Every successful action is saved on the server before the response.
+Choose Warrior, Knight, Scout, or Mage and a staff element for the Mage. The hidden `Over9000` name and `D` API class retain the original debug characters. Swipe on the map, use arrow keys, or tap an adjacent tile to move. Walk into enemies to inspect them safely, then choose Attack. Space waits; I focuses inventory, M spells, S expands stats, H opens help, and V your saved journey. Every successful action is saved on the server before the response.
 
 Defeat the guardian on each floor to reach the stairs. Floor two has a key carrier and locked stairs. Ruthagor guards floor three. Winning grants 1,000 points and lets you continue to higher floors. Collect gear, items, pods, and spells, gain EXP, choose level-up bonuses, trade with chiefs, or fight them. Combat resolves one exchange per click, allowing the same between-exchange item/spell decisions without a blocking terminal loop.
 
@@ -40,6 +40,8 @@ The suite executes the unchanged Python methods, compares 80 Python-generated cl
 `npm run simulate` runs reproducible bot games and edge probes. See [simulation findings and fixed bugs](docs/SIMULATION.md) for the 840-game report, limitations, and stress-run commands.
 
 GitHub Actions runs these checks on pushes and PRs. `npm run build` performs strict TypeScript checking, Vite frontend compilation, and backend bundling. See [source review and compatibility notes](docs/PORTING.md) for formula details and intentional fixes.
+
+See the [complete v0.6 feature checklist](docs/FEATURES-V0.6.md) for the swipe interface, equipment comparisons, original animated class sprites, combat forecasts, themed floors, poison/mana warnings and direct ground actions.
 
 ## Android phone testing
 

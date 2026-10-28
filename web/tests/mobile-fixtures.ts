@@ -136,9 +136,109 @@ for (const name of [
   w.weight = 2;
   armory.inventory.push(w);
 }
+function openArena(className = "Mage") {
+  const g = newGame("Shai", className, "Wind", 0, 91);
+  g.tiles = Array.from({ length: 15 }, () => Array(30).fill(0));
+  g.player.x = 15;
+  g.player.y = 7;
+  g.player.hp = 10;
+  g.loot = [];
+  g.pods = [];
+  g.stairs = { x: 25, y: 12, locked: false };
+  const staff = g.inventory.find((i) => i.kind === "tome");
+  if (staff) {
+    g.player.weapons = [staff];
+    g.inventory = g.inventory.filter((i) => i.id !== staff.id);
+  }
+  const m = makeMonster(g, "Zombie", 1);
+  Object.assign(m, { x: 16, y: 7, hp: 100 });
+  m.stats.Health = 100;
+  m.stats.Armor = 2;
+  m.stats.Power = 1;
+  m.stats.Luck = 0;
+  m.stats.Speed = 4;
+  g.monsters = [m];
+  return g;
+}
+const swipe = openArena("Scout");
+swipe.monsters = [];
+const poisonMove = structuredClone(swipe);
+poisonMove.player.effects.Poison = [3, 1];
+const staffLow = openArena();
+staffLow.combat = staffLow.monsters[0].id;
+staffLow.player.stats.Mana = 1;
+staffLow.player.stats.Magic = 20;
+staffLow.player.stats.Power = 3;
+const staffEmpty = structuredClone(staffLow);
+staffEmpty.player.stats.Mana = 0;
+const groundThrow = openArena("Scout");
+groundThrow.monsters[0].hp = 30;
+groundThrow.monsters[0].stats.Health = 30;
+groundThrow.monsters[0].stats.Armor = 0;
+const floorKnifeItem = makeItem(groundThrow, "Throwing Knife");
+groundThrow.pendingLoot = floorKnifeItem;
+groundThrow.loot = [{ x: 15, y: 7, item: floorKnifeItem }];
+const groundTeleport = openArena("Scout");
+groundTeleport.combat = groundTeleport.monsters[0].id;
+const floorPortal = makeItem(groundTeleport, "Teleporter");
+groundTeleport.pendingLoot = floorPortal;
+groundTeleport.loot = [{ x: 15, y: 7, item: floorPortal }];
+const carriedTeleport = openArena("Scout");
+carriedTeleport.combat = carriedTeleport.monsters[0].id;
+carriedTeleport.inventory.push(makeItem(carriedTeleport, "Teleporter"));
+const npcTalk = openArena("Warrior");
+const chief = makeMonster(npcTalk, "Chieftan", 1);
+chief.name = "Yarrow";
+chief.x = 16;
+chief.y = 7;
+chief.hp = 8;
+chief.stats.Health = 8;
+chief.npc = {
+  tribe: "Awa",
+  deal: "Health Gain",
+  done: false,
+  line: "Curious traveler, my lantern has seen stranger things. Shall we make a bargain?",
+};
+npcTalk.monsters = [chief];
+npcTalk.combat = chief.id;
+npcTalk.player.hp = 5;
+const criticalHit = openArena("Warrior");
+criticalHit.player.weapons = [];
+criticalHit.player.stats.Power = 5;
+criticalHit.player.stats.Speed = 10;
+criticalHit.player.stats.Luck = 100;
+criticalHit.player.stats.Accuracy = 200;
+criticalHit.monsters[0].stats.Armor = 0;
+criticalHit.monsters[0].stats.Speed = 1;
+criticalHit.combat = criticalHit.monsters[0].id;
+for (let seed = 0; seed < 100; seed++) {
+  criticalHit.seed = seed;
+  if (act(criticalHit, { type: "attack" }).log.includes("Critical hit!")) break;
+}
+const moss = structuredClone(explore);
+moss.floor = 1;
+generateFloor(moss);
+const ice = structuredClone(explore);
+ice.floor = 2;
+generateFloor(ice);
+const ember = structuredClone(explore);
+ember.floor = 3;
+generateFloor(ember);
 console.log(
   JSON.stringify({
     explore,
+    swipe,
+    poisonMove,
+    staffLow,
+    staffEmpty,
+    groundThrow,
+    groundTeleport,
+    carriedTeleport,
+    npcTalk,
+    criticalHit,
+    moss,
+    ice,
+    ember,
     floorWeapon,
     floorSwap,
     floorWeak,

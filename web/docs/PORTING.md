@@ -2,28 +2,28 @@
 
 Reviewed the complete repository before porting. `source-manifest.json` fingerprints every original Python file; tests verify those files remain unchanged. Root Python files are retained, including unused legacy code.
 
-| Original file | Role and port location |
-| --- | --- |
-| `game.py` | 30×15 floors, 8 rooms, 10 items, main turn cadence → engine generation/actions |
-| `Classes.py` | Four playable classes, hidden debug classes, seven monster/NPC bases → catalog |
-| `Mob.py` | Active combat, criticals, armor, poison, mana, equipment calculations → engine |
-| `Mob1.py` | Unused earlier single-weapon implementation; reviewed, retained, not used to override active Mob formulas |
-| `Monster.py` | Monster growth/randomization, initiative, EXP, drops, wandering → engine |
-| `Player.py` | Naming, Mage staff choice, inventory, fight/flee, leveling, score, actions → engine/UI |
-| `Dungeon.py` | Connected quadrant rooms, population, bosses, darkness → engine/Pixi |
-| `Instance.py` | Walls, empty space, stairs, locks, ascent → engine |
-| `Item.py` | Loot distribution, consumables, armor, bags, hands, nukes, vision → catalog/engine |
-| `Weapon.py` | Sword/spear/axe, six materials, equip restrictions, breakage → engine |
-| `Tome.py` | Three affinities, nine elemental spells, costs/requirements → catalog/engine |
-| `Boosters.py` | Temporary percent and permanent stat boosts → engine |
-| `Npc.py` | Three tribes, generated chiefs, eight bargains, four gifts, Mystery spell → engine/dialogue |
-| `Replenisher.py` | Health/mana pods, normal/max selection → engine |
-| `saving.py` | Full object-state saves and load recovery → versioned JSONB/JSON store |
-| `Disps.py` | Terminal character glyphs → original pixel art |
-| `Statusbar.py` | Menus, queries, logs → React panels and encounter actions |
-| `Misc_funcs.py` | Names, random helpers, ANSI presentation → seeded helpers/UI |
-| `keylistener.py` | Raw terminal keyboard → browser keyboard/touch handlers |
-| `Options.py` | Options scaffold → difficulty selection; server autosave is always on |
+| Original file    | Role and port location                                                                                    |
+| ---------------- | --------------------------------------------------------------------------------------------------------- |
+| `game.py`        | 30×15 floors, 8 rooms, 10 items, main turn cadence → engine generation/actions                            |
+| `Classes.py`     | Four playable classes, hidden debug classes, seven monster/NPC bases → catalog                            |
+| `Mob.py`         | Active combat, criticals, armor, poison, mana, equipment calculations → engine                            |
+| `Mob1.py`        | Unused earlier single-weapon implementation; reviewed, retained, not used to override active Mob formulas |
+| `Monster.py`     | Monster growth/randomization, initiative, EXP, drops, wandering → engine                                  |
+| `Player.py`      | Naming, Mage staff choice, inventory, fight/flee, leveling, score, actions → engine/UI                    |
+| `Dungeon.py`     | Connected quadrant rooms, population, bosses, darkness → engine/Pixi                                      |
+| `Instance.py`    | Walls, empty space, stairs, locks, ascent → engine                                                        |
+| `Item.py`        | Loot distribution, consumables, armor, bags, hands, nukes, vision → catalog/engine                        |
+| `Weapon.py`      | Sword/spear/axe, six materials, equip restrictions, breakage → engine                                     |
+| `Tome.py`        | Three affinities, nine elemental spells, costs/requirements → catalog/engine                              |
+| `Boosters.py`    | Temporary percent and permanent stat boosts → engine                                                      |
+| `Npc.py`         | Three tribes, generated chiefs, eight bargains, four gifts, Mystery spell → engine/dialogue               |
+| `Replenisher.py` | Health/mana pods, normal/max selection → engine                                                           |
+| `saving.py`      | Full object-state saves and load recovery → versioned JSONB/JSON store                                    |
+| `Disps.py`       | Terminal character glyphs → original pixel art                                                            |
+| `Statusbar.py`   | Menus, queries, logs → React panels and encounter actions                                                 |
+| `Misc_funcs.py`  | Names, random helpers, ANSI presentation → seeded helpers/UI                                              |
+| `keylistener.py` | Raw terminal keyboard → browser keyboard/touch handlers                                                   |
+| `Options.py`     | Options scaffold → difficulty selection; server autosave is always on                                     |
 
 ## Preserved numerical rules
 
@@ -64,3 +64,7 @@ Encounter origin/phase and exchange-result text are optional saved metadata, so 
 The original item sprites in `src/item-art.ts` are shared Canvas pixel drawings for map and menu use, with separate potion, blade, spear, axe, staff, rope, armor, shield, bomb/missile, goggles, bag, gem and pill silhouettes. Item readiness badges are presentation checks: they disable wasteful menu actions when health/mana are full or an antidote has no poison to cure; direct engine item effects retain their original behavior. `attackInitiative` is shared by the authoritative exchange and its forecast without changing the formula.
 
 `equip-floor` extends the floor interaction without changing combat or original bag equip rules. Reachable weapons/staves use the original equip effect; a full-bag replacement is placed back on the floor instead of overflowing inventory or disappearing. The UI labels that swap explicitly. No world turn or RNG is consumed. Original Power requirements, hand behavior, and the single equipped-gear bag slot remain in force. Weapon artwork now keys both silhouette and material, with distinct relic and elemental staff details.
+
+## v0.6 requested corrections
+
+World turns no longer truncate fractional player or monster HP. This fixes enemies appearing to lose HP on the first move without being hit; presentation rounds values independently. Combat formulas remain unchanged. Adjacent enemies can be targeted by projectiles at the player's feet, without a temporary inventory slot. Ground teleporters are consumed once; carried teleporters remain reusable. Teleport items and magic now clear encounters and relocate the player. These are intentional requested changes, with reach/target validation and regression coverage. An optional monotonic event counter preserves repeated critical notices when the bounded event history is full; older saves remain valid.

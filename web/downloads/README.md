@@ -11,6 +11,6 @@ Open that link in your Android phone's browser, download the APK, open it from D
 - Uninstalling or clearing app storage removes these local saves.
 - This is a debug-signed test APK, not a Google Play release. Future updates retain saves when signed with the same key. A build signed by a different local/CI key cannot replace it without uninstalling.
 
-Version **0.5.0-test** adds direct ground equipping, safe full-bag equipment swaps, custom material/relic weapon sprites, and a top HUD weapon indicator. It retains attack order, item readiness and Heal/Throw Ready cues. Ropes and throwing weapons remain pickup-only. It retains the compact layout, health warnings and action animations. Install over the existing test app to retain saves.
+Version **0.6.0-test** includes swipe movement, top combat/weapon/poison/mana information, scrolling item and spell cards, clear equipment comparisons, original animated adventurers with held gear, themed floors and chieftain dialogue. Nearby projectiles can be thrown from the ground; ground teleporters are single-use, and carried teleporters or Teleport magic can escape combat. See the [complete feature checklist](../docs/FEATURES-V0.6.md). Install over the existing test app to retain saves.
 
 File: `command-line-dungeon-android-test.apk`. SHA-256 is recorded in `SHA256SUMS.txt`. See [Android build and verification details](../docs/ANDROID.md).
