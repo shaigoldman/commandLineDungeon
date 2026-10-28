@@ -131,7 +131,8 @@ export const spells: Spell[] = [
     cost: 10,
     req: 80,
     when: "combat",
-    description: "Kill an enemy. Dragons counter this spell.",
+    description:
+      "Strike for the enemy’s remaining HP; armor applies. Dragons counter this spell.",
   },
   {
     name: "Cleanse",

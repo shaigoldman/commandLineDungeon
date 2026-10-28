@@ -479,6 +479,13 @@ export function attackStats(
   }
   return s;
 }
+/** Forecast uses the same selected attack mode as the authoritative strike. */
+export function combatAttackStats(a: Actor, consume = false, unarmed = false) {
+  const physical = !unarmed && a.weapons.some((w) => w.kind === "weapon");
+  const magical =
+    !unarmed && a.weapons.some((w) => w.kind === "tome") && a.stats.Mana >= 2;
+  return attackStats(a, consume, physical, magical);
+}
 export function hitRate(a: Actor, b: Actor) {
   const s = attackStats(a),
     e = attackStats(b);
@@ -515,7 +522,8 @@ function hurt(g: Game, a: Actor, n: number, source = "Attack") {
 function heal(a: Actor, n: number) {
   a.hp = Math.min(a.stats.Health, a.hp + n);
 }
-function kill(g: Game, m: Actor, reward = true) {
+function kill(g: Game, m: Actor, reward = true, drops = reward) {
+  if (!g.monsters.some((a) => a.id === m.id)) return;
   g.monsters = g.monsters.filter((a) => a.id !== m.id);
   if (g.combat === m.id) g.combat = undefined;
   log(g, m.name + " falls.");
@@ -524,6 +532,8 @@ function kill(g: Game, m: Actor, reward = true) {
     g.xp += xp;
     g.score += xp;
     log(g, `Gained ${xp} EXP.`);
+  }
+  if (drops) {
     if (m.key) {
       g.keys++;
       g.score += 100;
@@ -532,8 +542,8 @@ function kill(g: Game, m: Actor, reward = true) {
       const i = randomItem(g, g.floor + g.player.stats.Luck * 0.01);
       g.loot.push({ x: m.x, y: m.y, item: i });
     }
-    checkLevel(g);
   }
+  if (reward) checkLevel(g);
 }
 function checkLevel(g: Game) {
   if (g.xp >= 100 && !g.pendingLevels) {
@@ -559,9 +569,7 @@ function checkLevel(g: Game) {
 }
 function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
   const physical = !unarmed && a.weapons.some((w) => w.kind === "weapon");
-  const magical =
-    !unarmed && a.weapons.some((w) => w.kind === "tome") && a.stats.Mana >= 2;
-  const s = attackStats(a, true, physical, magical);
+  const s = combatAttackStats(a, true, unarmed);
   const h = attackStats(a, true, physical, false),
     e = attackStats(b, true, b.weapons.length > 0, false);
   const rate = Math.max(40, h.Accuracy + h.Speed - e.Speed * 1.2);
@@ -602,11 +610,21 @@ function poison(g: Game) {
 }
 function monsterTurn(g: Game) {
   g.turn++;
-  if (g.player.stats.Speed > 5) g.player.hp = Math.trunc(g.player.hp);
+  if (g.player.stats.Speed > 5) {
+    g.player.hp = Math.trunc(g.player.hp);
+    if (g.player.hp <= 0) {
+      hurt(g, g.player, 0, "Exhaustion");
+      return;
+    }
+  }
   for (let pass = 0; pass < (g.player.stats.Speed <= 5 ? 2 : 1); pass++)
     for (const m of [...g.monsters]) {
       if (pass === 1 && m.stats.Speed <= 5) continue;
       m.hp = Math.trunc(m.hp);
+      if (m.hp <= 0) {
+        kill(g, m);
+        continue;
+      }
       if (g.status !== "playing" || g.combat) break;
       if (g.player.stats.Speed > 5 && g.turn % 2 === 0 && m.stats.Speed <= 5)
         continue;
@@ -717,12 +735,13 @@ function use(g: Game, i: Item) {
       p.effects["Nuke Shield"] = [1, 1];
       break;
     case "nuke":
-      for (const m of [...g.monsters]) kill(g, m, false);
+      for (const m of [...g.monsters]) kill(g, m, false, true);
       if (p.effects["Nuke Shield"]) delete p.effects["Nuke Shield"];
       else hurt(g, p, p.hp, "Nuke");
       break;
     case "teleport":
       Object.assign(p, position(g));
+      g.pendingLoot = undefined;
       break;
     case "vision":
       g.light = g.light.map((r) => r.map(() => true));
@@ -760,6 +779,7 @@ export function act(input: Game, a: Action): Game {
   const m = g.monsters.find((m) => m.id === g.combat);
   switch (a.type) {
     case "level": {
+      if (!g.pendingLevels) throw Error("No level-up bonus is pending.");
       const allowed = [
         "Health",
         "Power",
@@ -820,6 +840,8 @@ export function act(input: Game, a: Action): Game {
     case "pickup": {
       const i = g.pendingLoot;
       if (!i) break;
+      if (!g.loot.some((l) => l.item.id === i.id && l.x === p.x && l.y === p.y))
+        throw Error("That treasure is no longer within reach.");
       if (i.auto) {
         use(g, i);
       } else {
@@ -880,6 +902,8 @@ export function act(input: Game, a: Action): Game {
     case "unequip": {
       const i = p.weapons.find((i) => i.id === a.id);
       if (!i) throw Error("Equipment not found");
+      if (g.inventory.length + 1 + Number(p.weapons.length > 1) > g.capacity)
+        throw Error("Inventory full. Use or drop an item before unequipping.");
       p.weapons = p.weapons.filter((i) => i.id !== a.id);
       g.inventory.push(i);
       break;
@@ -892,6 +916,7 @@ export function act(input: Game, a: Action): Game {
       switch (s.name) {
         case "Teleport":
           Object.assign(p, position(g));
+          g.pendingLoot = undefined;
           break;
         case "Gust":
           hurt(g, m!, 10);
@@ -971,7 +996,9 @@ export function act(input: Game, a: Action): Game {
       if (!m?.npc) throw Error("No NPC");
       log(
         g,
-        `${m.name} of the ${m.npc.tribe}: ${m.npc.line} My deal: ${m.npc.deal}. Accept, or leave.`,
+        m.npc.done
+          ? `${m.name}: We have already traded. Safe travels.`
+          : `${m.name} of the ${m.npc.tribe}: ${m.npc.line} My deal: ${m.npc.deal}. Accept, or leave.`,
       );
       break;
     case "deal": {
@@ -1027,8 +1054,13 @@ export function act(input: Game, a: Action): Game {
               "Accuracy",
               "Health",
             ]),
-            n = roll(g, 5 + Math.floor(m.level / 10));
+            rolled = roll(g, 5 + Math.floor(m.level / 10));
+          const n =
+            s === "Health"
+              ? Math.min(rolled, Math.max(0, p.stats.Health - 1))
+              : rolled;
           p.stats[s] -= n;
+          if (s === "Health") p.hp = Math.min(p.hp, p.stats.Health);
           m.stats[s] += n;
           break;
         }

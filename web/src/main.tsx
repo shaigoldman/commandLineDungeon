@@ -4,7 +4,7 @@ import type { Game, Action } from "../shared/types";
 import { classes, describe } from "../shared/catalog";
 import {
   availableSpells,
-  attackStats,
+  combatAttackStats,
   hitRate,
   fleeChance,
 } from "../shared/engine";
@@ -256,7 +256,7 @@ function App() {
     );
   const p = game.player,
     enemy = game.monsters.find((m) => m.id === game.combat),
-    stats = attackStats(p),
+    stats = combatAttackStats(p),
     cast = availableSpells(game);
   return (
     <div className="shell">
@@ -519,7 +519,7 @@ function App() {
                 <h2>{enemy.name}</h2>
                 <p>
                   HP {Math.floor(enemy.hp)} / {Math.floor(enemy.stats.Health)} ·
-                  Attack {Math.floor(enemy.stats.Power)} · Hit{" "}
+                  Attack {Math.floor(combatAttackStats(enemy).Attack)} · Hit{" "}
                   {Math.min(100, hitRate(p, enemy)).toFixed(0)}% · Escape{" "}
                   {(fleeChance(p, enemy) * 100).toFixed(0)}%
                 </p>
@@ -530,7 +530,8 @@ function App() {
                   {enemy.npc && (
                     <>
                       {button("Talk", { type: "talk" })}
-                      {enemy.npc.deal === "Item of Choice" &&
+                      {!enemy.npc.done &&
+                        enemy.npc.deal === "Item of Choice" &&
                         game.inventory.length > 0 && (
                           <select
                             aria-label="Item to trade"
@@ -544,10 +545,11 @@ function App() {
                             ))}
                           </select>
                         )}
-                      {button("Accept deal: " + enemy.npc.deal, {
-                        type: "deal",
-                        id: trade || game.inventory[0]?.id,
-                      })}
+                      {!enemy.npc.done &&
+                        button("Accept deal: " + enemy.npc.deal, {
+                          type: "deal",
+                          id: trade || game.inventory[0]?.id,
+                        })}
                     </>
                   )}
                   {button("Flee", { type: "flee" })}

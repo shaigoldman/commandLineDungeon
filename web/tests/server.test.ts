@@ -14,18 +14,23 @@ describe("saved games API", () => {
     try {
       expect((await request(app).get("/api/health")).status).toBe(200);
       expect((await request(app).get("/api/game")).status).toBe(404);
-      const created = await request(app)
-        .post("/api/games")
-        .send({
-          name: "Ada",
-          className: "Mage",
-          element: "Wind",
-          difficulty: 0,
-        });
+      const created = await request(app).post("/api/games").send({
+        name: "Ada",
+        className: "Mage",
+        element: "Wind",
+        difficulty: 0,
+      });
       expect(created.status).toBe(201);
       const key = created.body.recoveryKey;
       expect(key).toHaveLength(64);
       const headers = { Authorization: "Bearer " + key };
+      const unearned = await request(app)
+        .post("/api/action")
+        .set(headers)
+        .send({ revision: 0, action: { type: "level", stat: "Power" } });
+      expect(unearned.status).toBe(400);
+      expect((await store.get(key))?.player.stats.Power).toBe(2);
+      expect((await store.get(key))?.revision).toBe(0);
       const moved = await request(app)
         .post("/api/action")
         .set(headers)

@@ -37,6 +37,8 @@ npm run test:browser
 
 The suite executes the unchanged Python methods, compares 80 Python-generated class/equipment/hit fixtures, tests 100 generated maps for connectivity and spawn uniqueness, covers the campaign, items, spells, NPCs, server save recovery, stale-write rejection, and actual PostgreSQL SQL through PGlite. The browser smoke test starts an isolated production server, creates a Mage, casts a spell, uses keyboard and touch controls, reloads the save, restores it in a separate browser context, and checks mobile overflow and browser exceptions. It uses system Chromium when available or Playwright's installed Chromium. `CHROMIUM_PATH` overrides the executable.
 
+`npm run simulate` runs reproducible bot games and edge probes. See [simulation findings and fixed bugs](docs/SIMULATION.md) for the 840-game report, limitations, and stress-run commands.
+
 GitHub Actions runs these checks on pushes and PRs. `npm run build` performs strict TypeScript checking, Vite frontend compilation, and backend bundling. See [source review and compatibility notes](docs/PORTING.md) for formula details and intentional fixes.
 
 ## Deployment

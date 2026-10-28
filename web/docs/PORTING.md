@@ -31,7 +31,7 @@ Reviewed the complete repository before porting. `source-manifest.json` fingerpr
 - Hit chance `max(40, Accuracy + Speed - enemy Speed × 1.2)`. Physical equipment subtracts `Weight × 2` accuracy and `Weight / 2` combat speed; initiative subtracts `Weight / 4`. Python 3 fractional division is preserved.
 - Critical condition `random() × random() > 1 - min(.70, Luck × .01)`; critical damage is tripled. This is deliberately not a single random roll against Luck.
 - Armor reduces Attack damage, floored at zero. Poison bypasses armor, stacks by maximum duration and damage, and ticks on successful moves. Parasites heal by their attack damage and apply poison.
-- Mana maximum is **10**, matching the active early return in `Mob.getMana`. Staff basic attacks cost 2. Pure staff damage uses Magic; the original active attack path only adds equipment bonuses when physical weapon use is enabled. The combined-stat display may show the staff's nominal bonus, as the original does.
+- Mana maximum is **10**, matching the active early return in `Mob.getMana`. Staff basic attacks cost 2. Pure staff damage uses Magic; the original active attack path only adds equipment bonuses when physical weapon use is enabled. The browser display now uses that same active attack mode, so it does not advertise a nominal staff bonus the strike will not use.
 - Six physical materials: Fragile, Iron, Steel, Lucky, Magic, Obsidian; uses, attack/weight/luck modifications, floor-biased material chance, Power ≥ twice Weight requirement, and breakage.
 - Spell mana costs, Magic requirements, combat restrictions, healing, light, teleport, growth, mystery, and direct damage rules. Despite their descriptions, original direct damage calls use Attack damage and therefore armor applies.
 - 18 ordinary monsters, 10 loot objects, 10 replenisher pods, and a staircase guardian per floor. Parasites join from zero-based floor 2; Golems from floor 3. The second floor in each three-floor cycle has a key carrier and locked stairs; the third has Ruthagor.
@@ -50,3 +50,7 @@ All actively generated content is available. Historical references to non-existe
 ## Asset provenance
 
 The 24×32 shaded unit sprites and retained monster silhouette patterns in `src/art.ts`, stone tiles, staircase, pods, chests, and slash/spark effects were authored for this port. The four character busts in `public/assets/portraits.png` are original generated artwork, using a handheld tactical-RPG pixel-art brief and unrelated character designs. `public/assets/sprites.svg` and `atlas.json` are regenerable standalone assets. No copyrighted Fire Emblem assets are copied or downloaded.
+
+## Simulation follow-up
+
+See `SIMULATION.md` for reproducible seeded playthroughs and focused regressions. Nuke deaths now retain original non-deal key/item drops without combat EXP. Turn rounding resolves deaths immediately. Unrequested level bonuses, overflowing unequips, and distant treasure pickups are rejected. NPC Health transfers preserve a positive maximum and valid current HP. Combat formulas and balance remain unchanged.

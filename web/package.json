@@ -10,7 +10,8 @@
     "test:python": "python3 tests/original_mechanics.py",
     "migrate": "tsx server/migrate.ts",
     "dev:client": "vite --host 0.0.0.0",
-    "test:browser": "python3 tests/browser.py"
+    "test:browser": "python3 tests/browser.py",
+    "simulate": "tsx scripts/simulate.ts"
   },
   "dependencies": {
     "express": "^5.1.0",
