@@ -506,7 +506,42 @@ export function incomingDamage(enemy: Actor, player: Actor) {
 }
 /** Floor use consumes an item in place without using an inventory slot. */
 export function canUseFromFloor(item: Item) {
-  return !["weapon", "tome", "teleport", "trash"].includes(item.kind);
+  return [
+    "heal",
+    "mana",
+    "antidote",
+    "armor",
+    "stat",
+    "boost",
+    "shield",
+    "nuke",
+    "vision",
+    "sight",
+    "hand",
+    "bag",
+    "xp",
+  ].includes(item.kind);
+}
+/** Read-only availability shared by item menus; use() remains authoritative. */
+export function itemUseProblem(g: Game, i: Item): string | undefined {
+  if (i.kind === "weapon" && (i.weight || 0) * 2 > g.player.stats.Power)
+    return `Requires ${(i.weight || 0) * 2} Power; you have ${g.player.stats.Power}.`;
+  if (
+    g.combat &&
+    [
+      "stat",
+      "nuke",
+      "shield",
+      "teleport",
+      "vision",
+      "sight",
+      "hand",
+      "bag",
+    ].includes(i.kind)
+  )
+    return "Use outside combat.";
+  if (!g.combat && ["rope", "projectile"].includes(i.kind))
+    return "Requires an enemy encounter.";
 }
 export function hitRate(a: Actor, b: Actor) {
   const s = attackStats(a),
@@ -590,6 +625,7 @@ function checkLevel(g: Game) {
   }
 }
 function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
+  log(g, `${a.name} attacks ${b.name}.`);
   const physical = !unarmed && a.weapons.some((w) => w.kind === "weapon");
   const s = combatAttackStats(a, true, unarmed);
   const h = attackStats(a, true, physical, false),
@@ -671,6 +707,12 @@ function monsterTurn(g: Game) {
           random(g) <= Math.min(0.8, 0.48 * g.difficulty) * 1.1 * g.floor)
       ) {
         g.combat = m.id;
+        g.encounter = {
+          enemyId: m.id,
+          origin: "enemy",
+          engaged: false,
+          exchanges: 0,
+        };
         log(g, m.name + " challenges you. Fight or flee.");
       }
     }
@@ -731,6 +773,13 @@ function use(g: Game, i: Item) {
       break;
     case "projectile":
       if (!m) throw Error("A target is required.");
+      g.encounter = {
+        enemyId: m.id,
+        origin: "resumed",
+        exchanges: 0,
+        ...g.encounter,
+        engaged: true,
+      };
       if (
         m.className !== "Dragon" ||
         random(g) < 0.5 ||
@@ -738,6 +787,7 @@ function use(g: Game, i: Item) {
       )
         hurt(g, m, i.value);
       else log(g, "The dragon dodged!");
+      g.encounter.result = `You threw ${i.name}. ${m.name}: ${m.hp} HP remaining.`;
       break;
     case "armor":
       p.stats.Armor = (p.stats.Armor || 0) + i.value;
@@ -831,6 +881,12 @@ export function act(input: Game, a: Action): Game {
       const enemy = g.monsters.find((m) => m.x === x && m.y === y);
       if (enemy) {
         g.combat = enemy.id;
+        g.encounter = {
+          enemyId: enemy.id,
+          origin: "inspection",
+          engaged: false,
+          exchanges: 0,
+        };
         log(g, `Encountered ${enemy.name}.`);
         break;
       }
@@ -898,6 +954,16 @@ export function act(input: Game, a: Action): Game {
       break;
     case "attack": {
       if (!m) throw Error("No enemy");
+      const beforeHP = p.hp,
+        beforeEnemyHP = m.hp;
+      g.encounter = {
+        enemyId: m.id,
+        origin: "resumed",
+        exchanges: 0,
+        ...g.encounter,
+        engaged: true,
+      };
+      g.encounter.exchanges++;
       if (m.npc) log(g, m.name + ": It did not have to end this way…");
       const first =
         p.stats.Speed -
@@ -906,6 +972,7 @@ export function act(input: Game, a: Action): Game {
       if (first) strike(g, p, m, a.unarmed);
       if (m.hp > 0 && p.hp > 0) strike(g, m, p);
       if (!first && p.hp > 0 && m.hp > 0) strike(g, p, m, a.unarmed);
+      g.encounter.result = `Exchange ${g.encounter.exchanges}: you lost ${Math.max(0, beforeHP - p.hp)} HP; ${m.name} lost ${Math.max(0, beforeEnemyHP - m.hp)} HP.`;
       break;
     }
     case "flee":
@@ -914,12 +981,20 @@ export function act(input: Game, a: Action): Game {
         g.combat = undefined;
         log(g, "You escaped safely.");
       } else {
+        g.encounter = {
+          enemyId: m.id,
+          origin: "resumed",
+          exchanges: 0,
+          ...g.encounter,
+          engaged: true,
+        };
         log(g, "Could not get away!");
         strike(g, m, p);
       }
       break;
     case "leave":
       g.combat = undefined;
+      g.encounter = undefined;
       log(g, "You end the encounter.");
       break;
     case "use": {
@@ -948,6 +1023,15 @@ export function act(input: Game, a: Action): Game {
       const s = availableSpells(g).find((s) => s.name === a.spell);
       if (!s) throw Error("Spell unavailable");
       p.stats.Mana -= s.cost;
+      if (m && s.when === "combat")
+        g.encounter = {
+          enemyId: m.id,
+          origin: "resumed",
+          exchanges: 0,
+          ...g.encounter,
+          engaged: true,
+          result: `You cast ${s.name}.`,
+        };
       log(g, p.name + " cast " + s.name);
       switch (s.name) {
         case "Teleport":

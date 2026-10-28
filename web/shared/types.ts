@@ -61,6 +61,13 @@ export interface Game {
   score: number;
   turn: number;
   combat?: string;
+  encounter?: {
+    enemyId: string;
+    origin: "inspection" | "enemy" | "resumed";
+    engaged: boolean;
+    exchanges: number;
+    result?: string;
+  };
   pendingLoot?: Item;
   pendingLevels: number;
   status: "playing" | "dead" | "won";

@@ -940,3 +940,126 @@ body.playing-compact {
     line-height: 1.2;
   }
 }
+/* Encounter decisions are distinct from stat inspection and item selection. */
+.encounter-notice {
+  color: #c7e6ed;
+  border-left: 3px solid #88bdce;
+  padding-left: 7px;
+  font-weight: 700;
+}
+.encounter-notice span {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+}
+.encounter-notice.enemy-initiated {
+  background: #493329;
+  color: #ffe0ad;
+  border-color: #efac62;
+  padding: 5px 7px;
+}
+.encounter-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.encounter-heading h2 small {
+  display: block;
+  font: 10px/1.4 sans-serif;
+  color: #ccd5ca;
+}
+.encounter-heading > button {
+  flex-shrink: 0;
+  min-height: 44px;
+  font-size: 10px;
+  padding: 5px 8px;
+}
+.combat-item-preview {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #e7cf98;
+}
+.enemy-stat-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+.enemy-stat-list dd {
+  margin: 0;
+  font-weight: 700;
+}
+.item-restriction {
+  color: #ffd0aa !important;
+  font-weight: 700;
+}
+.compact-game .combat-panel .enemy-portrait {
+  display: none;
+}
+.compact-game .combat-panel .encounter-notice {
+  margin: 0 0 4px;
+  font-size: 10px;
+  line-height: 1.2;
+}
+.compact-game .combat-panel .encounter-heading h2 {
+  font-size: 18px;
+}
+.compact-game .combat-panel .combat-forecast {
+  margin: 3px 0;
+}
+.compact-game .combat-panel .combat-item-preview {
+  margin: 3px 0 0;
+  font-size: 9px;
+}
+.compact-game .combat-panel {
+  max-height: min(54dvh, 310px);
+  padding: 7px;
+}
+.compact-game .combat-panel .combat-more {
+  display: none;
+}
+@media (max-height: 600px) and (orientation: portrait) {
+  .compact-game .combat-panel .encounter-notice span {
+    font-size: 9px;
+  }
+  .compact-game .combat-panel .encounter-heading h2 {
+    font-size: 16px;
+  }
+  .compact-game .combat-panel .actions {
+    gap: 4px;
+  }
+  .compact-game .combat-panel .actions > button {
+    padding: 5px;
+    font-size: 10px;
+  }
+}
+@media (max-height: 500px) and (pointer: coarse) and (orientation: landscape) {
+  .compact-game.has-context .adventure {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 42%);
+  }
+  .compact-game .combat-panel {
+    max-height: none;
+  }
+  .compact-game .combat-panel .encounter-heading > button {
+    min-height: 32px;
+  }
+  .compact-game .combat-panel .lethal-warning span {
+    display: none;
+  }
+}
+@media (max-height: 600px) and (orientation: portrait) {
+  .compact-game .combat-panel .encounter-notice span,
+  .compact-game .combat-panel .combat-item-preview,
+  .compact-game .combat-panel .lethal-warning span {
+    display: none;
+  }
+  .compact-game .combat-panel .combat-forecast {
+    font-size: 9px;
+  }
+}
+@media (max-height: 500px) and (pointer: coarse) and (orientation: landscape) {
+  .compact-game .combat-panel .encounter-notice span {
+    display: none;
+  }
+}

@@ -25,6 +25,21 @@ m.stats.Power = 1;
 m.stats.Armor = 0;
 combat.monsters = [m];
 combat.combat = m.id;
+combat.encounter = {
+  enemyId: m.id,
+  origin: "inspection",
+  engaged: false,
+  exchanges: 0,
+};
+combat.inventory.push(makeItem(combat, "Throwing Knife"));
+const enemyInitiated = structuredClone(combat);
+enemyInitiated.encounter!.origin = "enemy";
+const equipment = structuredClone(explore);
+const heavy = makeItem(equipment, "Sword");
+heavy.name = "Heavy practice sword";
+heavy.weight = 20;
+equipment.player.stats.Power = 1;
+equipment.inventory.push(heavy);
 const loot = structuredClone(explore);
 const item = makeItem(loot, "Medium Health Potion");
 loot.loot.push({ x: loot.player.x, y: loot.player.y, item });
@@ -60,9 +75,18 @@ lethal.monsters[0].stats.Power = 10;
 const critThreat = structuredClone(combat);
 critThreat.monsters[0].stats.Power = 4;
 critThreat.monsters[0].stats.Luck = 100;
+const floorKnife = structuredClone(loot);
+const knife = makeItem(floorKnife, "Throwing Knife");
+floorKnife.pendingLoot = knife;
+floorKnife.loot = [
+  { x: floorKnife.player.x, y: floorKnife.player.y, item: knife },
+];
 console.log(
   JSON.stringify({
     explore,
+    enemyInitiated,
+    equipment,
+    floorKnife,
     combat,
     loot,
     fullBag,

@@ -58,3 +58,5 @@ See `SIMULATION.md` for reproducible seeded playthroughs and focused regressions
 ## Mobile interaction additions
 
 The `use-floor` action applies the normal consumable effect to a reachable pending floor item, then removes it from the floor without taking inventory space or advancing a turn. Equipment and reusable teleport/trash items retain pickup-first behavior. The new enemy-damage forecast is read-only and uses the existing attack mode, boosters, armor, critical multiplier and initiative formula; it does not change combat or consume RNG. Threshold health cues and action animations are presentation only.
+
+Encounter origin/phase and exchange-result text are optional saved metadata, so old version-1 saves still load. Inspecting stats does not dispatch an engine action. Enemy challenges remain challenges without immediate damage, as in the original; actual attack formulas and exchange ordering are unchanged. Floor use now whitelists items usable in place, excluding targeted projectiles and escape ropes. Read-only item availability messages reflect the existing Power and combat-context checks.

@@ -154,7 +154,7 @@ export function DungeonView({
             changed &&
             (actionType === "attack" ||
               (actionType === "flee" && g.player.hp < before.player.hp) ||
-              (actionType === "cast" &&
+              (["cast", "use"].includes(actionType) &&
                 (g.player.hp < before.player.hp ||
                   before.monsters.some(
                     (m) =>

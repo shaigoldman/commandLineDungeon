@@ -11,6 +11,7 @@ import {
   fleeChance,
   incomingDamage,
   canUseFromFloor,
+  itemUseProblem,
 } from "../shared/engine";
 import { DungeonView } from "./DungeonView";
 import { Portrait } from "./Portrait";
@@ -193,6 +194,11 @@ function App() {
       )
         return;
       const k = e.key.toLowerCase();
+      if (
+        ["enter", " "].includes(k) &&
+        (e.target as HTMLElement).closest("button,a,summary")
+      )
+        return;
       const dirs: Record<string, [number, number]> = {
         arrowup: [0, -1],
         arrowdown: [0, 1],
@@ -210,7 +216,8 @@ function App() {
       else if (k === "s") openPanel("stats");
       else if (k === "h") setHelp(true);
       else if (k === "v") setSave(true);
-      else if (k === "enter" && game?.combat) void act({ type: "attack" });
+      else if (k === "enter" && game?.combat && game.encounter?.engaged)
+        void act({ type: "attack" });
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -240,10 +247,12 @@ function App() {
     }
     setBusy(false);
   }
-  const button = (text: string, a: Action, kind = "") => (
+  const button = (text: string, a: Action, kind = "", reason?: string) => (
     <button
       className={kind}
+      title={reason}
       disabled={
+        !!reason ||
         busy ||
         game?.status === "dead" ||
         (game?.status === "won" && a.type !== "continue") ||
@@ -392,6 +401,20 @@ function App() {
       : p.hp > 0 && healthRatio <= 0.1
         ? "CRITICAL · 10% HP or less"
         : "";
+  const encounter =
+    enemy && game.encounter?.enemyId === enemy.id ? game.encounter : undefined;
+  const combatItems = game.inventory.filter((i) =>
+    [
+      "heal",
+      "mana",
+      "antidote",
+      "rope",
+      "projectile",
+      "armor",
+      "boost",
+      "xp",
+    ].includes(i.kind),
+  );
   const hasContext =
     game.status !== "playing" ||
     !!enemy ||
@@ -778,23 +801,49 @@ function App() {
               </div>
             </div>
           ) : enemy ? (
-            <div className="encounter">
+            <div className="encounter combat-panel">
               <Portrait className="enemy-portrait" type={enemy.className} />
               <div>
-                <p className="eyebrow">
-                  {enemy.boss
-                    ? "FLOOR GUARDIAN"
-                    : enemy.npc
-                      ? "A STRANGER IN THE DEPTHS"
-                      : "ENEMY ENCOUNTER"}{" "}
-                  · LEVEL {enemy.level}
+                <p
+                  className={
+                    "encounter-notice " +
+                    (encounter?.origin === "enemy" ? "enemy-initiated" : "")
+                  }
+                  role={encounter?.origin === "enemy" ? "alert" : "status"}
+                >
+                  {encounter?.origin === "enemy"
+                    ? encounter.engaged
+                      ? "COMBAT · ENEMY INITIATED"
+                      : `⚠ ${enemy.name} approached you!`
+                    : encounter?.engaged
+                      ? "COMBAT IN PROGRESS"
+                      : encounter?.origin === "inspection"
+                        ? "INSPECTING ENEMY · NO ATTACK YET"
+                        : "ENCOUNTER RESUMED"}
+                  <span>
+                    {encounter?.engaged
+                      ? encounter.result || "Choose your next action."
+                      : encounter?.origin === "enemy"
+                        ? "Enemy initiated this encounter. No blow exchanged yet."
+                        : "Checking stats does not attack. Choose Attack to exchange blows."}
+                  </span>
                 </p>
-                <h2>{enemy.name}</h2>
-                <p>
-                  HP {Math.floor(enemy.hp)} / {Math.floor(enemy.stats.Health)} ·
-                  Attack {Math.floor(combatAttackStats(enemy).Attack)} · Hit{" "}
-                  {Math.min(100, hitRate(p, enemy)).toFixed(0)}% · Escape{" "}
-                  {(fleeChance(p, enemy) * 100).toFixed(0)}%
+                <div className="encounter-heading">
+                  <h2>
+                    {enemy.name}{" "}
+                    <small>
+                      Lv {enemy.level} · HP {Math.floor(enemy.hp)}/
+                      {Math.floor(enemy.stats.Health)}
+                    </small>
+                  </h2>
+                  <button onClick={() => openPanel("enemy-stats")}>
+                    Enemy stats
+                  </button>
+                </div>
+                <p className="combat-forecast">
+                  Your hit chance {Math.min(100, hitRate(p, enemy)).toFixed(0)}%
+                  · Enemy hit {danger?.normal} HP ·{" "}
+                  {danger?.enemyFirst ? "Enemy acts first" : "You act first"}
                 </p>
                 {danger && (danger.lethal || danger.criticalLethal) && (
                   <p className="lethal-warning" role="alert">
@@ -846,15 +895,22 @@ function App() {
                         })}
                     </>
                   )}
-                  {button("Flee", { type: "flee" })}
-                  {compact &&
-                    quickPotion &&
-                    p.hp < p.stats.Health &&
-                    button(
-                      "Use potion",
-                      { type: "use", id: quickPotion.id },
-                      "quick-combat-heal",
-                    )}
+                  {button(
+                    `Flee · ${(fleeChance(p, enemy) * 100).toFixed(0)}%`,
+                    { type: "flee" },
+                  )}
+                  <button
+                    disabled={busy}
+                    onClick={() => openPanel("combat-items")}
+                  >
+                    Items ({combatItems.length})
+                  </button>
+                  {button(
+                    encounter?.engaged || encounter?.origin === "enemy"
+                      ? "End encounter"
+                      : "Close inspection",
+                    { type: "leave" },
+                  )}
                   <details className="combat-more">
                     <summary>More options</summary>
                     {p.weapons.length > 0 &&
@@ -862,9 +918,18 @@ function App() {
                         type: "attack",
                         unarmed: true,
                       })}
-                    {button("Back to dungeon", { type: "leave" })}
+                    <p>
+                      End encounter is safe, as in the original game. Flee can
+                      fail and provoke a hit.
+                    </p>
                   </details>
                 </div>
+                <p className="combat-item-preview">
+                  Combat items:{" "}
+                  {combatItems.length
+                    ? [...new Set(combatItems.map((i) => i.name))].join(" · ")
+                    : "None in your bag"}
+                </p>
               </div>
             </div>
           ) : game.pendingLoot ? (
@@ -873,6 +938,24 @@ function App() {
                 <p className="eyebrow">DISCOVERED TREASURE</p>
                 <h2>{game.pendingLoot.name}</h2>
                 <p>{describe(game.pendingLoot)}</p>
+                {game.pendingLoot.kind === "projectile" && (
+                  <p>
+                    Pick up this throwing weapon to use it against an enemy.
+                  </p>
+                )}
+                {game.pendingLoot.kind === "weapon" && (
+                  <p
+                    className={
+                      itemUseProblem(game, game.pendingLoot)
+                        ? "item-restriction"
+                        : "muted"
+                    }
+                  >
+                    Pick up to carry.{" "}
+                    {itemUseProblem(game, game.pendingLoot) ||
+                      "Equip it from your bag."}
+                  </p>
+                )}
                 <div className="actions">
                   <button
                     className="primary"
@@ -925,13 +1008,17 @@ function App() {
             role={compact && mobilePanel ? "dialog" : undefined}
             aria-modal={compact && mobilePanel ? true : undefined}
             aria-label={
-              tab === "stats"
-                ? "Character"
-                : tab === "journal"
-                  ? "Adventure log"
-                  : tab === "spells"
-                    ? "Magic"
-                    : "Inventory"
+              tab === "combat-items"
+                ? "Combat items"
+                : tab === "enemy-stats"
+                  ? "Enemy stats"
+                  : tab === "stats"
+                    ? "Character"
+                    : tab === "journal"
+                      ? "Adventure log"
+                      : tab === "spells"
+                        ? "Magic"
+                        : "Inventory"
             }
           >
             <div className="tabs">
@@ -959,7 +1046,92 @@ function App() {
               </span>
             </div>
             <div className="tab-content" ref={journal}>
-              {tab === "journal" ? (
+              {tab === "enemy-stats" ? (
+                enemy ? (
+                  <>
+                    <h2>{enemy.name} · Enemy stats</h2>
+                    <p>
+                      Inspecting is safe: no attack, turn, mana or item is
+                      spent.
+                    </p>
+                    <dl className="enemy-stat-list">
+                      {Object.entries({
+                        HP: `${enemy.hp}/${enemy.stats.Health}`,
+                        Attack: combatAttackStats(enemy).Attack,
+                        ...enemy.stats,
+                      }).map(([name, value]) => (
+                        <React.Fragment key={name}>
+                          <dt>{name}</dt>
+                          <dd>{value}</dd>
+                        </React.Fragment>
+                      ))}
+                    </dl>
+                    <p>
+                      Your hit chance:{" "}
+                      {Math.min(100, hitRate(p, enemy)).toFixed(0)}%. Enemy hit
+                      chance: {Math.min(100, hitRate(enemy, p)).toFixed(0)}%.
+                      Escape: {(fleeChance(p, enemy) * 100).toFixed(0)}%.
+                    </p>
+                    <p>
+                      Attack exchanges blows; items and spells do not spend a
+                      combat round. End encounter closes safely. Flee can fail
+                      and trigger an enemy strike.
+                    </p>
+                  </>
+                ) : (
+                  <p>No enemy is selected.</p>
+                )
+              ) : tab === "combat-items" ? (
+                <>
+                  <h2>Combat items</h2>
+                  <p>
+                    Choose an item to use it now. This spends the item, not a
+                    combat round. Throwing weapons target{" "}
+                    {enemy?.name || "the current enemy"}.
+                  </p>
+                  {!combatItems.length && (
+                    <p>
+                      No combat consumables in your bag. Check Magic for
+                      available spells.
+                    </p>
+                  )}
+                  {combatItems.map((i) => (
+                    <div className="item" key={i.id}>
+                      <div>
+                        <b>{i.name}</b>
+                        <small>{describe(i)}</small>
+                      </div>
+                      {button(
+                        i.kind === "projectile"
+                          ? "Throw"
+                          : i.kind === "heal"
+                            ? "Drink potion"
+                            : i.kind === "mana"
+                              ? "Restore mana"
+                              : i.kind === "rope"
+                                ? "Escape with rope"
+                                : "Use item",
+                        { type: "use", id: i.id },
+                        "",
+                        itemUseProblem(game, i),
+                      )}
+                    </div>
+                  ))}
+                  {p.weapons.length > 0 && (
+                    <>
+                      <h3>Other combat actions</h3>
+                      <p>
+                        Attack unarmed exchanges blows and spends a combat
+                        round.
+                      </p>
+                      {button("Attack unarmed", {
+                        type: "attack",
+                        unarmed: true,
+                      })}
+                    </>
+                  )}
+                </>
+              ) : tab === "journal" ? (
                 game.log.map((l, i) => (
                   <div
                     className={
@@ -984,11 +1156,18 @@ function App() {
                       <div>
                         <b>{i.name}</b>
                         <small>{describe(i)}</small>
+                        {itemUseProblem(game, i) && (
+                          <small className="item-restriction">
+                            {itemUseProblem(game, i)}
+                          </small>
+                        )}
                       </div>
                       <div className="actions">
                         {button(
                           ["weapon", "tome"].includes(i.kind) ? "Equip" : "Use",
                           { type: "use", id: i.id },
+                          "",
+                          itemUseProblem(game, i),
                         )}
                         {button("Drop", { type: "drop", id: i.id })}
                       </div>
@@ -999,6 +1178,11 @@ function App() {
                       <div>
                         <b>{i.name} · Equipped</b>
                         <small>{describe(i)}</small>
+                        {itemUseProblem(game, i) && (
+                          <small className="item-restriction">
+                            {itemUseProblem(game, i)}
+                          </small>
+                        )}
                       </div>
                       {button("Unequip", { type: "unequip", id: i.id })}
                     </div>

@@ -14,7 +14,7 @@ Android uses `LocalGameAPI` to run the shared engine locally. All successful gam
 
 Android progress is **separate from server progress**. A device journey code works only on the same installation. It does not retrieve a web save or transfer to another phone. The save panel makes this distinction explicit. Closing/reopening the app resumes the current journey; uninstalling or clearing app data removes local saves. This build does not implement cloud synchronization or cross-device save transfer.
 
-The package ID is `com.shaigoldman.commandlinedungeon.test`, version `0.2.0-test`, version code `2`, launcher name **Dungeon Test**. This is a debug-signed test package, distinct from any future store release. Native permissions are the normal Internet permission used by the WebView shell and an AndroidX internal signature permission; the game does not request contacts, location, or shared-storage access.
+The package ID is `com.shaigoldman.commandlinedungeon.test`, version `0.3.0-test`, version code `3`, launcher name **Dungeon Test**. This is a debug-signed test package, distinct from any future store release. Native permissions are the normal Internet permission used by the WebView shell and an AndroidX internal signature permission; the game does not request contacts, location, or shared-storage access.
 
 The workspace signing key is ignored under `work/android-user/`. Keep it for compatible rebuilds. A fresh checkout or CI may use a different test signing key; Android will reject an in-place update signed by that other key. Uninstalling to switch keys removes local progress. Release signing and Google Play publication need a separate owner-controlled production key and are not performed here.
 
@@ -65,3 +65,11 @@ Critical health is labeled at 10% or less; Last Breath is labeled at 1% or less.
 Use from floor consumes usable items in place, even with a full bag. Equipment and reusable teleport/trash items must first be picked up; their existing inventory behavior is retained. Movement slides between cells, attacks lunge and slash, pickups sparkle, and restoration has rising numbers and an energy ring. Reduced-motion preferences disable travel, lunges and particle motion while retaining result labels.
 
 Automated Chromium checks cover 60 combinations of five viewport sizes (320×480 through landscape 844×390) and twelve game states. Primary buttons are checked for clipping and occlusion as well as visibility. The package uses the same signing certificate as version 0.1, allowing an in-place update that retains device saves.
+
+## Combat clarity update (0.3.0-test)
+
+Walking into a monster opens a safe inspection; choosing Attack exchanges blows. Enemy-initiated challenges have a distinct amber notice. A challenge does not itself deal damage under the original rules; the UI says so. Actual strikes name attacker and defender in the log, and resolved exchanges summarize health lost. Existing saves without encounter metadata use an Encounter Resumed label.
+
+Enemy stats is a read-only panel. Keyboard Enter on a focused stats/items button activates that button rather than attacking. Items opens the combat consumable list with named actions (Throw, Drink potion, Restore mana, Escape with rope). Items and spells retain their original between-exchange behavior. End encounter remains safe, matching the original End Attack action; Flee can fail and trigger an enemy strike.
+
+Throwing weapons and ropes require pickup rather than floor use. Equipment shows required/current Power and disables Equip until the requirement is met. Combat-restricted items likewise explain why their Use button is unavailable. Five additional mechanics tests and phone checks cover enemy initiation, inspection/Enter behavior, throwing knives, floor-action eligibility and disabled equipment. The layout matrix now covers 70 viewport/state combinations.
