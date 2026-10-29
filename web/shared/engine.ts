@@ -1,3 +1,17 @@
+import {
+  expansionFloor,
+  applyCurse,
+  villagerDeath,
+  spawnGhosts,
+  rememberVillager,
+  summon,
+  buy,
+  quote,
+  openChest,
+  unlockDoor,
+  enterSecret,
+  chestReward,
+} from "./expansion";
 import npcDialogue from "./npc-dialogue.json";
 import {
   classes,
@@ -24,7 +38,11 @@ export function log(g: Game, s: string) {
   g.log = g.log.slice(-100);
 }
 export function makeItem(g: Game, name: string): Item {
-  const d = itemDefinitions.find((d) => d[0] === name);
+  const named =
+    /^(Fragile|Iron|Steel|Lucky|Magic|Obsidian) (Sword|Spear|Axe)$/.exec(name);
+  const element = /^(Wind|Fire|Water|Mystery) Staff$/.exec(name)?.[1];
+  const base = named?.[2] || (element ? "Magic Staff" : name);
+  const d = itemDefinitions.find((d) => d[0] === base);
   let i: Item = {
     id: id(g),
     name,
@@ -35,6 +53,15 @@ export function makeItem(g: Game, name: string): Item {
     description: "",
   };
   if (i.kind === "heal") i.description = `Restore ${i.value} HP.`;
+  if (i.kind === "candy")
+    i.description =
+      i.value === 100
+        ? "Gain 100 EXP: one level-up and its stat choice."
+        : `Gain ${i.value} EXP.`;
+  if (i.kind === "summon-stone") {
+    i.uses = i.maxUses = 1 + roll(g, 5);
+    i.description = `Summon a random mob next to you. ${i.uses} uses before breaking.`;
+  }
   if (i.kind === "mana") i.description = "Fully restore 10 mana.";
   if (i.kind === "projectile")
     i.description = `Throw for ${i.value} damage. Dragons may dodge.`;
@@ -63,17 +90,21 @@ export function makeItem(g: Game, name: string): Item {
     i.auto = i.value !== -1;
     i.description = `Permanently add ${i.value} armor.`;
   }
-  if (["bag", "hand", "sight"].includes(i.kind)) i.auto = true;
+  if (["bag", "hand", "sight", "gold"].includes(i.kind)) i.auto = true;
   if (i.kind === "weapon") {
     const chance = 0.5 - g.floor / 10;
     let m = 0;
-    while (m < 5 && random(g) > chance) m++;
+    if (named)
+      m = ["Fragile", "Iron", "Steel", "Lucky", "Magic", "Obsidian"].indexOf(
+        named[1],
+      );
+    else while (m < 5 && random(g) > chance) m++;
     const material = ["Fragile", "Iron", "Steel", "Lucky", "Magic", "Obsidian"][
       m
     ];
     i.attack = i.value;
-    i.weight = ({ Sword: 2, Spear: 4, Axe: 6 } as Record<string, number>)[name];
-    i.luck = ({ Sword: 3, Spear: 1, Axe: 6 } as Record<string, number>)[name];
+    i.weight = ({ Sword: 2, Spear: 4, Axe: 6 } as Record<string, number>)[base];
+    i.luck = ({ Sword: 3, Spear: 1, Axe: 6 } as Record<string, number>)[base];
     i.maxUses = [3, 10, 20, 8, 1, 35][m];
     if (m === 0) {
       i.attack--;
@@ -94,14 +125,36 @@ export function makeItem(g: Game, name: string): Item {
       else i.weight *= 2;
     }
     i.uses = random(g) < 0.3 ? roll(g, i.maxUses) + 1 : i.maxUses;
-    i.name = material + " " + name;
+    i.name = material + " " + base;
   }
   if (i.kind === "tome") {
-    i.element = pick(g, ["Wind", "Fire", "Water"]);
+    i.element = element || pick(g, ["Wind", "Fire", "Water"]);
     staff(i, i.element);
   }
+  if (name === "Awathons Broadsword")
+    Object.assign(i, {
+      kind: "weapon",
+      rarity: 10,
+      attack: 25,
+      weight: 10,
+      luck: 11,
+      uses: 50,
+      maxUses: 50,
+    });
+  if (name === "EXP Pill")
+    Object.assign(i, { kind: "xp", rarity: 9, description: "Gain 100 EXP." });
+  if (name === "Piece of Trash") Object.assign(i, { rarity: 1 });
   const desc: Record<string, string> = {
-    antidote: "Cure poison.",
+    antidote: "Cure poison and curses.",
+    seismic:
+      "Deal exactly 5 damage to every monster, NPC and yourself, ignoring armor. Killing villagers brings a curse.",
+    immunity: "Permanent poison immunity. Curses are not poison.",
+    double: `Permanently double ${i.stat}.`,
+    gold: `Add ${i.value} gold to your purse. No bag slot needed.`,
+    key:
+      i.value === 2
+        ? "Opens a chest or secret door; consumed once."
+        : "Opens a regular chest; consumed once.",
     rope: "Guarantee escape from combat.",
     nuke: "Destroy all monsters and yourself unless shielded.",
     shield: "Protect against one nuke.",
@@ -264,21 +317,29 @@ export function makeMonster(g: Game, type: string, level: number): Actor {
 function empty(g: Game, x: number, y: number) {
   return (
     g.tiles[y]?.[x] === 0 &&
+    (g.inSecret ? x >= 33 : x < 29) &&
+    !(g.inSecret && x === 33 && y === 7) &&
     !g.monsters.some((m) => m.hp > 0 && m.x === x && m.y === y) &&
     !(g.player.x === x && g.player.y === y) &&
     !g.loot.some((i) => i.x === x && i.y === y) &&
     !g.pods.some((i) => i.x === x && i.y === y) &&
+    !g.chests?.some((c) => !c.opened && c.x === x && c.y === y) &&
     !(g.stairs.x === x && g.stairs.y === y)
   );
 }
 function position(g: Game) {
   const a: { x: number; y: number }[] = [];
-  for (let y = 0; y < 15; y++)
-    for (let x = 0; x < 30; x++) if (empty(g, x, y)) a.push({ x, y });
+  for (let y = 0; y < g.tiles.length; y++)
+    for (let x = g.inSecret ? 33 : 0; x < (g.inSecret ? 40 : 29); x++)
+      if (empty(g, x, y)) a.push({ x, y });
   if (!a.length) throw Error("No open tiles");
   return pick(g, a);
 }
 export function generateFloor(g: Game) {
+  g.chests = [];
+  g.secretDoors = [];
+  g.inSecret = undefined;
+  g.haunting = [];
   g.tiles = Array.from({ length: 15 }, () => Array(30).fill(1));
   g.light = Array.from({ length: 15 }, () => Array(30).fill(false));
   g.monsters = [];
@@ -384,6 +445,7 @@ export function generateFloor(g: Game) {
     g.monsters.push(m);
   }
   Object.assign(g.player, position(g));
+  expansionFloor(g);
   g.combat = undefined;
   g.pendingLoot = undefined;
   log(g, `Floor ${g.floor + 1}: find the guardian and the stairs.`);
@@ -407,6 +469,7 @@ export function newGame(
     x: -1,
     y: -1,
     level: 1,
+    gold: 0,
   };
   const g: Game = {
     version: 1,
@@ -511,6 +574,11 @@ export function incomingDamage(enemy: Actor, player: Actor) {
 /** Floor use consumes an item in place without using an inventory slot. */
 export function canUseFromFloor(item: Item) {
   return [
+    "candy",
+    "seismic",
+    "immunity",
+    "double",
+    "gold",
     "heal",
     "mana",
     "antidote",
@@ -530,7 +598,7 @@ export function canUseFromFloor(item: Item) {
 /** Floor equipment never disappears: a displaced weapon stays here if the bag is full. */
 export function floorEquipPlan(g: Game, item: Item) {
   const replaced =
-    item.kind === "weapon" && g.player.weapons.length >= g.hands
+    ["weapon", "tome"].includes(item.kind) && g.player.weapons.length >= g.hands
       ? g.player.weapons[0]
       : undefined;
   const leaveOnFloor = !!replaced && g.inventory.length + 2 > g.capacity;
@@ -562,8 +630,15 @@ export function itemUseProblem(g: Game, i: Item): string | undefined {
     return "Health is already full.";
   if (i.kind === "mana" && g.player.stats.Mana >= 10)
     return "Mana is already full.";
-  if (i.kind === "antidote" && !g.player.effects.Poison)
-    return "You are not poisoned.";
+  if (
+    i.kind === "antidote" &&
+    !g.player.effects.Poison &&
+    !g.player.effects.Curse
+  )
+    return "You have no poison or curse.";
+  if (i.kind === "immunity" && g.player.poisonImmune)
+    return "Already immune to poison.";
+  if (i.kind === "key") return "Use this at a chest or secret door.";
 }
 export function hitRate(a: Actor, b: Actor) {
   const s = attackStats(a),
@@ -606,6 +681,10 @@ function kill(g: Game, m: Actor, reward = true, drops = reward) {
   g.monsters = g.monsters.filter((a) => a.id !== m.id);
   if (g.combat === m.id) g.combat = undefined;
   log(g, m.name + " falls.");
+  if (m.merchant) {
+    villagerDeath(g, m);
+    return;
+  }
   if (reward) {
     const xp = experience(m.level, g.player.level);
     g.xp += xp;
@@ -669,9 +748,18 @@ function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
     damage *= 3;
     log(g, "Critical hit!");
   }
+  const hpBeforeHit = b.hp;
   hurt(g, b, damage);
   if (a.drain) heal(a, damage);
-  if (a.poison && b.hp > 0) {
+  if (
+    a.curseChance &&
+    b.id === "player" &&
+    b.hp > 0 &&
+    b.hp < hpBeforeHit &&
+    random(g) < a.curseChance
+  )
+    applyCurse(g);
+  if (a.poison && b.hp > 0 && !b.poisonImmune) {
     const old = b.effects.Poison || [0, 0];
     b.effects.Poison = [
       Math.max(old[0], a.poison[0]),
@@ -683,19 +771,26 @@ function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
 }
 function poison(g: Game) {
   const e = g.player.effects.Poison;
-  if (e) {
+  if (e && !g.player.poisonImmune) {
     hurt(g, g.player, e[1], "Poison");
     if (--e[0] <= 0) delete g.player.effects.Poison;
   }
 }
 function monsterTurn(g: Game) {
   g.turn++;
+  const curse = g.player.effects.Curse;
+  if (curse) {
+    hurt(g, g.player, curse[1], "Curse");
+    if (--curse[0] <= 0) delete g.player.effects.Curse;
+  }
+  spawnGhosts(g);
   if (g.player.hp <= 0) {
     hurt(g, g.player, 0, "Exhaustion");
     return;
   }
   for (let pass = 0; pass < (g.player.stats.Speed <= 5 ? 2 : 1); pass++)
     for (const m of [...g.monsters]) {
+      if (!!g.inSecret !== m.x >= 29 || m.spawnTurn === g.turn) continue;
       if (pass === 1 && m.stats.Speed <= 5) continue;
       if (m.hp <= 0) {
         kill(g, m);
@@ -720,6 +815,7 @@ function monsterTurn(g: Game) {
         x === g.player.x &&
         y === g.player.y &&
         !m.npc &&
+        !m.merchant &&
         random(g) < 0.6 &&
         (m.level <= g.player.level ||
           random(g) <= Math.min(0.8, 0.48 * g.difficulty) * 1.1 * g.floor)
@@ -760,15 +856,54 @@ function use(g: Game, i: Item) {
   if (i.kind === "weapon" || i.kind === "tome") {
     if (i.kind === "weapon" && (i.weight || 0) * 2 > p.stats.Power)
       throw Error("Not enough Power to wield this weapon.");
-    if (i.kind === "weapon" && p.weapons.length >= g.hands) {
-      g.inventory.push(p.weapons.shift()!);
-    }
-    p.weapons.push(i);
     g.inventory = g.inventory.filter((a) => a.id !== i.id);
+    const displaced: Item[] = [];
+    while (p.weapons.length >= g.hands) displaced.push(p.weapons.shift()!);
+    p.weapons.push(i);
+    for (const old of displaced) {
+      if (g.inventory.length + 1 < g.capacity) g.inventory.push(old);
+      else {
+        g.loot.push({ x: p.x, y: p.y, item: old });
+        log(g, old.name + " left on the floor because your bag is full.");
+      }
+    }
     log(g, "Equipped " + i.name);
     return;
   }
   switch (i.kind) {
+    case "candy":
+      g.xp += i.value;
+      checkLevel(g);
+      break;
+    case "summon-stone":
+      summon(g, true);
+      i.uses!--;
+      log(g, `Summoner Stone: ${i.uses} uses left.`);
+      if (i.uses! > 0) {
+        i.description = `Summon a random mob next to you. ${i.uses} uses before breaking.`;
+        return;
+      }
+      log(g, "Summoner Stone broke.");
+      break;
+    case "seismic":
+      for (const target of [...g.monsters]) hurt(g, target, 5, "Seismic");
+      hurt(g, p, 5, "Seismic");
+      break;
+    case "immunity":
+      p.poisonImmune = true;
+      delete p.effects.Poison;
+      break;
+    case "double": {
+      const stat = i.stat!;
+      p.stats[stat] = (p.stats[stat] || 0) * 2;
+      if (stat === "Health") p.hp *= 2;
+      break;
+    }
+    case "gold":
+      p.gold = (p.gold || 0) + i.value;
+      break;
+    case "key":
+      throw Error("Use this key at a chest or secret door.");
     case "heal":
       heal(p, i.value);
       break;
@@ -777,6 +912,7 @@ function use(g: Game, i: Item) {
       break;
     case "antidote":
       delete p.effects.Poison;
+      delete p.effects.Curse;
       break;
     case "rope":
       if (!m) throw Error("Use the rope when fleeing.");
@@ -825,6 +961,8 @@ function use(g: Game, i: Item) {
     case "teleport":
       Object.assign(p, position(g));
       g.pendingLoot = undefined;
+      g.pendingChest = undefined;
+      g.pendingDoor = undefined;
       g.combat = undefined;
       g.encounter = undefined;
       log(g, "Teleported to safety.");
@@ -863,7 +1001,35 @@ export function act(input: Game, a: Action): Game {
   if (g.pendingLevels && a.type !== "level")
     throw Error("Choose your level-up bonus first.");
   const m = g.monsters.find((m) => m.id === g.combat);
+  if (["open-chest", "unlock-door"].includes(a.type) && g.pendingLevels)
+    throw Error("Choose your level bonus first.");
   switch (a.type) {
+    case "buy": {
+      if (!m?.merchant || Math.abs(m.x - p.x) + Math.abs(m.y - p.y) > 1)
+        throw Error("No villager shop in this encounter.");
+      const item = buy(g, m, a.id);
+      if (item.auto) use(g, item);
+      else g.inventory.push(item);
+      g.marketNotice = `Bought ${item.name}.`;
+      log(g, g.marketNotice);
+      break;
+    }
+    case "quote":
+    case "sell":
+      if (!m?.merchant || Math.abs(m.x - p.x) + Math.abs(m.y - p.y) > 1)
+        throw Error("No villager shop in this encounter.");
+      quote(g, m, a.id, a.type === "sell");
+      break;
+    case "open-chest":
+      openChest(g, a.id);
+      break;
+    case "unlock-door":
+      unlockDoor(g, a.id);
+      break;
+    case "dismiss-object":
+      g.pendingChest = undefined;
+      g.pendingDoor = undefined;
+      break;
     case "level": {
       if (!g.pendingLevels) throw Error("No level-up bonus is pending.");
       const allowed = [
@@ -886,12 +1052,54 @@ export function act(input: Game, a: Action): Game {
       break;
     }
     case "move": {
-      if (m || g.pendingLoot)
-        throw Error("Finish the current encounter first.");
+      if (m) throw Error("Finish the current encounter first.");
       if (Math.abs(a.dx) + Math.abs(a.dy) !== 1) throw Error("Invalid move");
+      g.pendingLoot = undefined;
       const x = p.x + a.dx,
         y = p.y + a.dy;
+      if (g.inSecret && x === 32 && y === 7) {
+        const door = g.secretDoors?.find((d) => d.id === g.inSecret)!;
+        p.x = door.x - 1;
+        p.y = door.y;
+        g.inSecret = undefined;
+        if (g.monsters.some((m) => m.x === p.x && m.y === p.y)) {
+          const spots = [];
+          for (let yy = 0; yy < g.tiles.length; yy++)
+            for (let xx = 0; xx < 29; xx++)
+              if (
+                g.tiles[yy][xx] === 0 &&
+                !g.monsters.some((m) => m.x === xx && m.y === yy)
+              )
+                spots.push({ x: xx, y: yy });
+          spots.sort(
+            (a, b) =>
+              Math.abs(a.x - p.x) +
+              Math.abs(a.y - p.y) -
+              Math.abs(b.x - p.x) -
+              Math.abs(b.y - p.y),
+          );
+          if (!spots.length) throw Error("The dungeon exit is blocked.");
+          Object.assign(p, spots[0]);
+        }
+        g.pendingChest = undefined;
+        g.pendingDoor = undefined;
+        monsterTurn(g);
+        log(g, "Returned to the dungeon.");
+        break;
+      }
+      const door = g.secretDoors?.find((d) => d.x === x && d.y === y);
+      if (door) {
+        if (door.unlocked) enterSecret(g, door);
+        else {
+          g.pendingDoor = door.id;
+          log(g, "Secret door: a Rare Key is required.");
+        }
+        break;
+      }
+      const chest = g.chests?.find((c) => !c.opened && c.x === x && c.y === y);
       if (g.tiles[y]?.[x] !== 0) break;
+      g.pendingChest = undefined;
+      g.pendingDoor = undefined;
       const enemy = g.monsters.find((m) => m.x === x && m.y === y);
       if (enemy) {
         g.combat = enemy.id;
@@ -901,11 +1109,16 @@ export function act(input: Game, a: Action): Game {
           engaged: false,
           exchanges: 0,
         };
+        rememberVillager(g, enemy);
         log(g, `Encountered ${enemy.name}.`);
         break;
       }
       p.x = x;
       p.y = y;
+      if (chest) {
+        g.pendingChest = chest.id;
+        log(g, "A chest. Open it or leave it and continue walking.");
+      }
       poison(g);
       if (p.hp <= 0) break;
       const pod = g.pods.find((i) => i.x === x && i.y === y);
@@ -967,7 +1180,11 @@ export function act(input: Game, a: Action): Game {
       const plan = floorEquipPlan(g, i);
       if (plan.problem) throw Error(plan.problem);
       use(g, i);
-      if (plan.leaveOnFloor && plan.replaced) {
+      if (
+        plan.leaveOnFloor &&
+        plan.replaced &&
+        !g.loot.some((l) => l.item.id === plan.replaced!.id)
+      ) {
         g.inventory = g.inventory.filter((a) => a.id !== plan.replaced!.id);
         g.loot.push({ x: p.x, y: p.y, item: plan.replaced });
         log(
@@ -998,9 +1215,51 @@ export function act(input: Game, a: Action): Game {
       g.pendingLoot = undefined;
       break;
     }
+    case "pickup-swap": {
+      const incoming = a.incomingId
+        ? g.loot.find(
+            (l) => l.item.id === a.incomingId && l.x === p.x && l.y === p.y,
+          )?.item
+        : g.pendingLoot;
+      if (
+        !incoming ||
+        !g.loot.some(
+          (l) => l.item.id === incoming.id && l.x === p.x && l.y === p.y,
+        )
+      )
+        throw Error("No item within reach to swap.");
+      if (a.id === incoming.id) {
+        g.pendingLoot = undefined;
+        log(g, "Left " + incoming.name + " on the floor.");
+        break;
+      }
+      const held = p.weapons.length === 1 && p.weapons[0].id === a.id;
+      const dropped =
+        g.inventory.find((i) => i.id === a.id) ||
+        (held ? p.weapons[0] : undefined);
+      if (!dropped)
+        throw Error("Choose a carried item or leave the incoming item.");
+      if (g.inventory.length + Number(p.weapons.length > 0) > g.capacity)
+        throw Error("Resolve bag capacity first.");
+      g.inventory = g.inventory.filter((i) => i.id !== dropped.id);
+      if (held) p.weapons = [];
+      g.loot = g.loot.filter((l) => l.item.id !== incoming.id);
+      g.loot.push({ x: p.x, y: p.y, item: dropped });
+      if (incoming.auto) use(g, incoming);
+      else g.inventory.push(incoming);
+      g.pendingLoot = undefined;
+      log(g, `Picked up ${incoming.name}; left ${dropped.name} here.`);
+      break;
+    }
     case "pickup": {
-      const i = g.pendingLoot;
-      if (!i) break;
+      const i = a.id
+        ? g.loot.find((l) => l.item.id === a.id && l.x === p.x && l.y === p.y)
+            ?.item
+        : g.pendingLoot;
+      if (!i) {
+        if (a.id) throw Error("No item within reach.");
+        break;
+      }
       if (!g.loot.some((l) => l.item.id === i.id && l.x === p.x && l.y === p.y))
         throw Error("That treasure is no longer within reach.");
       if (i.auto) {
@@ -1033,7 +1292,8 @@ export function act(input: Game, a: Action): Game {
         engaged: true,
       };
       g.encounter.exchanges++;
-      if (m.npc) log(g, m.name + ": It did not have to end this way…");
+      if (m.npc || m.merchant)
+        log(g, m.name + ": It did not have to end this way…");
       const first = attackInitiative(p) >= m.stats.Speed;
       if (first) strike(g, p, m, a.unarmed);
       if (m.hp > 0 && p.hp > 0) strike(g, m, p);
@@ -1100,9 +1360,20 @@ export function act(input: Game, a: Action): Game {
         };
       log(g, p.name + " cast " + s.name);
       switch (s.name) {
+        case "Summon":
+          summon(g);
+          break;
+        case "Alchemize": {
+          const gold = 3 + roll(g, 23);
+          p.gold = (p.gold || 0) + gold;
+          log(g, `Alchemized ${gold} gold.`);
+          break;
+        }
         case "Teleport":
           Object.assign(p, position(g));
           g.pendingLoot = undefined;
+          g.pendingChest = undefined;
+          g.pendingDoor = undefined;
           g.combat = undefined;
           g.encounter = undefined;
           log(g, "Teleported to safety.");
@@ -1182,6 +1453,11 @@ export function act(input: Game, a: Action): Game {
       generateFloor(g);
       break;
     case "talk":
+      if (m?.merchant) {
+        rememberVillager(g, m);
+        log(g, m.name + ": " + m.merchant.line);
+        break;
+      }
       if (!m?.npc) throw Error("No NPC");
       log(
         g,
@@ -1192,6 +1468,30 @@ export function act(input: Game, a: Action): Game {
       break;
     case "deal": {
       if (!m?.npc || m.npc.done) throw Error("No available deal");
+      if (m.npc.tribe === "Emperor") {
+        if (m.npc.deal === "Imperial Treasury") {
+          if (p.hp <= 5) throw Error("You need more than 5 HP.");
+          p.hp -= 5;
+          p.gold = (p.gold || 0) + 100;
+        } else if (m.npc.deal === "Crown of Plenty") {
+          if ((p.gold || 0) < 40) throw Error("The crown costs 40 gold.");
+          p.gold! -= 40;
+          const gift = chestReward(g, true);
+          g.loot.push({ x: p.x, y: p.y, item: gift });
+          g.pendingLoot = gift;
+        } else {
+          if (p.stats.Health <= 10)
+            throw Error("You need more than 10 maximum HP.");
+          p.stats.Health -= 10;
+          p.hp = Math.min(p.hp, p.stats.Health);
+          p.stats.Power *= 2;
+          p.stats.Magic *= 2;
+        }
+        m.npc.done = true;
+        g.combat = undefined;
+        log(g, "Imperial bargain complete: " + m.npc.deal);
+        break;
+      }
       switch (m.npc.deal) {
         case "Life":
           heal(m, p.hp);

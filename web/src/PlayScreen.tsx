@@ -1,3 +1,7 @@
+import { dragonArt } from "./dragon-art";
+import { itemLore, rarityInfo } from "../shared/item-lore";
+import { MerchantPanel } from "./MerchantPanel";
+import { worldArt } from "./world-art";
 import React, { useEffect, useRef, useState } from "react";
 import { App as NativeApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
@@ -19,6 +23,11 @@ import {
   floorTheme,
   outgoingDamage,
   freshGameLog,
+  criticalChance,
+  chancePercent,
+  combatBreakdown,
+  retaliationRisk,
+  swipeDirection,
 } from "../shared/presentation";
 import { describe, spells as spellDefinitions } from "../shared/catalog";
 import { DungeonView } from "./DungeonView";
@@ -55,13 +64,14 @@ export function PlayScreen({
     spells =
       g.status === "playing" && !g.pendingLevels ? availableSpells(g) : [];
   const [panel, setPanel] = useState<
-      "stats" | "enemy" | "save" | "help" | "npc" | null
+      "stats" | "enemy" | "save" | "help" | "npc" | "level" | null
     >(null),
     [selection, setSelection] = useState<Selection | null>(null),
     [overview, setOverview] = useState(false),
     [toast, setToast] = useState(""),
     [poisonFlash, setPoisonFlash] = useState(0),
     [trade, setTrade] = useState("");
+  const [swapPickup, setSwapPickup] = useState<Item | null>(null);
   const modal = useRef<HTMLDivElement>(null),
     toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const criticalTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -74,16 +84,28 @@ export function PlayScreen({
     (!ignoreStairs && atStairs) ||
     g.status !== "playing" ||
     !!g.pendingLevels ||
+    !!g.pendingChest ||
+    !!g.pendingDoor ||
     !!g.pendingLoot ||
     !!enemy;
-  const canMove = !context && !busy && !panel && !selection;
+  const canMove =
+    g.status === "playing" &&
+    !g.pendingLevels &&
+    !enemy &&
+    !g.pendingChest &&
+    !g.pendingDoor &&
+    !busy &&
+    !panel &&
+    !selection &&
+    !swapPickup;
   const lootPaused =
     !!g.pendingLoot && !enemy && !g.pendingLevels && g.status === "playing";
   const lootMovementHint =
     lootPaused && !panel && !selection && !busy
-      ? "Item at your feet. Inspect it, or choose Leave & resume to keep moving. The item stays here."
+      ? "Swipe to leave this loot and move. Items stay on the floor."
       : undefined;
   const forecast = enemy ? outgoingDamage(p, enemy) : undefined;
+  const risk = enemy ? retaliationRisk(p, enemy) : undefined;
   const staffInactive =
     p.weapons.some((i) => i.kind === "tome") && p.stats.Mana < 2;
   const [criticalNotice, setCriticalNotice] = useState("");
@@ -111,6 +133,100 @@ export function PlayScreen({
       picked && isGear
         ? equipmentComparison(g, picked, !!selection?.ground)
         : undefined;
+  const activeChest = g.chests?.find((c) => c.id === g.pendingChest);
+  const activeDoor = g.secretDoors?.find((d) => d.id === g.pendingDoor);
+  const inspectedLoot = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!g.pendingLoot) {
+      inspectedLoot.current = undefined;
+      return;
+    }
+    if (
+      g.status === "playing" &&
+      !g.pendingLevels &&
+      inspectedLoot.current !== g.pendingLoot.id
+    ) {
+      inspectedLoot.current = g.pendingLoot.id;
+      setSelection({ item: g.pendingLoot, ground: true });
+    }
+  }, [g.pendingLoot?.id, g.pendingLevels, g.status]);
+  useEffect(() => {
+    if (g.pendingLevels && g.status === "playing") setPanel("level");
+  }, [g.pendingLevels, p.level, g.status]);
+  function levelChoices() {
+    return (
+      <div className="level-choices">
+        {[
+          "Health",
+          "Power",
+          "Luck",
+          "Magic",
+          "EXP",
+          "Accuracy + Speed",
+          ...(p.className === "Knight" && p.level % 3 === 0 ? ["Armor"] : []),
+        ].map((stat) => (
+          <button
+            key={stat}
+            aria-label={stat + (stat === "EXP" ? " +20" : " +2")}
+            onClick={() => void send({ type: "level", stat })}
+          >
+            <b>
+              {stat}
+              {stat === "EXP" ? " +20" : " +2"}
+            </b>
+            <small>
+              {stat === "EXP"
+                ? `${g.xp} → ${g.xp + 20} EXP`
+                : stat === "Accuracy + Speed"
+                  ? `${n(p.stats.Accuracy)} → ${n(p.stats.Accuracy + 2)} accuracy · ${n(p.stats.Speed)} → ${n(p.stats.Speed + 2)} speed`
+                  : `${n(p.stats[stat] || 0)} → ${n((p.stats[stat] || 0) + 2)}`}
+            </small>
+          </button>
+        ))}
+      </div>
+    );
+  }
+  function closeDetails() {
+    setPanel(null);
+    setSwapPickup(null);
+    if ((selection?.ground && g.pendingLoot) || (swapPickup && g.pendingLoot))
+      void send({ type: "ignore" });
+    setSelection(null);
+  }
+  function pickUp() {
+    const incoming =
+      (selection?.ground ? selection.item : undefined) ||
+      g.pendingLoot ||
+      g.loot.find((l) => l.x === p.x && l.y === p.y)?.item;
+    if (!incoming) return;
+    if (
+      !incoming.auto &&
+      g.inventory.length + Number(p.weapons.length > 0) >= g.capacity
+    )
+      setSwapPickup(incoming);
+    else void send({ type: "pickup", id: incoming.id });
+  }
+  const lootPointer = useRef<{
+    x: number;
+    y: number;
+    zone: boolean;
+    outside: boolean;
+  } | null>(null);
+  const swipedLoot = useRef(false);
+  function moveFromLoot(dx: number, dy: number) {
+    if (
+      busy ||
+      panel ||
+      swapPickup ||
+      enemy ||
+      g.pendingLevels ||
+      g.status !== "playing"
+    )
+      return;
+    setSelection(null);
+    setIgnoreStairs(true);
+    void send({ type: "move", dx, dy });
+  }
   const origin = g.encounter?.enemyId === enemy?.id ? g.encounter : undefined;
   function announce(message: string) {
     setToast(message.replace(/\b\d+\.\d{2,}\b/g, (v) => n(Number(v))));
@@ -132,11 +248,29 @@ export function PlayScreen({
     const listener = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).closest("input,textarea,select")) return;
       if (e.key === "Escape") {
-        setPanel(null);
-        setSelection(null);
+        closeDetails();
         return;
       }
-      if (panel || selection) return;
+      if (
+        selection?.ground &&
+        !panel &&
+        !swapPickup &&
+        !enemy &&
+        ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)
+      ) {
+        e.preventDefault();
+        const d = (
+          {
+            ArrowUp: [0, -1],
+            ArrowDown: [0, 1],
+            ArrowLeft: [-1, 0],
+            ArrowRight: [1, 0],
+          } as Record<string, number[]>
+        )[e.key];
+        moveFromLoot(d[0], d[1]);
+        return;
+      }
+      if (panel || selection || swapPickup) return;
       const dirs: Record<string, [number, number]> = {
         ArrowUp: [0, -1],
         ArrowDown: [0, 1],
@@ -181,20 +315,20 @@ export function PlayScreen({
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
-  }, [g, canMove, panel, selection, busy, lootMovementHint]);
+  }, [g, canMove, panel, selection, busy, lootMovementHint, swapPickup]);
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     const h = NativeApp.addListener("backButton", () => {
-      if (selection) setSelection(null);
+      if (selection || swapPickup) closeDetails();
       else if (panel) setPanel(null);
       else setPanel("save");
     });
     return () => {
       void h.then((v) => v.remove());
     };
-  }, [panel, selection]);
+  }, [panel, selection, swapPickup]);
   useEffect(() => {
-    if (!panel && !selection) return;
+    if (!panel && !selection && !swapPickup) return;
     const old = document.activeElement as HTMLElement;
     const box = modal.current;
     box?.querySelector<HTMLElement>(".modal-close")?.focus();
@@ -220,16 +354,34 @@ export function PlayScreen({
       document.removeEventListener("keydown", trap);
       if (old?.isConnected) old.focus();
     };
-  }, [panel, !!selection]);
+  }, [panel, !!selection, swapPickup]);
   async function send(a: Action) {
     if (busy) return;
     clearError();
     const before = g;
     const after = await onAction(a);
     if (!after) return;
-    setSelection(null);
-    if (["deal", "use", "cast", "throw-floor"].includes(a.type)) setPanel(null);
+    const opensLoot =
+      after.status === "playing" &&
+      !after.pendingLevels &&
+      after.pendingLoot &&
+      (after.pendingLoot.id !== before.pendingLoot?.id ||
+        !!before.pendingLevels);
+    setSelection(opensLoot ? { item: after.pendingLoot!, ground: true } : null);
+    setSwapPickup(null);
+    if (after.pendingLevels && after.status === "playing") setPanel("level");
+    else if (
+      a.type === "leave" ||
+      a.type === "level" ||
+      ["deal", "use", "cast", "throw-floor"].includes(a.type)
+    )
+      setPanel(null);
     const entries = freshGameLog(before, after);
+    if (["buy", "quote", "sell"].includes(a.type)) {
+      announce(after.marketNotice || "Trade complete.");
+      return;
+    }
+
     if (entries.some((line) => line.includes("Critical hit!"))) {
       const index = entries.findIndex((line) => line.includes("Critical hit!"));
       setCriticalNotice("CRITICAL HIT! " + (entries[index + 1] || ""));
@@ -238,7 +390,14 @@ export function PlayScreen({
     }
     const moved =
       after.player.x !== before.player.x || after.player.y !== before.player.y;
-    if (a.type === "move" && moved && before.player.effects.Poison) {
+    const curseNotice = entries.find((s) => s.startsWith("CURSED:"));
+    if (curseNotice)
+      announce(
+        [entries.find((line) => line.includes(": “")), curseNotice]
+          .filter(Boolean)
+          .join(" "),
+      );
+    else if (a.type === "move" && moved && before.player.effects.Poison) {
       requestAnimationFrame(() =>
         requestAnimationFrame(() => setPoisonFlash(after.revision)),
       );
@@ -307,23 +466,68 @@ export function PlayScreen({
   const statList = (actor = p) => {
     const stats = combatAttackStats(actor);
     return (
-      <dl className="full-stat-grid">
-        {Object.entries({
-          HP: `${Math.ceil(actor.hp)}/${Math.ceil(actor.stats.Health)}`,
-          Level: n(actor.level),
-          ...Object.fromEntries(
-            Object.entries(actor.stats).map(([k, v]) => [k, n(v)]),
-          ),
-          Attack: n(stats.Attack),
-          "Combat speed": n(stats.Speed),
-          Initiative: n(actor === p ? attackInitiative(p) : actor.stats.Speed),
-        }).map(([label, value]) => (
-          <React.Fragment key={label}>
-            <dt>{label}</dt>
-            <dd>{value}</dd>
-          </React.Fragment>
-        ))}
-      </dl>
+      <>
+        <h3>Combat adjustments</h3>
+        <table className="stats-breakdown">
+          <thead>
+            <tr>
+              <th>Stat</th>
+              <th>Base</th>
+              <th>Effects</th>
+              <th>Gear</th>
+              <th>Now</th>
+            </tr>
+          </thead>
+          <tbody>
+            {combatBreakdown(actor).map((row) => (
+              <tr key={row.stat}>
+                <th>{row.stat}</th>
+                <td>{n(row.base)}</td>
+                <td>
+                  {row.effects > 0 ? "+" : ""}
+                  {n(row.effects)}
+                </td>
+                <td className="gear-adjustment">
+                  {row.gear > 0 ? "+" : ""}
+                  {n(row.gear)}
+                </td>
+                <td>
+                  <b>{n(row.now)}</b>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p>
+          Crit chance: {chancePercent(criticalChance(stats.Luck))} · Basic
+          attacks use{" "}
+          {actor.weapons.some((w) => w.kind === "tome") && actor.stats.Mana >= 2
+            ? "Magic"
+            : "Power"}
+          . Gear includes weight and attack-mode changes.
+        </p>
+        <h3>Base stats</h3>
+        <dl className="full-stat-grid">
+          {Object.entries({
+            ...(actor === p
+              ? {
+                  Gold: n(p.gold || 0),
+                  "Poison immunity": p.poisonImmune ? "Permanent" : "None",
+                }
+              : {}),
+            HP: `${Math.ceil(actor.hp)}/${Math.ceil(actor.stats.Health)}`,
+            Level: n(actor.level),
+            ...Object.fromEntries(
+              Object.entries(actor.stats).map(([k, v]) => [k, n(v)]),
+            ),
+          }).map(([label, value]) => (
+            <React.Fragment key={label}>
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </React.Fragment>
+          ))}
+        </dl>
+      </>
     );
   };
   function equipmentDetails(item: Item) {
@@ -347,8 +551,10 @@ export function PlayScreen({
       </>
     );
   }
-  const ground =
-    g.pendingLoot || g.loot.find((l) => l.x === p.x && l.y === p.y)?.item;
+  const groundPile = g.loot
+    .filter((l) => l.x === p.x && l.y === p.y)
+    .map((l) => l.item);
+  const ground = g.pendingLoot || groundPile[0];
   return (
     <main
       className={
@@ -360,7 +566,10 @@ export function PlayScreen({
       <header className="play-header">
         <b>◈ DUNGEON</b>
         <span className="floor-name">
-          F{g.floor + 1} · {floorTheme(g.floor).name}
+          {g.inSecret
+            ? "Secret chamber"
+            : `F${g.floor + 1} · ${floorTheme(g.floor).name}`}{" "}
+          · ◉ {p.gold || 0} gold
         </span>
         <button onClick={() => setPanel("save")}>
           {isDeviceGame ? "Saved on phone" : "Saved journey"} ●
@@ -413,6 +622,12 @@ export function PlayScreen({
                   : "Unarmed · no weapon"}{" "}
                 · Full stats ⌄
               </small>
+              {p.effects.Curse && (
+                <span className="curse-chip">
+                  CURSE −{n(p.effects.Curse[1])} HP / turn ·{" "}
+                  {p.effects.Curse[0]} turns
+                </span>
+              )}
               {p.effects.Poison && (
                 <span className="poison-chip">
                   POISON −{n(Math.trunc(p.effects.Poison[1]))} HP / step ·{" "}
@@ -455,11 +670,28 @@ export function PlayScreen({
             aria-label="Expand enemy stats"
             onClick={() => setPanel("enemy")}
           >
-            {enemy.npc ? (
+            {enemy.className === "Dragon" ? (
+              <img
+                className="dragon-hud"
+                src={dragonArt().toDataURL()}
+                alt="Red winged serpent dragon"
+              />
+            ) : enemy.merchant || enemy.className === "Ghost" ? (
               <img
                 className="chief-hud"
-                src={sprite("Chieftan", 2, enemy.npc.tribe).toDataURL()}
-                alt={enemy.npc.tribe + " chieftain"}
+                src={worldArt(enemy.className).toDataURL()}
+                alt={enemy.className}
+              />
+            ) : enemy.npc ? (
+              <img
+                className="chief-hud"
+                src={(enemy.npc!.tribe === "Emperor"
+                  ? worldArt("Emperor")
+                  : sprite("Chieftan", 2, enemy.npc!.tribe)
+                ).toDataURL()}
+                alt={
+                  enemy.merchant ? "Villager" : enemy.npc!.tribe + " chieftain"
+                }
               />
             ) : (
               <Portrait type={enemy.className} />
@@ -492,9 +724,17 @@ export function PlayScreen({
           action={lastAction}
           overview={overview}
           movementEnabled={canMove}
-          movementBlockedHint={lootMovementHint}
+          movementBlockedHint={
+            lootMovementHint ||
+            (activeChest
+              ? "Chest ahead. Open it or choose Leave chest to keep exploring."
+              : activeDoor
+                ? "Secret door ahead. Unlock it with a Rare Key, or choose Leave door."
+                : undefined)
+          }
           onMove={(dx, dy) => {
             if (canMove) void send({ type: "move", dx, dy });
+            else if (g.pendingLoot) moveFromLoot(dx, dy);
           }}
           onHint={announce}
         />
@@ -521,20 +761,27 @@ export function PlayScreen({
           <p className="loot-movement-hint" role="status">
             ITEM FOUND · Movement paused
             <br />
-            Choose an item action or Leave &amp; resume below.
+            Swipe to leave the loot and move.
           </p>
         )}
-        {enemy?.npc && (
+        {(enemy?.npc || enemy?.merchant) && (
           <div className="chief-speech" aria-label="Chieftain speech bubble">
             <img
-              alt={enemy.npc.tribe + " chieftain"}
-              src={sprite("Chieftan", 3, enemy.npc.tribe).toDataURL()}
+              alt={
+                enemy.merchant ? "Villager" : enemy.npc!.tribe + " chieftain"
+              }
+              src={(enemy.merchant
+                ? worldArt(enemy.className, 3)
+                : enemy.npc!.tribe === "Emperor"
+                  ? worldArt("Emperor", 3)
+                  : sprite("Chieftan", 3, enemy.npc!.tribe)
+              ).toDataURL()}
             />
             <div>
               <strong>
-                {enemy.name} · {enemy.npc.tribe}
+                {enemy.name} · {enemy.merchant ? "Villager" : enemy.npc!.tribe}
               </strong>
-              <p>“{enemy.npc.line}”</p>
+              <p>“{enemy.merchant?.line || enemy.npc!.line}”</p>
               <button onClick={() => setPanel("npc")}>Discuss trade</button>
             </div>
           </div>
@@ -570,7 +817,10 @@ export function PlayScreen({
         )}
       </section>
       {context && (
-        <section className="play-context">
+        <section
+          className="play-context"
+          aria-hidden={!!selection || !!swapPickup || !!panel}
+        >
           {g.status === "dead" ? (
             <>
               <strong>Your journey ends here · Score {n(g.score)}</strong>
@@ -584,26 +834,7 @@ export function PlayScreen({
           ) : g.pendingLevels ? (
             <>
               <strong>Level {p.level} · choose a bonus</strong>
-              <div className="context-actions">
-                {[
-                  "Health",
-                  "Power",
-                  "Luck",
-                  "Magic",
-                  "EXP",
-                  "Accuracy + Speed",
-                  ...(p.className === "Knight" && p.level % 3 === 0
-                    ? ["Armor"]
-                    : []),
-                ].map((stat) => (
-                  <React.Fragment key={stat}>
-                    {actButton(stat + (stat === "EXP" ? " +20" : " +2"), {
-                      type: "level",
-                      stat,
-                    })}
-                  </React.Fragment>
-                ))}
-              </div>
+              <button onClick={() => setPanel("level")}>Review level up</button>
             </>
           ) : (
             <>
@@ -615,7 +846,9 @@ export function PlayScreen({
                   >
                     <b>Your hit: {forecast?.normal} damage</b>
                     <span>
-                      Crit {forecast?.critical} · Hit {n(forecast?.hit || 0)}%
+                      Crit {chancePercent(forecast?.critChance || 0)} ·{" "}
+                      {forecast?.critical} damage · Hit{" "}
+                      {chancePercent(forecast?.hit || 0)}
                       {staffInactive ? " · STAFF INACTIVE" : ""}
                     </span>
                   </div>
@@ -624,22 +857,33 @@ export function PlayScreen({
                       "turn-order" + (danger?.enemyFirst ? " enemy-first" : "")
                     }
                   >
-                    <b>1 · {danger?.enemyFirst ? enemy.name : "YOU"}</b>
-                    <span>→</span>
-                    <b>2 · {danger?.enemyFirst ? "YOU" : enemy.name}</b>
-                    <small>on Attack · if alive</small>
+                    <b>
+                      First to act: {danger?.enemyFirst ? enemy.name : "You"}
+                    </b>
+                    <small>
+                      {origin?.engaged ? "Next exchange" : "If you attack"}
+                    </small>
                   </div>
-                  {(danger?.lethal || danger?.criticalLethal) && (
+                  {risk?.safeKill && (
+                    <p className="safe-strike">
+                      Guaranteed normal hit defeats this enemy before
+                      retaliation.
+                    </p>
+                  )}
+                  {risk?.warning && (
                     <p className="kill-warning">
-                      ⚠{" "}
-                      {danger.lethal
-                        ? "Next enemy hit can kill you"
-                        : "A critical hit can kill you"}{" "}
-                      · {danger.normal} / crit {danger.critical} damage
+                      ⚠ {risk.warning} · Enemy damage {danger?.normal} / crit{" "}
+                      {danger?.critical}
+                    </p>
+                  )}
+                  {enemy.merchant && (
+                    <p className="kill-warning">
+                      Harming villagers: no loot or EXP. Killing brings a long
+                      curse and a ghost.
                     </p>
                   )}
                   <div className="context-actions">
-                    {enemy.npc && (
+                    {(enemy.npc || enemy.merchant) && (
                       <button
                         className="primary"
                         onClick={() => setPanel("npc")}
@@ -648,10 +892,14 @@ export function PlayScreen({
                       </button>
                     )}
                     {actButton(
-                      enemy.npc ? "Attack chief" : "Attack",
+                      enemy.merchant
+                        ? "Attack villager"
+                        : enemy.npc
+                          ? "Attack chief"
+                          : "Attack",
                       { type: "attack" },
                       false,
-                      enemy.npc ? "" : "primary",
+                      enemy.npc || enemy.merchant ? "" : "primary",
                     )}
                     {actButton(
                       origin?.engaged ? "End encounter" : "Close inspection",
@@ -669,27 +917,93 @@ export function PlayScreen({
                   </div>
                 </>
               )}
-              {!enemy && ground && (
+              {!enemy && ground && !atStairs && (
                 <div className="ground-prompt">
                   <ItemIcon item={ground} />
                   <span>
                     <strong>{ground.name}</strong>
                     <small>Movement paused · choose an action</small>
                   </span>
+                  <button className="primary" onClick={pickUp}>
+                    Pick up
+                  </button>
                   <button
-                    className="primary"
                     onClick={() => setSelection({ item: ground, ground: true })}
                   >
-                    {["weapon", "tome"].includes(ground.kind)
-                      ? "Compare / equip"
-                      : "Inspect / use"}
+                    Inspect
+                  </button>
+                  <button
+                    disabled={
+                      ground.kind === "projectile"
+                        ? adjacentEnemies(g).length === 0
+                        : !["weapon", "tome"].includes(ground.kind) &&
+                          (!canUseFromFloor(ground) ||
+                            !!itemUseProblem(g, ground))
+                    }
+                    title={
+                      itemUseProblem(g, ground) ||
+                      (!canUseFromFloor(ground)
+                        ? "Pick this item up first."
+                        : ground.description)
+                    }
+                    onClick={() =>
+                      ["weapon", "tome", "seismic", "projectile"].includes(
+                        ground.kind,
+                      )
+                        ? setSelection({ item: ground, ground: true })
+                        : void send({ type: "use-floor", id: ground.id })
+                    }
+                  >
+                    Use
                   </button>
                   {actButton("Leave & resume", { type: "ignore" })}
                 </div>
               )}
-              {!enemy && !ground && atStairs && (
+              {activeChest && (
+                <div className="object-prompt">
+                  <strong>
+                    {activeChest.ultra ? "Ultrarare" : "Regular"} chest
+                  </strong>
+                  <small>
+                    {activeChest.locked
+                      ? "Requires a Standard or Rare Key"
+                      : "Unlocked — no key needed"}
+                  </small>
+                  {actButton("Open chest", {
+                    type: "open-chest",
+                    id: activeChest.id,
+                  })}
+                  {actButton("Leave chest", { type: "dismiss-object" })}
+                </div>
+              )}
+              {activeDoor && (
+                <div className="object-prompt">
+                  <strong>Secret door</strong>
+                  <small>A Rare Key opens the hidden chamber.</small>
+                  {actButton("Unlock secret door", {
+                    type: "unlock-door",
+                    id: activeDoor.id,
+                  })}
+                  {actButton("Leave door", { type: "dismiss-object" })}
+                </div>
+              )}
+              {!enemy && atStairs && (
                 <div className="context-actions">
+                  {ground && (
+                    <small>
+                      Loot is on the stairs. You can ascend and leave it behind.
+                    </small>
+                  )}
                   {actButton("Ascend", { type: "ascend" }, false, "primary")}
+                  {ground && (
+                    <button
+                      onClick={() =>
+                        setSelection({ item: ground, ground: true })
+                      }
+                    >
+                      Inspect floor loot
+                    </button>
+                  )}
                   <button onClick={() => setIgnoreStairs(true)}>
                     Keep exploring
                   </button>
@@ -704,18 +1018,23 @@ export function PlayScreen({
           BAG {g.inventory.length + Number(p.weapons.length > 0)}/{g.capacity}
         </span>
         <div className="item-carousel">
-          {!g.pendingLoot && ground && (
+          {groundPile.map((item, index) => (
             <button
+              key={item.id}
               className="item-card ground-card"
-              aria-label={"Ground: " + ground.name}
-              onClick={() => setSelection({ item: ground, ground: true })}
+              aria-label={
+                "Ground: " +
+                item.name +
+                (groundPile.length > 1 ? " · " + (index + 1) : "")
+              }
+              onClick={() => setSelection({ item, ground: true })}
             >
-              <ItemIcon item={ground} />
-              <strong>{ground.name}</strong>
+              <ItemIcon item={item} />
+              <strong>{item.name}</strong>
               <small>AT YOUR FEET</small>
               <em>Inspect ground item</em>
             </button>
-          )}
+          ))}
           {cards.length ? (
             cards.map(({ item, equipped: held }) => {
               const problem = held ? undefined : itemUseProblem(g, item);
@@ -755,9 +1074,11 @@ export function PlayScreen({
                       danger?.criticalLethal) && (
                       <span className="card-cue">HEAL READY</span>
                     )}
-                  {!held && item.kind === "antidote" && p.effects.Poison && (
-                    <span className="card-cue">CURE READY</span>
-                  )}
+                  {!held &&
+                    item.kind === "antidote" &&
+                    (p.effects.Poison || p.effects.Curse) && (
+                      <span className="card-cue">CURE READY</span>
+                    )}
                   {!held &&
                     item.kind === "projectile" &&
                     enemy &&
@@ -795,12 +1116,48 @@ export function PlayScreen({
           </div>
         </section>
       )}
-      {(panel || selection) && (
+      {(panel || selection || swapPickup) && (
         <div
           className="play-backdrop"
+          onPointerDown={(e) => {
+            swipedLoot.current = false;
+            if (
+              !selection?.ground ||
+              enemy ||
+              panel ||
+              swapPickup ||
+              !e.isPrimary ||
+              (e.target as HTMLElement).closest("button,input,select")
+            )
+              return;
+            lootPointer.current = {
+              x: e.clientX,
+              y: e.clientY,
+              zone: !!(e.target as HTMLElement).closest(".loot-swipe-zone"),
+              outside: !(e.target as HTMLElement).closest(".play-modal"),
+            };
+          }}
+          onPointerCancel={() => {
+            lootPointer.current = null;
+          }}
+          onPointerUp={(e) => {
+            const start = lootPointer.current;
+            lootPointer.current = null;
+            if (!start) return;
+            const direction = swipeDirection(
+              e.clientX - start.x,
+              e.clientY - start.y,
+            );
+            if (!direction) return;
+            const box = modal.current;
+            const scrolls = box && box.scrollHeight > box.clientHeight + 2;
+            if (direction.dy && scrolls && !start.zone && !start.outside)
+              return;
+            swipedLoot.current = true;
+            moveFromLoot(direction.dx, direction.dy);
+          }}
           onClick={() => {
-            setPanel(null);
-            setSelection(null);
+            if (!swipedLoot.current) closeDetails();
           }}
         >
           <div
@@ -809,19 +1166,25 @@ export function PlayScreen({
             role="dialog"
             aria-modal="true"
             aria-label={
-              selection
-                ? isGear
-                  ? "Equipment comparison"
-                  : "Item details"
-                : panel === "stats"
-                  ? "Full player stats"
-                  : panel === "enemy"
-                    ? "Enemy stats"
-                    : panel === "npc"
-                      ? "Chieftain dialogue"
-                      : panel === "save"
-                        ? "Saved journey"
-                        : "How to play"
+              swapPickup
+                ? "Bag is full"
+                : selection
+                  ? isGear
+                    ? "Equipment comparison"
+                    : "Item details"
+                  : panel === "stats"
+                    ? "Full player stats"
+                    : panel === "enemy"
+                      ? "Enemy stats"
+                      : panel === "npc"
+                        ? enemy?.merchant
+                          ? "Villager market"
+                          : "Chieftain dialogue"
+                        : panel === "level"
+                          ? "Level up"
+                          : panel === "save"
+                            ? "Saved journey"
+                            : "How to play"
             }
             onClick={(e) => e.stopPropagation()}
           >
@@ -829,8 +1192,7 @@ export function PlayScreen({
               className="modal-close"
               aria-label="Close details"
               onClick={() => {
-                setPanel(null);
-                setSelection(null);
+                closeDetails();
               }}
             >
               ×
@@ -840,10 +1202,99 @@ export function PlayScreen({
                 {error}
               </p>
             )}
-            {picked && selection ? (
+            {swapPickup ? (
               <>
+                <h2>Bag is full</h2>
+                <p>
+                  Choose an item to drop to keep {swapPickup.name}. You can
+                  leave the newly found item instead.
+                </p>
+                <div className="swap-items">
+                  {[
+                    swapPickup,
+                    ...g.inventory,
+                    ...(p.weapons.length === 1 ? p.weapons : []),
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      aria-label={
+                        item.id === swapPickup.id
+                          ? "Leave new item: " + item.name
+                          : p.weapons.some((w) => w.id === item.id)
+                            ? "Drop equipped: " + item.name
+                            : "Drop: " + item.name
+                      }
+                      onClick={() =>
+                        void send({
+                          type: "pickup-swap",
+                          id: item.id,
+                          incomingId: swapPickup.id,
+                        })
+                      }
+                    >
+                      <ItemIcon item={item} />
+                      {item.id === swapPickup.id
+                        ? "Leave new item: "
+                        : p.weapons.some((w) => w.id === item.id)
+                          ? "Drop equipped: "
+                          : "Drop: "}
+                      {item.name}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : picked && selection ? (
+              <>
+                {selection.ground && (
+                  <>
+                    <div className="loot-swipe-zone">
+                      {enemy
+                        ? "Close inspection to return to the encounter"
+                        : "Swipe here to leave loot & move · or use arrow keys"}
+                    </div>
+                    {atStairs && (
+                      <button onClick={() => void send({ type: "ascend" })}>
+                        Ascend · leave floor items
+                      </button>
+                    )}
+                    {groundPile.length > 1 && (
+                      <nav
+                        className="ground-pile"
+                        aria-label="Items at your feet"
+                      >
+                        {groundPile.map((item) => (
+                          <button
+                            key={item.id}
+                            aria-label={"Inspect ground: " + item.name}
+                            aria-pressed={picked.id === item.id}
+                            onClick={() => setSelection({ item, ground: true })}
+                          >
+                            <ItemIcon item={item} />
+                            <span>{item.name}</span>
+                          </button>
+                        ))}
+                      </nav>
+                    )}
+                  </>
+                )}
                 <ItemIcon item={picked} large />
                 <h2>{picked.name}</h2>
+                <span
+                  className={
+                    "rarity-badge rarity-" + rarityInfo(picked.rarity).className
+                  }
+                >
+                  {rarityInfo(picked.rarity).name}
+                </span>
+                <p className="item-lore">
+                  <i>{itemLore(picked)}</i>
+                </p>
+                {picked.uses !== undefined &&
+                  picked.kind === "summon-stone" && (
+                    <p>
+                      {picked.uses} / {picked.maxUses} uses left
+                    </p>
+                  )}
                 {isGear && comparison ? (
                   <>
                     <p className="comparison-intro">
@@ -916,13 +1367,9 @@ export function PlayScreen({
                             !!comparison.problem,
                             "primary",
                           )}
-                      {selection.ground &&
-                        actButton(
-                          "Store in bag",
-                          { type: "pickup" },
-                          g.inventory.length + Number(p.weapons.length > 0) >=
-                            g.capacity,
-                        )}
+                      {selection.ground && (
+                        <button onClick={pickUp}>Pick up</button>
+                      )}
                     </div>
                   </>
                 ) : (
@@ -967,13 +1414,9 @@ export function PlayScreen({
                             !!itemUseProblem(g, picked),
                             "primary",
                           )}
-                        {actButton(
-                          picked.auto ? "Use now" : "Pick up",
-                          { type: "pickup" },
-                          !picked.auto &&
-                            g.inventory.length + Number(p.weapons.length > 0) >=
-                              g.capacity,
-                        )}
+                        <button onClick={pickUp}>
+                          {picked.auto ? "Use now" : "Pick up"}
+                        </button>
                       </>
                     ) : (
                       <>
@@ -1002,6 +1445,32 @@ export function PlayScreen({
                 {selection.ground &&
                   actButton("Leave on floor", { type: "ignore" })}
               </>
+            ) : panel === "level" ? (
+              <>
+                <h2>Level {p.level} · Choose a boost</h2>
+                <p>Current stats and the change from each choice.</p>
+                <div className="level-current-stats">
+                  {[
+                    "Health",
+                    "Power",
+                    "Luck",
+                    "Accuracy",
+                    "Speed",
+                    "Magic",
+                    "Armor",
+                  ].map((stat) => (
+                    <span key={stat}>
+                      <small>{stat}</small>
+                      <b>{n(p.stats[stat] || 0)}</b>
+                    </span>
+                  ))}
+                </div>
+                {levelChoices()}
+                <details>
+                  <summary>Full base and combat stats</summary>
+                  {statList()}
+                </details>
+              </>
             ) : panel === "stats" ? (
               <>
                 <h2>{p.name} · Full stats</h2>
@@ -1009,6 +1478,19 @@ export function PlayScreen({
                   Lv {p.level} {p.className} · XP {n(g.xp)}/100 · Score{" "}
                   {n(g.score)} · Keys {g.keys}
                 </p>
+                {p.poisonImmune && (
+                  <p>POISON IMMUNITY · permanent; curses still affect you.</p>
+                )}
+                {(g.chronicles || []).length > 0 && (
+                  <details>
+                    <summary>
+                      Ashfall stories · {g.chronicles!.length} voices
+                    </summary>
+                    {g.chronicles!.map((line) => (
+                      <p key={line}>{line}</p>
+                    ))}
+                  </details>
+                )}
                 <h3>Equipped</h3>
                 {p.weapons.length ? (
                   p.weapons.map((i) => (
@@ -1077,7 +1559,9 @@ export function PlayScreen({
                           <li key={label}>
                             {label}: {n(value[1])}
                             {label.includes("Booster") ? "%" : ""} · {value[0]}{" "}
-                            calculations remaining
+                            {label === "Curse"
+                              ? "world turns remaining · HP damage per turn; antidotes cure"
+                              : "calculations remaining"}
                           </li>
                         ))}
                     </ul>
@@ -1095,24 +1579,57 @@ export function PlayScreen({
                 <h2>{enemy.name} · Enemy stats</h2>
                 {statList(enemy)}
                 <p>
-                  Enemy damage {danger?.normal} · Critical {danger?.critical}.
-                  Your hit chance {n(Math.min(100, hitRate(p, enemy)))}%.
+                  Enemy damage {danger?.normal} · Critical {danger?.critical} (
+                  {chancePercent(criticalChance(combatAttackStats(enemy).Luck))}
+                  ). Your hit chance {chancePercent(forecast?.hit || 0)}.
                 </p>
                 <p>
-                  Initiative: you {n(attackInitiative(p))}, enemy{" "}
-                  {n(enemy.stats.Speed)}. Higher acts first; ties go to you.
+                  First to act: {danger?.enemyFirst ? enemy.name : "You"} · Your
+                  initiative {n(attackInitiative(p))}, enemy{" "}
+                  {n(enemy.stats.Speed)}.
+                  <br />
+                  {forecast?.hitsToKill === null
+                    ? forecast &&
+                      forecast.critical > 0 &&
+                      forecast.critChance > 0
+                      ? `${Math.ceil(enemy.hp / forecast.critical)} critical hits needed; normal hits deal no damage.`
+                      : "Your basic attacks cannot damage this enemy."
+                    : `${forecast?.hitsToKill} normal ${forecast?.hitsToKill === 1 ? "hit" : "hits"} to defeat this enemy.`}{" "}
+                  {forecast &&
+                    forecast.hitsToKill !== null &&
+                    forecast.critChance > 0 &&
+                    forecast.critical > forecast.normal &&
+                    "Critical hits can shorten this."}
                 </p>
               </>
+            ) : panel === "npc" && enemy?.merchant ? (
+              <MerchantPanel g={g} m={enemy} send={send} />
             ) : panel === "npc" && enemy?.npc ? (
               <>
                 <img
                   className="chief-modal-art"
-                  src={sprite("Chieftan", 4, enemy.npc.tribe).toDataURL()}
-                  alt={enemy.npc.tribe + " chieftain"}
+                  src={(enemy.npc!.tribe === "Emperor"
+                    ? worldArt("Emperor", 4)
+                    : sprite("Chieftan", 4, enemy.npc!.tribe)
+                  ).toDataURL()}
+                  alt={
+                    enemy.merchant
+                      ? "Villager"
+                      : enemy.npc!.tribe + " chieftain"
+                  }
                 />
                 <h2>{enemy.name}</h2>
-                <p className="dialogue-tribe">{enemy.npc.tribe} chieftain</p>
+                <p className="dialogue-tribe">{enemy.npc!.tribe} chieftain</p>
                 <blockquote>{enemy.npc.line}</blockquote>
+                {enemy.npc!.tribe === "Emperor" && (
+                  <p className="action-problem">
+                    {enemy.npc.deal === "Imperial Treasury"
+                      ? "Pay 5 current HP → receive 100 gold"
+                      : enemy.npc.deal === "Crown of Plenty"
+                        ? "Pay 40 gold → receive a rare or ultrarare item"
+                        : "Pay 10 maximum HP → permanently double Power and Magic"}
+                  </p>
+                )}
                 <h3>
                   {enemy.npc.done
                     ? "No further bargains"

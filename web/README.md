@@ -2,6 +2,14 @@
 
 A complete browser-playable port of Shai Goldman's Python dungeon RPG. React 19 + TypeScript provides the interface; PixiJS 8 renders original pixel art; a Node/Express TypeScript server owns the rules, random state, progression, and saves. The Python files in the repository root are unchanged.
 
+## Ashfall expansion · v0.7
+
+Gold, named villagers and the half-remembered apocalypse bring trading to the dungeon. Shops keep their stock, prices, refusals and wanted-item premiums across saves. Villagers are fragile and fast; killing one brings a curse and a delayed ghost instead of rewards.
+
+New loot includes Seismic Shockers, permanent poison immunity, stat doublers, candies and charged Summoner Stones. Wind can Summon strangers; Fire can Alchemize gold. Keys open biased-loot chests and rare border doors into offscreen chambers with treasure, chiefs, an emperor or King Niblet's enormous shop.
+
+Loot opens inspection automatically with a colored rarity badge and authored lore. Closing leaves it safely; full bags offer an atomic drop/swap chooser. Weapons and staves share the same hand limit. Level-up overlays show current stats and the proposed change; measured combat captions stack apart. Base/effects/gear stats, actual critical percentages, hits-to-defeat estimates and first-strike retaliation warnings clarify combat. Pile selection and swipe-away work on ground loot, including stairs. Ruthagor uses an original two-tile red winged serpent sprite. See the [full feature and verification checklist](docs/EXPANSION-V0.7.md).
+
 ## Run
 
 Requires Node 24 and npm. Python 3 with NumPy is needed only for source-parity tests.
@@ -22,7 +30,7 @@ Choose Warrior, Knight, Scout, or Mage and a staff element for the Mage. The hid
 
 Defeat the guardian on each floor to reach the stairs. Floor two has a key carrier and locked stairs. Ruthagor guards floor three. Winning grants 1,000 points and lets you continue to higher floors. Collect gear, items, pods, and spells, gain EXP, choose level-up bonuses, trade with chiefs, or fight them. Combat resolves one exchange per click, allowing the same between-exchange item/spell decisions without a blocking terminal loop.
 
-The **Saved journey** panel provides a private recovery key. Paste it into **Restore a saved journey** on another browser or device. Possession of that key grants control of the save. The browser stores it locally and the server stores only its SHA-256 digest. HTTPS is required in production. Dead journeys remain readable as tombstones; begin another journey to play again. Older journeys remain available through their keys.
+The **Saved journey** panel provides a private recovery key. Paste it into **Restore a saved journey** on another browser or device. Possession of that key grants control of the save. The browser stores it locally and the server stores only its SHA-256 digest. HTTPS is required in production. Dead journeys remain readable as tombstones; begin another journey to play again. Other journeys from this build remain available through their keys. Older test-release save versions are unsupported.
 
 ## Verify
 
@@ -33,6 +41,8 @@ npm run test:python
 npm test
 npm run build
 npm run test:browser
+npm run build:android:web
+npm run test:android:browser
 ```
 
 The suite executes the unchanged Python methods, compares 80 Python-generated class/equipment/hit fixtures, tests 100 generated maps for connectivity and spawn uniqueness, covers the campaign, items, spells, NPCs, server save recovery, stale-write rejection, and actual PostgreSQL SQL through PGlite. The browser smoke test starts an isolated production server, creates a Mage, casts a spell, uses keyboard and touch controls, reloads the save, restores it in a separate browser context, and checks mobile overflow and browser exceptions. It uses system Chromium when available or Playwright's installed Chromium. `CHROMIUM_PATH` overrides the executable.

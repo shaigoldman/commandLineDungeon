@@ -1,0 +1,113 @@
+{
+  "powered": false,
+  "seedsPerBuild": 5,
+  "maxActionsPerGame": 600,
+  "games": 60,
+  "actions": 5181,
+  "rejections": 0,
+  "rejectionReasons": {},
+  "wins": 0,
+  "deaths": 56,
+  "capped": 4,
+  "coverage": {
+    "move": 3958,
+    "attack": 321,
+    "use": 214,
+    "pickup": 200,
+    "flee": 67,
+    "dismiss-object": 46,
+    "drop": 43,
+    "ignore": 185,
+    "level": 4,
+    "unequip": 18,
+    "leave": 39,
+    "cast": 86
+  },
+  "byBuild": {
+    "Warrior/Wind/Normal": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 3,
+      "capped": 2,
+      "highestFloor": 1
+    },
+    "Warrior/Wind/Hard": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 5,
+      "capped": 0,
+      "highestFloor": 1
+    },
+    "Knight/Wind/Normal": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 5,
+      "capped": 0,
+      "highestFloor": 1
+    },
+    "Knight/Wind/Hard": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 4,
+      "capped": 1,
+      "highestFloor": 1
+    },
+    "Scout/Wind/Normal": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 4,
+      "capped": 1,
+      "highestFloor": 1
+    },
+    "Scout/Wind/Hard": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 5,
+      "capped": 0,
+      "highestFloor": 1
+    },
+    "Mage/Wind/Normal": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 5,
+      "capped": 0,
+      "highestFloor": 1
+    },
+    "Mage/Wind/Hard": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 5,
+      "capped": 0,
+      "highestFloor": 1
+    },
+    "Mage/Fire/Normal": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 5,
+      "capped": 0,
+      "highestFloor": 1
+    },
+    "Mage/Fire/Hard": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 5,
+      "capped": 0,
+      "highestFloor": 1
+    },
+    "Mage/Water/Normal": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 5,
+      "capped": 0,
+      "highestFloor": 1
+    },
+    "Mage/Water/Hard": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 5,
+      "capped": 0,
+      "highestFloor": 1
+    }
+  },
+  "findings": {}
+}

@@ -19,6 +19,8 @@ export function violations(g: Game): string[] {
     errors.push("living-player-without-health");
   if (p.stats.Health <= 0 || p.hp > p.stats.Health)
     errors.push("invalid-player-health-bounds");
+  if (!Number.isInteger(p.gold || 0) || (p.gold || 0) < 0)
+    errors.push("invalid-gold-purse");
   if (p.stats.Mana < 0 || p.stats.Mana > 10) errors.push("invalid-mana");
   if (g.monsters.some((m) => m.hp <= 0)) errors.push("unremoved-dead-monster");
   if (
@@ -45,6 +47,8 @@ export function violations(g: Game): string[] {
     ...p.weapons,
     ...g.monsters.flatMap((m) => m.weapons),
     ...g.loot.map((l) => l.item),
+    ...g.monsters.flatMap((m) => m.merchant?.stock.map((s) => s.item) || []),
+    ...(g.chests || []).filter((c) => !c.opened).map((c) => c.reward),
   ];
   if (new Set(owned.map((i) => i.id)).size !== owned.length)
     errors.push("duplicated-item-ownership");
@@ -232,6 +236,20 @@ export function simulate(
             )
               a = { type: "pickup" };
             else a = { type: "ignore" };
+          } else if (g.pendingChest) {
+            a =
+              !g.chests?.find((c) => c.id === g.pendingChest)?.locked ||
+              g.inventory.some((i) => i.kind === "key")
+                ? { type: "open-chest", id: g.pendingChest }
+                : { type: "dismiss-object" };
+          } else if (g.pendingDoor) {
+            a = g.inventory.some((i) => i.kind === "key" && i.value === 2)
+              ? { type: "unlock-door", id: g.pendingDoor }
+              : { type: "dismiss-object" };
+          } else if (g.inSecret && !m) {
+            const chest = g.chests?.find((c) => !c.opened && c.x >= 33);
+            if (chest) a = direction(g, chest.x, chest.y);
+            else a = direction(g, 33, 7) || { type: "move", dx: -1, dy: 0 };
           } else if (m) {
             const potion = g.inventory.find((i) => i.kind === "heal");
             const rope = g.inventory.find((i) => i.kind === "rope");
@@ -239,7 +257,8 @@ export function simulate(
             const damage = spells.find((s) =>
               ["Gust", "Burn", "Annihilate"].includes(s.name),
             );
-            if (m.npc)
+            if (m.merchant) a = { type: "leave" };
+            else if (m.npc)
               a = m.npc.done
                 ? { type: "leave" }
                 : { type: "deal", id: g.inventory[0]?.id };
@@ -318,7 +337,10 @@ export function simulate(
               const target = g.monsters
                 .filter(
                   (m) =>
-                    visible(m.x, m.y) && !m.npc?.done && (m.key || !m.boss),
+                    visible(m.x, m.y) &&
+                    !m.merchant &&
+                    !m.npc?.done &&
+                    (m.key || !m.boss),
                 )
                 .sort(
                   (a, b) =>
@@ -360,6 +382,7 @@ export function simulate(
               }
             }
           }
+          a ??= { type: "wait" };
           report.coverage[a.type] = (report.coverage[a.type] || 0) + 1;
           report.actions++;
           const input = g;
@@ -449,6 +472,7 @@ export function simulate(
   );
   g = newGame("Probe", "Warrior", "Wind", 0, 7);
   const wand = makeItem(g, "Magic Staff");
+  g.hands = 2;
   g.player.weapons.push(wand, { ...wand, id: "second-wand" });
   while (g.inventory.length < 4)
     g.inventory.push(makeItem(g, "Tiny Health Potion"));

@@ -86,6 +86,23 @@ export interface Spell {
 }
 export const spells: Spell[] = [
   {
+    name: "Summon",
+    element: "Wind",
+    cost: 9,
+    req: 25,
+    when: "peace",
+    description:
+      "Summon a nearby stranger: usually a villager, sometimes a chief or monster.",
+  },
+  {
+    name: "Alchemize",
+    element: "Fire",
+    cost: 8,
+    req: 25,
+    when: "peace",
+    description: "Transmute mana into 3–25 gold.",
+  },
+  {
     name: "Teleport",
     element: "Wind",
     cost: 1,
@@ -168,6 +185,28 @@ export const spells: Spell[] = [
   },
 ];
 export const itemDefinitions: [string, string, number, number, string?][] = [
+  ["Candy", "candy", 2, 10],
+  ["Rare Candy", "candy", 7, 35],
+  ["Ultra Candy", "candy", 10, 100],
+  ["Summoner Stone", "summon-stone", 7, 0],
+  ["Seismic Shocker", "seismic", 7, 5],
+  ["Poison Antibody", "immunity", 10, 0],
+  ...["Health", "Power", "Speed", "Luck", "Accuracy", "Magic", "Armor"].map(
+    (s) =>
+      [s + " Doubler", "double", 10, 2, s] as [
+        string,
+        string,
+        number,
+        number,
+        string,
+      ],
+  ),
+  ["1 Gold Coin", "gold", 1, 1],
+  ["5 Gold Coins", "gold", 4, 5],
+  ["10 Gold Coins", "gold", 7, 10],
+  ["20 Gold Coins", "gold", 10, 20],
+  ["Standard Key", "key", 4, 1],
+  ["Rare Key", "key", 7, 2],
   ["Tiny Health Potion", "heal", 1, 5],
   ["Small Health Potion", "heal", 1, 10],
   ["Medium Health Potion", "heal", 3, 15],

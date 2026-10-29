@@ -63,3 +63,11 @@ After the fractional-HP and teleport/ground-action changes, a fresh ordinary-pol
 ```sh
 SIM_SEEDS=5 SIM_STEPS=600 SIM_REPORT=work/simulation-v6.json npm run simulate
 ```
+
+## v0.7 Ashfall follow-up
+
+The current-build ordinary policy ran 60 games (five seeds per build) for 5,181 actions with zero rejected actions and zero invariant violations. Results were 56 deaths, four action-cap stops and no victories. This is not a game-balance or expert-play claim. The invariant checker now includes gold bounds, merchant stock ownership and unopened chest rewards. Deterministic mechanics/API/browser playthroughs separately exercise all expansion features. Raw aggregates: [simulation-v7.json](simulation-v7.json).
+
+```sh
+SIM_SEEDS=5 SIM_STEPS=600 SIM_REPORT=work/simulation-v7-final.json npm run simulate
+```

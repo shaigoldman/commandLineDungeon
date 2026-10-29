@@ -29,6 +29,11 @@ export interface Actor {
   y: number;
   level: number;
   poison?: [number, number];
+  poisonImmune?: boolean;
+  gold?: number;
+  curseChance?: number;
+  spawnTurn?: number;
+  merchant?: Merchant;
   drain?: boolean;
   boss?: boolean;
   key?: boolean;
@@ -39,6 +44,34 @@ export interface Actor {
     line: string;
     acceptsNoWeapon?: boolean;
   };
+}
+export interface Merchant {
+  stock: { item: Item; price: number }[];
+  buyPrices: Record<string, number | null>;
+  dislikes: string[];
+  taste: number;
+  wanted?: string;
+  premium: number;
+  line: string;
+  refusal: string;
+  king?: boolean;
+}
+export interface Chest {
+  id: string;
+  x: number;
+  y: number;
+  locked: boolean;
+  ultra: boolean;
+  opened: boolean;
+  reward: Item;
+}
+export interface SecretDoor {
+  id: string;
+  x: number;
+  y: number;
+  unlocked: boolean;
+  outcome: string;
+  roomMade?: boolean;
 }
 export interface Game {
   version: 1;
@@ -73,6 +106,14 @@ export interface Game {
   status: "playing" | "dead" | "won";
   log: string[];
   logSerial?: number;
+  chests?: Chest[];
+  secretDoors?: SecretDoor[];
+  pendingChest?: string;
+  pendingDoor?: string;
+  haunting?: { x: number; y: number; due: number; name: string }[];
+  inSecret?: string;
+  chronicles?: string[];
+  marketNotice?: string;
   revision: number;
 }
 export type Action =
@@ -84,14 +125,20 @@ export type Action =
         | "wait"
         | "ascend"
         | "continue"
-        | "pickup"
         | "ignore"
         | "talk";
     }
   | { type: "use-floor" | "equip-floor"; id?: string }
+  | { type: "pickup"; id?: string }
+  | { type: "pickup-swap"; id: string; incomingId?: string }
   | { type: "throw-floor"; id: string; target: string }
   | { type: "attack"; unarmed?: boolean }
   | { type: "use" | "drop" | "unequip"; id: string }
   | { type: "deal"; id?: string }
   | { type: "cast"; spell: string }
-  | { type: "level"; stat: string };
+  | { type: "level"; stat: string }
+  | {
+      type: "buy" | "quote" | "sell" | "open-chest" | "unlock-door";
+      id: string;
+    }
+  | { type: "dismiss-object" };

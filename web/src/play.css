@@ -1203,3 +1203,236 @@ body.playing-game {
     flex-basis: 25px;
   }
 }
+.curse-chip {
+  display: block;
+  color: #f3b3f7;
+  background: #50334f;
+  font-size: 9px;
+  padding: 2px 4px;
+  border: 1px solid #b77ac3;
+}
+.gold-purse {
+  color: #f3d786;
+  font-weight: bold;
+}
+.market-stock {
+  display: grid;
+  gap: 7px;
+}
+.market-offer {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 7px;
+  border: 1px solid #5d7174;
+  background: #20343d;
+}
+.market-offer img {
+  width: 38px;
+  height: 38px;
+  image-rendering: pixelated;
+}
+.market-offer span {
+  flex: 1;
+  min-width: 0;
+}
+.market-offer small,
+.market-offer em {
+  display: block;
+  font-size: 11px;
+}
+.market-offer em,
+.wanted-item {
+  color: #f0d585;
+}
+.market-offer button {
+  max-width: 110px;
+  font-size: 11px;
+}
+.market-notice {
+  border: 1px solid #cfb977;
+  padding: 8px;
+  color: #f4dda7;
+}
+.swap-items {
+  display: grid;
+  gap: 7px;
+}
+.swap-items button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  min-height: 48px;
+}
+.swap-items img {
+  width: 36px;
+  height: 36px;
+}
+.object-prompt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.object-prompt small {
+  flex-basis: 100%;
+  color: #d7c89c;
+}
+.ground-prompt {
+  flex-wrap: wrap;
+}
+.ground-prompt > span {
+  min-width: 110px;
+}
+@media (max-width: 420px) {
+  .ground-prompt button {
+    flex: 1;
+    min-height: 34px;
+  }
+  .ground-prompt > span {
+    flex-basis: calc(100% - 44px);
+  }
+}
+.market-tabs {
+  display: flex;
+  gap: 5px;
+  position: sticky;
+  top: 0;
+  background: #192c37;
+  padding: 5px 0;
+  z-index: 2;
+}
+.market-tabs button {
+  flex: 1;
+  font-size: 11px;
+}
+.market-tabs button[aria-pressed="true"] {
+  border-color: #dfc57c;
+  color: #f5dda0;
+  background: #534a32;
+}
+.rarity-badge {
+  display: inline-block;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  padding: 3px 8px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  font-weight: bold;
+}
+.rarity-common {
+  color: #dfd6b8;
+  background: #353f3c;
+}
+.rarity-uncommon {
+  color: #b4e6b0;
+  background: #294d3b;
+}
+.rarity-rare {
+  color: #a9d8ff;
+  background: #294966;
+}
+.rarity-ultra {
+  color: #e7c2ff;
+  background: #50365f;
+}
+.item-lore {
+  color: #d6c7a4;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.level-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.level-choices button {
+  text-align: left;
+  padding: 10px;
+}
+.level-choices small {
+  display: block;
+  font-size: 11px;
+  color: #c3d2c7;
+  margin-top: 4px;
+}
+.stats-breakdown {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.stats-breakdown th,
+.stats-breakdown td {
+  padding: 7px 4px;
+  border-bottom: 1px solid #53696c;
+  text-align: right;
+}
+.stats-breakdown th:first-child {
+  text-align: left;
+}
+.gear-adjustment {
+  color: #ebcf8e;
+  background: #51472c66;
+}
+.safe-strike {
+  color: #b7e5b2;
+  font-size: 11px;
+  margin: 4px 0;
+}
+.loot-swipe-zone {
+  touch-action: none;
+  padding: 12px 35px 12px 8px;
+  margin-bottom: 12px;
+  border: 1px dashed #c0ab73;
+  background: #273f45;
+  color: #f1dcaa;
+  font-size: 11px;
+  user-select: none;
+}
+.ground-pile {
+  display: flex;
+  overflow-x: auto;
+  gap: 7px;
+  padding: 5px 0 12px;
+}
+.ground-pile button {
+  min-width: 105px;
+  max-width: 140px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ground-pile img {
+  width: 28px;
+  height: 28px;
+}
+.ground-pile button[aria-pressed="true"] {
+  border: 2px solid #e8d18b;
+}
+.dragon-hud {
+  width: 72px;
+  height: 48px;
+  image-rendering: pixelated;
+  object-fit: contain;
+}
+.level-current-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+  margin: 10px 0;
+}
+.level-current-stats span {
+  display: flex;
+  flex-direction: column;
+  padding: 7px;
+  border: 1px solid #627574;
+}
+.level-current-stats small {
+  font-size: 10px;
+  color: #d1c99c;
+}
+.level-current-stats b {
+  font-size: 17px;
+}

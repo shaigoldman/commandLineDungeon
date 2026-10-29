@@ -2,6 +2,7 @@ import type { Actor, Game, Item } from "./types";
 import {
   attackInitiative,
   combatAttackStats,
+  attackStats,
   hitRate,
   floorEquipPlan,
   itemUseProblem,
@@ -24,11 +25,14 @@ export function equipmentComparison(g: Game, item: Item, ground = false) {
   const alreadyEquipped = g.player.weapons.some((w) => w.id === item.id);
   const replaced =
     !alreadyEquipped &&
-    item.kind === "weapon" &&
+    ["weapon", "tome"].includes(item.kind) &&
     after.weapons.length >= g.hands
       ? after.weapons.shift()
       : undefined;
-  if (!alreadyEquipped) after.weapons.push(item);
+  if (!alreadyEquipped) {
+    while (after.weapons.length >= g.hands) after.weapons.shift();
+    after.weapons.push(item);
+  }
   const afterStats = combatAttackStats(after),
     enemy = g.monsters.find((m) => m.id === g.combat);
   const problem = alreadyEquipped
@@ -41,6 +45,11 @@ export function equipmentComparison(g: Game, item: Item, ground = false) {
     before: beforeStats[name],
     after: afterStats[name],
   }));
+  rows.push({
+    name: "Crit chance %",
+    before: criticalChance(beforeStats.Luck),
+    after: criticalChance(afterStats.Luck),
+  });
   rows.push({
     name: "Initiative",
     before: attackInitiative(g.player),
@@ -60,8 +69,8 @@ export function equipmentComparison(g: Game, item: Item, ground = false) {
     });
     rows.push({
       name: "Hit chance %",
-      before: Math.min(100, hitRate(g.player, enemy)),
-      after: Math.min(100, hitRate(after, enemy)),
+      before: outgoingDamage(g.player, enemy).hit,
+      after: outgoingDamage(after, enemy).hit,
     });
   }
   return {
@@ -122,14 +131,90 @@ export function adjacentEnemies(g: Game) {
       (!g.combat || g.combat === m.id),
   );
 }
+export function criticalChance(luck: number) {
+  const threshold = 1 - Math.min(0.7, Math.max(0, luck) * 0.01);
+  return (1 - threshold + threshold * Math.log(threshold)) * 100;
+}
 export function outgoingDamage(player: Actor, enemy: Actor) {
-  const s = combatAttackStats(player),
-    armor = Math.max(0, enemy.stats.Armor || 0);
+  const actor = structuredClone(player),
+    defender = structuredClone(enemy);
+  const s = combatAttackStats(actor, true),
+    physical = actor.weapons.some((w) => w.kind === "weapon");
+  const h = attackStats(actor, true, physical, false),
+    e = attackStats(defender, true, defender.weapons.length > 0, false);
+  const normal = Math.max(
+    0,
+    Math.trunc(s.Attack - Math.max(0, enemy.stats.Armor || 0)),
+  );
   return {
-    normal: Math.max(0, Math.trunc(s.Attack - armor)),
-    critical: Math.max(0, Math.trunc(s.Attack * (s.Luck > 0 ? 3 : 1) - armor)),
-    hit: Math.min(100, hitRate(player, enemy)),
+    normal,
+    critical: Math.max(
+      0,
+      Math.trunc(
+        s.Attack * (s.Luck > 0 ? 3 : 1) - Math.max(0, enemy.stats.Armor || 0),
+      ),
+    ),
+    hit: Math.min(100, Math.max(40, h.Accuracy + h.Speed - e.Speed * 1.2)),
+    critChance: criticalChance(s.Luck),
+    hitsToKill: normal > 0 ? Math.ceil(enemy.hp / normal) : null,
   };
+}
+export function retaliationRisk(player: Actor, enemy: Actor) {
+  const forecast = outgoingDamage(player, enemy),
+    incoming = Math.max(
+      0,
+      Math.trunc(
+        combatAttackStats(enemy).Attack - Math.max(0, player.stats.Armor || 0),
+      ),
+    );
+  const crit = Math.max(
+    0,
+    Math.trunc(
+      combatAttackStats(enemy).Attack *
+        (combatAttackStats(enemy).Luck > 0 ? 3 : 1) -
+        Math.max(0, player.stats.Armor || 0),
+    ),
+  );
+  const first = attackInitiative(player) >= enemy.stats.Speed,
+    kill = forecast.normal >= enemy.hp;
+  if (first && kill && forecast.hit >= 100)
+    return { warning: undefined, safeKill: true, conditionalMiss: false };
+  if (incoming < player.hp && crit < player.hp)
+    return { warning: undefined, safeKill: false, conditionalMiss: false };
+  const conditionalMiss = first && kill;
+  const hit = incoming >= player.hp ? "Enemy hit" : "Enemy critical hit";
+  return {
+    warning: conditionalMiss
+      ? `${hit} can kill you if you miss.`
+      : first && forecast.critical >= enemy.hp && forecast.critChance > 0
+        ? `${hit} can kill you if your strike does not finish them.`
+        : `${hit} can kill you${first ? "" : "; they act first"}.`,
+    safeKill: false,
+    conditionalMiss,
+  };
+}
+export function combatBreakdown(actor: Actor) {
+  const magical =
+    actor.weapons.some((w) => w.kind === "tome") && actor.stats.Mana >= 2;
+  const base = {
+    Attack: actor.stats.Power,
+    Accuracy: actor.stats.Accuracy,
+    Speed: actor.stats.Speed,
+    Luck: actor.stats.Luck,
+  };
+  const boosted = attackStats(actor, false, false, magical),
+    now = combatAttackStats(actor);
+  return Object.entries(base).map(([stat, value]) => {
+    const modeBase = stat === "Attack" && magical ? actor.stats.Magic : value;
+    const effects = boosted[stat] - modeBase;
+    return {
+      stat,
+      base: value,
+      effects,
+      gear: now[stat] - value - effects,
+      now: now[stat],
+    };
+  });
 }
 export function freshLog(before: string[], after: string[]) {
   for (
@@ -148,4 +233,36 @@ export function freshGameLog(before: Game, after: Game) {
     return count > 0 ? after.log.slice(-Math.min(count, after.log.length)) : [];
   }
   return freshLog(before.log, after.log);
+}
+
+export interface LabelBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+/** Canvas-space collision avoidance; all labels subsequently float at the same speed. */
+export function placeCombatLabel(
+  existing: LabelBox[],
+  desired: LabelBox,
+): LabelBox {
+  const placed = { ...desired };
+  for (let n = 0; n <= existing.length; n++) {
+    const overlaps = existing.filter(
+      (b) =>
+        placed.x < b.x + b.width + 5 &&
+        placed.x + placed.width + 5 > b.x &&
+        placed.y < b.y + b.height + 5 &&
+        placed.y + placed.height + 5 > b.y,
+    );
+    if (!overlaps.length) return placed;
+    placed.y = Math.min(...overlaps.map((b) => b.y)) - placed.height - 6;
+  }
+  return placed;
+}
+
+export function chancePercent(percent: number) {
+  if (percent >= 100) return "100%";
+  if (percent > 0 && percent < 0.1) return "<0.1%";
+  return `${Math.min(99.9, Math.round(percent * 10) / 10)}%`;
 }

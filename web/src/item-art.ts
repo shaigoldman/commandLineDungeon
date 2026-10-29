@@ -25,6 +25,10 @@ export function itemArtKey(item: Pick<Item, "kind" | "name" | "element">) {
           ? "javelin"
           : "knife";
   if (item.kind === "tome") return "staff-" + (item.element || "Mystery");
+  if (item.kind === "candy") return "candy-" + item.name;
+  if (item.kind === "double") return "double-" + item.name.split(" ")[0];
+  if (item.kind === "gold" || item.kind === "key")
+    return item.kind + "-" + item.name;
   return item.kind;
 }
 export function itemCanvas(
@@ -293,6 +297,80 @@ export function itemCanvas(
     for (let n = 0; n < 13; n++)
       r(8 + n, 22 - n, 3, 3, n < 7 ? "#d77986" : shine);
     r(9, 22, 2, 1, "#f6bcbd");
+  } else if (key.startsWith("candy-")) {
+    const color =
+      item.name === "Ultra Candy"
+        ? "#c49bea"
+        : item.name === "Rare Candy"
+          ? "#8bcfe4"
+          : "#e6a5a1";
+    r(3, 11, 7, 10, dark);
+    r(22, 11, 7, 10, dark);
+    r(4, 12, 5, 8, color);
+    r(23, 12, 5, 8, color);
+    r(9, 8, 14, 17, dark);
+    r(10, 9, 12, 14, color);
+    r(12, 10, 3, 10, shine);
+    r(17, 11, 2, 9, shine);
+  } else if (key === "summon-stone") {
+    r(8, 3, 16, 25, dark);
+    r(10, 4, 12, 22, "#778d9d");
+    r(11, 5, 4, 7, "#bacbd0");
+    r(15, 9, 3, 14, "#b7e7cf");
+    r(11, 15, 10, 3, "#b7e7cf");
+    r(19, 20, 3, 6, "#3e5667");
+  } else if (key.startsWith("gold-")) {
+    r(7, 8, 18, 18, dark);
+    r(8, 7, 16, 18, "#b68642");
+    r(10, 8, 12, 15, "#eac66b");
+    r(11, 9, 9, 2, "#fff0af");
+    r(15, 11, 3, 10, "#a6743f");
+    r(12, 14, 9, 3, "#a6743f");
+    if (item.name !== "1 Gold Coin") {
+      r(4, 22, 21, 3, "#8d6039");
+      r(5, 21, 21, 2, "#f0d382");
+    }
+  } else if (key.startsWith("key-")) {
+    const color = item.name.startsWith("Rare") ? "#cf9bf2" : "#dfcb85";
+    r(6, 4, 12, 12, dark);
+    r(8, 5, 8, 9, color);
+    r(10, 7, 4, 5, dark);
+    r(14, 13, 4, 15, color);
+    r(18, 21, 6, 3, color);
+    r(18, 25, 5, 3, color);
+  } else if (key === "seismic") {
+    r(9, 3, 14, 23, dark);
+    r(11, 4, 10, 21, "#a48767");
+    r(13, 5, 6, 4, "#e9d5a2");
+    r(14, 12, 4, 7, "#f6ba65");
+    r(4, 14, 5, 2, "#f2d28b");
+    r(24, 14, 5, 2, "#f2d28b");
+    r(5, 22, 5, 3, "#ba805a");
+    r(23, 22, 5, 3, "#ba805a");
+  } else if (key === "immunity") {
+    r(9, 5, 14, 22, dark);
+    r(11, 7, 10, 17, "#c1e8b8");
+    r(13, 3, 6, 5, "#d8c697");
+    r(14, 11, 4, 11, "#457d62");
+    r(11, 15, 10, 3, "#457d62");
+    r(12, 8, 2, 5, "#f1f5d7");
+  } else if (key.startsWith("double-")) {
+    const colors: Record<string, string> = {
+      Health: "#e5948c",
+      Power: "#eab578",
+      Speed: "#8edfc1",
+      Luck: "#c7d377",
+      Accuracy: "#bdd8ed",
+      Magic: "#c7a4e5",
+      Armor: "#b4c2d1",
+    };
+    r(5, 4, 22, 24, dark);
+    r(7, 5, 18, 21, colors[key.slice(7)] || shine);
+    r(10, 8, 10, 3, dark);
+    r(18, 10, 3, 6, dark);
+    r(11, 15, 9, 3, dark);
+    r(9, 17, 3, 5, dark);
+    r(9, 21, 13, 3, dark);
   } else {
     r(8, 6, 17, 22, dark);
     r(9, 7, 15, 19, "#c5c7b4");

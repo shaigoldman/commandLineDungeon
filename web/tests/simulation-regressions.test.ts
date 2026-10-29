@@ -40,7 +40,7 @@ describe("simulation regressions", () => {
     const nuke = makeItem(g, "Nuke");
     g.inventory.push(nuke);
     g.player.effects["Nuke Shield"] = [1, 1];
-    const count = g.monsters.length;
+    const count = g.monsters.filter((m) => !m.merchant).length;
     g = act(g, { type: "use", id: nuke.id });
     expect(g.status).toBe("playing");
     expect(g.monsters).toHaveLength(0);
@@ -57,6 +57,7 @@ describe("simulation regressions", () => {
     g.hands = 2;
     const a = makeItem(g, "Sword"),
       b = makeItem(g, "Magic Staff");
+    g.hands = 2;
     g.player.weapons = [a, b];
     while (g.inventory.length < 4)
       g.inventory.push(makeItem(g, "Tiny Health Potion"));

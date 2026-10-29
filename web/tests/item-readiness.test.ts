@@ -51,7 +51,7 @@ describe("attack order and item readiness", () => {
   it("makes antidotes ready only when poisoned and explains unresolved level choices", () => {
     const g = newGame("Shai", "Scout", "Wind", 0, 91),
       i = makeItem(g, "Poison Antidote");
-    expect(itemUseProblem(g, i)).toBe("You are not poisoned.");
+    expect(itemUseProblem(g, i)).toBe("You have no poison or curse.");
     g.player.effects.Poison = [3, 1];
     expect(itemUseProblem(g, i)).toBeUndefined();
     g.pendingLevels = 1;

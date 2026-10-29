@@ -40,8 +40,8 @@ describe("source mechanics", () => {
     expect(attackStats(g.player, true).Attack).toBe(15);
     expect(g.player.effects["Attack Booster"]).toBeUndefined();
   });
-  it("preserves item roster and all ten spells", () => {
-    expect(spells).toHaveLength(10);
+  it("preserves the original roster and extends it with Ashfall content", () => {
+    expect(spells).toHaveLength(12);
     for (const d of itemDefinitions) {
       const i = makeItem(game(), d[0]);
       expect(i.id).toBeTruthy();
@@ -63,10 +63,17 @@ describe("source mechanics", () => {
       }
       expect(seen.size).toBe(g.tiles.flat().filter((t) => !t).length);
       expect(seen.has(g.stairs.x + "," + g.stairs.y)).toBe(true);
-      expect(g.monsters).toHaveLength(19);
-      const occupied = [g.player, ...g.monsters, ...g.loot, ...g.pods].map(
-        (p) => p.x + "," + p.y,
-      );
+      expect(g.monsters.filter((m) => !m.merchant)).toHaveLength(19);
+      expect(
+        g.monsters.filter((m) => m.merchant).length,
+      ).toBeGreaterThanOrEqual(1);
+      const occupied = [
+        g.player,
+        ...g.monsters,
+        ...g.loot,
+        ...g.pods,
+        ...(g.chests || []),
+      ].map((p) => p.x + "," + p.y);
       expect(new Set(occupied).size).toBe(occupied.length);
     }
   });
@@ -310,7 +317,11 @@ it("plays a generated campaign through real moves, fights, keys, and stairs", ()
   };
   for (let floor = 0; floor < 3; floor++) {
     const carrier = g.monsters.find((m) => m.key);
-    if (carrier) go(carrier.x, carrier.y);
+    for (let retry = 0; carrier && !g.keys && retry < 30; retry++) {
+      const current = g.monsters.find((m) => m.key);
+      if (current) go(current.x, current.y);
+    }
+    if (carrier) expect(g.keys).toBeGreaterThan(0);
     const stair = { ...g.stairs };
     go(stair.x, stair.y);
     g = act(g, { type: "ascend" });

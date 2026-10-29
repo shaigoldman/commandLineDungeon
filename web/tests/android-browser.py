@@ -12,7 +12,7 @@ def load(page,name):
  page.evaluate('''game=>{const k=Object.keys(localStorage).find(k=>k.endsWith('dungeon.android.saves.v1'));const all=JSON.parse(localStorage.getItem(k));all.games[localStorage.getItem('dungeon-key')]=game;localStorage.setItem(k,JSON.stringify(all));}''',fixtures[name]);page.reload();page.wait_for_selector('canvas');expect(page.locator('.inventory-ribbon')).to_be_visible()
 def visible(page,name):
  b=page.get_by_role('button',name=name,exact=True);expect(b).to_be_visible()
- if b.evaluate("el=>!!el.closest('.item-carousel,.spell-carousel')"):b.scroll_into_view_if_needed();page.wait_for_timeout(80)
+ if b.evaluate("el=>!!el.closest('.item-carousel,.spell-carousel,.play-modal')"):b.scroll_into_view_if_needed();page.wait_for_timeout(80)
  r=b.bounding_box();assert r['y']>=0 and r['y']+r['height']<=page.evaluate('innerHeight')+1,(name,r)
  assert b.evaluate('''el=>{const r=el.getBoundingClientRect();const h=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return h===el||el.contains(h);}'''),('Obscured',name,r)
  return b
@@ -45,8 +45,9 @@ try:
   page.route('**/*',route);page.goto('http://127.0.0.1:3191');page.get_by_placeholder('Adventurer').fill('Android Shai');page.get_by_role('button',name='Mage',exact=False).tap();page.get_by_role('button',name='Enter the dungeon').tap();page.wait_for_selector('canvas')
   visible(page,'Cast Teleport · 1 MP').tap();expect(page.locator('.hero-vitals')).to_contain_text('9/10');page.reload();page.wait_for_selector('canvas');expect(page.locator('.player-panel')).to_contain_text('Android Shai')
   cases=[] if os.environ.get('MOBILE_SKIP_MATRIX') else [(320,480),(360,560),(390,760),(430,915),(844,390)]
-  scenes=[('swipe','Wait'),('poisonMove','Wait'),('staffLow','Attack'),('staffEmpty','Attack'),('combat','Attack'),('enemyInitiated','Attack'),('floorWeapon','Compare / equip'),('floorSwap','Compare / equip'),('groundThrow','Inspect / use'),('groundTeleport','Ground item'),('npcTalk','Talk / trade'),('level','Power +2'),('dead','Begin a new journey'),('won','Continue exploring'),('stairs','Ascend'),('moss','Wait'),('ice','Wait'),('ember','Wait')]
-  if os.environ.get('MOBILE_LOOT_ONLY'):scenes=[('lootPaused','Leave & resume'),('floorWeapon','Compare / equip'),('floorSwap','Compare / equip')]
+  scenes=[('swipe','Wait'),('poisonMove','Wait'),('staffLow','Attack'),('staffEmpty','Attack'),('combat','Attack'),('enemyInitiated','Attack'),('floorWeapon','Confirm equip from ground'),('floorSwap','Equip & leave old gear here'),('groundThrow','Throw at Zombie'),('groundTeleport','Use once & teleport'),('npcTalk','Talk / trade'),('level','Power +2'),('dead','Begin a new journey'),('won','Continue exploring'),('stairs','Ascend'),('moss','Wait'),('ice','Wait'),('ember','Wait')]
+  if os.environ.get('MOBILE_LOOT_ONLY'):scenes=[('lootPaused','Use from floor'),('floorWeapon','Confirm equip from ground'),('floorSwap','Equip & leave old gear here')]
+  if os.environ.get('MOBILE_EXPANSION_ONLY'):scenes=[('market','Talk / trade'),('fullLoot','Pick up'),('lockedChest','Open chest'),('secretDoor','Unlock secret door'),('chamber','Wait'),('emperor','Talk / trade'),('king','Talk / trade'),('curse','Wait')]
   for width,height in cases:
    page.set_viewport_size({'width':width,'height':height});print(f'Checking {width}x{height}',flush=True)
    for scene,action in scenes:
@@ -56,23 +57,17 @@ try:
   page.set_viewport_size({'width':390,'height':760});load(page,'swipe');assert page.locator('.magic-ribbon').count()==0;before=saved(page);swipe_map(page,65,0);page.wait_for_timeout(250);after=saved(page);assert after['player']['x']==before['player']['x']+1 and after['turn']==before['turn']+1
   visible(page,'Wait').tap();page.wait_for_timeout(100);assert saved(page)['turn']==after['turn']+1;swipe_map(page,-60,0);page.wait_for_timeout(150);assert saved(page)['player']['x']==before['player']['x']
   for overview in [False,True]:
-   load(page,'lootPaused')
-   if overview:visible(page,'Overview').tap();page.wait_for_timeout(200)
-   expect(page.get_by_role('status')).to_contain_text('Movement paused');visible(page,'Leave & resume');fits(page);before=saved(page)
-   page.screenshot(path=str(root/f'work/loot-paused-{overview}.png'))
-   box=page.locator('canvas').bounding_box();x=box['x']+box['width']/2;y=box['y']+box['height']/2
-   touch=context.new_cdp_session(page)
-   touch.send('Input.dispatchTouchEvent',{'type':'touchStart','touchPoints':[{'x':x,'y':y}]})
-   touch.send('Input.dispatchTouchEvent',{'type':'touchMove','touchPoints':[{'x':x+65,'y':y}]})
-   touch.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]});touch.detach()
-   expect(page.locator('.play-toast')).to_contain_text('The item stays here');assert saved(page)['revision']==before['revision']
-   page.locator('canvas').focus();page.keyboard.press('ArrowRight');assert saved(page)['revision']==before['revision']
-   visible(page,'Leave & resume').tap();expect(page.locator('.loot-movement-hint')).to_have_count(0)
-   swipe_map(page,65,0);page.wait_for_timeout(250);after=saved(page)
-   assert after['player']['x']==before['player']['x']+1 and after['turn']==before['turn']+1
-   assert after['loot']==before['loot'];assert after['inventory']==before['inventory']
+   load(page,'lootAhead')
+   if overview:visible(page,'Overview').tap();page.wait_for_timeout(150)
+   before=saved(page);swipe_map(page,65,0);expect(page.get_by_role('dialog',name='Item details')).to_be_visible()
+   expect(page.locator('.rarity-badge')).to_contain_text('Common');expect(page.locator('.item-lore i')).to_be_visible()
+   during=saved(page)
+   if overview:page.keyboard.press('ArrowRight');page.wait_for_timeout(150)
+   else:visible(page,'Close details').tap();page.wait_for_timeout(120);swipe_map(page,65,0);page.wait_for_timeout(150)
+   after=saved(page);assert not after.get('pendingLoot');assert after['player']['x']==before['player']['x']+2
+   assert after['loot']==during['loot'];assert after['inventory']==during['inventory']
    assert page.get_by_role('button',name='Follow hero' if overview else 'Overview',exact=True).count()==1
-  print('PASS: loot pause explains blocked touch/keyboard movement; Leave & resume preserves item and resumes swipes in both map views',flush=True)
+  print('PASS: automatic rarity/lore inspection in both map views; closing leaves loot and resumes movement',flush=True)
   load(page,'poisonMove');swipe_map(page,0,60);page.wait_for_timeout(100);expect(page.locator('.poison-chip').first).to_contain_text('2 steps');expect(page.locator('[data-testid="poison-flash"]')).to_have_count(1);page.wait_for_function("()=>{const e=document.querySelector('[data-testid=poison-flash]');return e&&Number(getComputedStyle(e).opacity)>0}",timeout=4000);assert saved(page)['player']['hp']==9;page.screenshot(path=str(root/'work/poison-v6.png'))
   visible(page,'Expand full player stats').tap();dialog=page.get_by_role('dialog',name='Full player stats');expect(dialog).to_contain_text('Poison');visible(page,'Close details').tap()
   load(page,'critical');expect(page.locator('.hero-vitals')).to_contain_text('CRITICAL · ≤10% HP');fits(page)
@@ -81,10 +76,10 @@ try:
   load(page,'staffLow');expect(page.locator('.mana-warning')).to_contain_text('Staff inactive');visible(page,'Expand enemy stats').tap();expect(page.get_by_role('dialog',name='Enemy stats')).to_contain_text('Zombie');visible(page,'Close details').tap();visible(page,'Item: Mana Potion').tap();visible(page,'Use item').tap();expect(page.locator('.mana-warning')).to_have_count(0);expect(page.get_by_label('Your damage forecast')).to_contain_text('18 damage')
   visible(page,'Cast Teleport · 1 MP').tap();expect(page.locator('.enemy-panel')).to_have_count(0)
   load(page,'criticalHit');visible(page,'Attack').tap();expect(page.locator('.critical-notice')).to_contain_text('CRITICAL HIT!');page.screenshot(path=str(root/'work/critical-v6.png'))
-  load(page,'floorWeapon');revision=saved(page)['revision'];visible(page,'Compare / equip').tap();dialog=page.get_by_role('dialog',name='Equipment comparison');expect(dialog).to_contain_text('Attack');expect(dialog).to_contain_text('Initiative');expect(dialog).to_contain_text('Power required');assert saved(page)['revision']==revision;page.screenshot(path=str(root/'work/equip-compare-v6.png'));visible(page,'Confirm equip from ground').tap();expect(page.locator('.held-line')).to_contain_text('Steel Sword');expect(page.get_by_role('button',name='Equipped: Steel Sword')).to_have_class('item-card is-equipped');expect(page.locator('.weapon-uses')).to_contain_text('uses');page.reload();page.wait_for_selector('canvas');expect(page.locator('.held-line')).to_contain_text('Steel Sword');page.screenshot(path=str(root/'work/explore-v6.png'))
-  load(page,'floorSwap');visible(page,'Compare / equip').tap();expect(page.get_by_role('dialog')).to_contain_text('old gear stays');visible(page,'Equip & leave old gear here').tap();assert saved(page)['loot'][0]['item']['name']=='Iron Axe'
-  load(page,'groundThrow');visible(page,'Inspect / use').tap();visible(page,'Throw at Zombie').tap();expect(page.locator('.enemy-panel')).to_contain_text('25/30');assert not saved(page)['loot']
-  load(page,'groundTeleport');visible(page,'Ground item').tap();visible(page,'Use once & teleport').tap();expect(page.locator('.enemy-panel')).to_have_count(0);assert not saved(page)['loot']
+  load(page,'floorWeapon');revision=saved(page)['revision'];dialog=page.get_by_role('dialog',name='Equipment comparison');expect(dialog).to_contain_text('Attack');expect(dialog).to_contain_text('Initiative');expect(dialog).to_contain_text('Power required');assert saved(page)['revision']==revision;page.screenshot(path=str(root/'work/equip-compare-v6.png'));visible(page,'Confirm equip from ground').tap();expect(page.locator('.held-line')).to_contain_text('Steel Sword');expect(page.get_by_role('button',name='Equipped: Steel Sword')).to_have_class('item-card is-equipped');expect(page.locator('.weapon-uses')).to_contain_text('uses');page.reload();page.wait_for_selector('canvas');expect(page.locator('.held-line')).to_contain_text('Steel Sword');page.screenshot(path=str(root/'work/explore-v6.png'))
+  load(page,'floorSwap');expect(page.get_by_role('dialog')).to_contain_text('old gear stays');visible(page,'Equip & leave old gear here').tap();assert saved(page)['loot'][0]['item']['name']=='Iron Axe'
+  load(page,'groundThrow');visible(page,'Throw at Zombie').tap();expect(page.locator('.enemy-panel')).to_contain_text('25/30');assert not saved(page)['loot']
+  load(page,'groundTeleport');visible(page,'Use once & teleport').tap();expect(page.locator('.enemy-panel')).to_have_count(0);assert not saved(page)['loot']
   load(page,'carriedTeleport');visible(page,'Item: Teleporter').tap();visible(page,'Teleport to safety').tap();expect(page.locator('.enemy-panel')).to_have_count(0);assert any(i['kind']=='teleport' for i in saved(page)['inventory'])
   visible(page,'Item: Teleporter').tap();visible(page,'Drop').tap();visible(page,'Ground: Teleporter').tap();visible(page,'Use once & teleport').tap();assert not any(i['kind']=='teleport' for i in saved(page)['inventory']);assert not any(l['item']['kind']=='teleport' for l in saved(page)['loot'])
   load(page,'npcTalk');expect(page.get_by_label('Chieftain speech bubble')).to_contain_text('Curious traveler');visible(page,'Talk / trade').tap();expect(page.get_by_role('dialog',name='Chieftain dialogue')).to_contain_text('Health Gain');page.screenshot(path=str(root/'work/chieftain-v6.png'));visible(page,'Accept deal: Health Gain').tap();expect(page.locator('.enemy-panel')).to_have_count(0);assert saved(page)['player']['hp']>5

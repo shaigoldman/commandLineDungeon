@@ -27,7 +27,23 @@ export function spellIcon(name: string, element: string) {
   ) => {
     for (let i = 0; i < n; i++) r(a + dx * i, b + dy * i, 2, 2, c);
   };
-  if (name === "Teleport") {
+  if (name === "Summon") {
+    for (let j = 0; j < 3; j++) {
+      r(4 + j * 2, 25 - j * 2, 24 - j * 4, 2);
+      r(5 + j * 2, 9 + j * 2, 2, 14 - j * 4);
+      r(25 - j * 2, 9 + j * 2, 2, 14 - j * 4);
+    }
+    r(12, 4, 8, 5, "#f1dcb1");
+    r(10, 11, 12, 8, "#d1ead7");
+  } else if (name === "Alchemize") {
+    r(7, 6, 18, 21, "#8c6264");
+    r(10, 4, 12, 3, "#efce77");
+    r(10, 12, 12, 10, "#e9c264");
+    r(14, 10, 4, 14, "#fff0b1");
+    r(8, 15, 16, 3, "#fff0b1");
+    r(3, 3, 3, 3, "#f4a16d");
+    r(26, 24, 3, 3, "#f4a16d");
+  } else if (name === "Teleport") {
     for (const cx of [9, 23]) {
       r(cx - 3, 4, 6, 2);
       r(cx - 5, 7, 2, 17);

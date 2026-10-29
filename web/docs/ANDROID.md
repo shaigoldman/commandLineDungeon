@@ -14,7 +14,7 @@ Android uses `LocalGameAPI` to run the shared engine locally. All successful gam
 
 Android progress is **separate from server progress**. A device journey code works only on the same installation. It does not retrieve a web save or transfer to another phone. The save panel makes this distinction explicit. Closing/reopening the app resumes the current journey; uninstalling or clearing app data removes local saves. This build does not implement cloud synchronization or cross-device save transfer.
 
-The package ID is `com.shaigoldman.commandlinedungeon.test`, version `0.6.1-test`, version code `7`, launcher name **Dungeon Test**. This is a debug-signed test package, distinct from any future store release. Native permissions are the normal Internet permission used by the WebView shell and an AndroidX internal signature permission; the game does not request contacts, location, or shared-storage access.
+The package ID is `com.shaigoldman.commandlinedungeon.test`, version `0.7.0-test`, version code `8`, launcher name **Dungeon Test**. This is a debug-signed test package, distinct from any future store release. Native permissions are the normal Internet permission used by the WebView shell and an AndroidX internal signature permission; the game does not request contacts, location, or shared-storage access.
 
 The workspace signing key is ignored under `work/android-user/`. Keep it for compatible rebuilds. A fresh checkout or CI may use a different test signing key; Android will reject an in-place update signed by that other key. Uninstalling to switch keys removes local progress. Release signing and Google Play publication need a separate owner-controlled production key and are not performed here.
 
@@ -56,7 +56,7 @@ npm run build
 npm run test:browser
 ```
 
-Earlier release notes below describe historical behavior; the [v0.6 checklist](FEATURES-V0.6.md) documents the current interface and superseding ground-item rules.
+Earlier release notes below describe historical behavior; the [v0.7 checklist](EXPANSION-V0.7.md) documents the current expansion and superseding item interactions.
 
 ## Phone UX update (0.2.0-test)
 
@@ -105,3 +105,11 @@ The complete [request checklist](FEATURES-V0.6.md) covers every behavior and del
 ## Item movement feedback (0.6.1-test)
 
 Standing on newly found loot pauses movement under the existing rules. The map and item prompt now explicitly say movement is paused; “Leave & resume” clears the prompt without removing the item. Blocked swipes and arrow keys explain how to resume, including in Overview. Touch/keyboard regression checks verify no turn or item is consumed by the blocked gesture and that movement resumes in both camera modes. Fifteen targeted layout cases cover loot, floor equipment and full-bag swaps across five phone/landscape sizes. Package identity and signing certificate remain unchanged.
+
+## Ashfall expansion (0.7.0-test)
+
+Gold, merchant inventories and fixed quotes, wanted items, permanent poison immunity, curses, pending ghost spawns, secret-room objects and story discoveries are part of the same saved journey. Save/reload is tested within this build. Older test-release saves are unsupported; begin a new journey when testing a new version. No database schema change is necessary for the JSONB save payload. The same package/signing identity permits an in-place upgrade.
+
+[The request checklist](EXPANSION-V0.7.md) lists every feature and the exact chosen rules. Verification includes source mechanics/parity, deterministic expansion playthroughs, server persistence and stale-write checks, offline mobile interactions, portrait/landscape layouts and native asset/signature checks. No physical Android device has been tested in this environment.
+
+The final v0.7 follow-up adds base/effect/gear breakdowns, precise critical probabilities, hit counts and first-actor labels, conditional retaliation warnings, ground-pile selection, swipe-away from item inspection and stair access beneath loot. The dragon is an original red serpentine winged design, drawn two grid cells wide. A dedicated four-direction swipe area preserves vertical scrolling of long inspection details. New journeys are the support target; old test-version saves are not supported.

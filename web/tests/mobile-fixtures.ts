@@ -1,4 +1,10 @@
 import {
+  makeVillager,
+  addSecretDoor,
+  addChest,
+  makeChief,
+} from "../shared/expansion";
+import {
   newGame,
   makeItem,
   makeMonster,
@@ -143,6 +149,9 @@ function openArena(className = "Mage") {
   g.player.y = 7;
   g.player.hp = 10;
   g.loot = [];
+  g.chests = [];
+  g.secretDoors = [];
+  g.haunting = [];
   g.pods = [];
   g.stairs = { x: 25, y: 12, locked: false };
   const staff = g.inventory.find((i) => i.kind === "tome");
@@ -168,6 +177,9 @@ lootPaused.pendingLoot = pausedItem;
 lootPaused.loot = [
   { x: lootPaused.player.x, y: lootPaused.player.y, item: pausedItem },
 ];
+const lootAhead = structuredClone(lootPaused);
+lootAhead.pendingLoot = undefined;
+lootAhead.loot[0].x++;
 const poisonMove = structuredClone(swipe);
 poisonMove.player.effects.Poison = [3, 1];
 const staffLow = openArena();
@@ -230,11 +242,180 @@ generateFloor(ice);
 const ember = structuredClone(explore);
 ember.floor = 3;
 generateFloor(ember);
+const market = openArena("Scout");
+market.monsters = [];
+market.player.gold = 500;
+const seller = makeVillager(market);
+Object.assign(seller, { x: 16, y: 7 });
+seller.merchant!.wanted = "Fragile Axe";
+seller.merchant!.premium = 3;
+seller.merchant!.dislikes = ["projectile"];
+seller.merchant!.line =
+  "The moon engine folded the world. Have you seen a Fragile Axe? I’m looking for one…";
+seller.merchant!.stock = [
+  "Poison Antibody",
+  "Seismic Shocker",
+  "Rare Key",
+  "Power Doubler",
+].map((name) => ({ item: makeItem(market, name), price: 20 }));
+market.monsters = [seller];
+market.combat = seller.id;
+market.inventory = [
+  makeItem(market, "Fragile Axe"),
+  makeItem(market, "Throwing Knife"),
+  makeItem(market, "Poison Antidote"),
+];
+market.capacity = 10;
+const fullLoot = openArena("Scout");
+fullLoot.monsters = [];
+fullLoot.capacity = 2;
+fullLoot.inventory = [
+  makeItem(fullLoot, "Throwing Knife"),
+  makeItem(fullLoot, "Escape Rope"),
+];
+const swapKey = makeItem(fullLoot, "Rare Key");
+fullLoot.pendingLoot = swapKey;
+fullLoot.loot = [{ x: 15, y: 7, item: swapKey }];
+const lockedChest = openArena("Scout");
+lockedChest.monsters = [];
+lockedChest.inventory = [makeItem(lockedChest, "Standard Key")];
+const chest = addChest(lockedChest, 16, 7);
+lockedChest.pendingChest = chest.id;
+const secretDoor = openArena("Scout");
+secretDoor.monsters = [];
+const doorway = addSecretDoor(secretDoor, "ultra");
+Object.assign(secretDoor.player, { x: 28, y: doorway.y });
+secretDoor.inventory = [makeItem(secretDoor, "Rare Key")];
+secretDoor.pendingDoor = doorway.id;
+const chamber = act(secretDoor, { type: "unlock-door", id: doorway.id });
+const emperor = openArena("Scout");
+const ruler = makeChief(emperor, true);
+ruler.npc!.deal = "Imperial Treasury";
+Object.assign(ruler, { x: 16, y: 7 });
+emperor.monsters = [ruler];
+emperor.combat = ruler.id;
+emperor.player.hp = 15;
+emperor.player.stats.Health = 20;
+const king = structuredClone(market);
+const kingActor = makeVillager(king, true);
+Object.assign(kingActor, { x: 16, y: 7 });
+king.monsters = [kingActor];
+king.combat = kingActor.id;
+king.player.gold = 99999;
+const curse = openArena("Scout");
+curse.player.effects.Curse = [12, 3];
+curse.inventory = [makeItem(curse, "Poison Antidote")];
+curse.monsters = [];
+const summonReady = openArena();
+summonReady.monsters = [];
+summonReady.player.weapons = [makeItem(summonReady, "Wind Staff")];
+summonReady.player.stats.Magic = 30;
+const alchemizeReady = structuredClone(summonReady);
+alchemizeReady.player.weapons = [makeItem(alchemizeReady, "Fire Staff")];
+const expansionBag = structuredClone(summonReady);
+expansionBag.capacity = 20;
+expansionBag.player.hp = 100;
+expansionBag.player.stats.Health = 100;
+expansionBag.player.stats.Power = 10;
+expansionBag.inventory = [
+  "Seismic Shocker",
+  "Poison Antibody",
+  "Power Doubler",
+  "20 Gold Coins",
+  "Candy",
+  "Rare Candy",
+  "Ultra Candy",
+  "Summoner Stone",
+].map((name) => makeItem(expansionBag, name));
+const target = makeMonster(expansionBag, "Golem", 1);
+Object.assign(target, { x: 17, y: 7, hp: 20 });
+target.stats.Health = 20;
+expansionBag.monsters = [target];
+const staffSwap = openArena();
+staffSwap.monsters = [];
+staffSwap.player.stats.Power = 20;
+staffSwap.player.stats.Magic = 30;
+staffSwap.capacity = 10;
+staffSwap.inventory.push(makeItem(staffSwap, "Extra Hand"));
+const newBlade = makeItem(staffSwap, "Iron Sword");
+staffSwap.pendingLoot = newBlade;
+staffSwap.loot = [{ x: 15, y: 7, item: newBlade }];
+const villagerDoom = structuredClone(market);
+Object.assign(villagerDoom.player.stats, {
+  Health: 100,
+  Power: 9001,
+  Accuracy: 9001,
+  Speed: 9001,
+  Luck: 0,
+});
+villagerDoom.player.hp = 100;
+villagerDoom.inventory = [makeItem(villagerDoom, "Poison Antidote")];
+const lootPile = structuredClone(lootPaused);
+const pileKey = makeItem(lootPile, "Rare Key"),
+  pileDouble = makeItem(lootPile, "Power Doubler");
+lootPile.loot.push(
+  { x: 15, y: 7, item: pileKey },
+  { x: 15, y: 7, item: pileDouble },
+);
+const stairPile = structuredClone(lootPile);
+Object.assign(stairPile.stairs, { x: 15, y: 7, locked: false });
+const guaranteedKill = openArena("Scout");
+Object.assign(guaranteedKill.player.stats, {
+  Power: 20,
+  Accuracy: 1000,
+  Speed: 100,
+  Luck: 0,
+});
+guaranteedKill.player.hp = 5;
+Object.assign(guaranteedKill.monsters[0].stats, {
+  Health: 5,
+  Power: 100,
+  Speed: 1,
+  Armor: 0,
+  Luck: 0,
+});
+guaranteedKill.monsters[0].hp = 5;
+guaranteedKill.combat = guaranteedKill.monsters[0].id;
+const missKill = structuredClone(guaranteedKill);
+missKill.player.stats.Accuracy = 0;
+missKill.player.stats.Speed = 2;
+const firstThreat = structuredClone(guaranteedKill);
+firstThreat.monsters[0].stats.Speed = 200;
+const dragonEncounter = openArena("Scout");
+const redDragon = makeMonster(dragonEncounter, "Dragon", 20);
+Object.assign(redDragon, {
+  x: 16,
+  y: 7,
+  name: "Ruthagor, Dungeon Master",
+  boss: true,
+});
+dragonEncounter.monsters = [redDragon];
+dragonEncounter.combat = redDragon.id;
 console.log(
   JSON.stringify({
     explore,
     swipe,
     poisonMove,
+    market,
+    fullLoot,
+    lockedChest,
+    secretDoor,
+    chamber,
+    emperor,
+    king,
+    curse,
+    summonReady,
+    alchemizeReady,
+    expansionBag,
+    lootPile,
+    stairPile,
+    guaranteedKill,
+    missKill,
+    firstThreat,
+    dragonEncounter,
+    villagerDoom,
+    staffSwap,
+    lootAhead,
     lootPaused,
     staffLow,
     staffEmpty,

@@ -68,3 +68,11 @@ The original item sprites in `src/item-art.ts` are shared Canvas pixel drawings 
 ## v0.6 requested corrections
 
 World turns no longer truncate fractional player or monster HP. This fixes enemies appearing to lose HP on the first move without being hit; presentation rounds values independently. Combat formulas remain unchanged. Adjacent enemies can be targeted by projectiles at the player's feet, without a temporary inventory slot. Ground teleporters are consumed once; carried teleporters remain reusable. Teleport items and magic now clear encounters and relocate the player. These are intentional requested changes, with reach/target validation and regression coverage. An optional monotonic event counter preserves repeated critical notices when the bounded event history is full; older saves remain valid.
+
+## v0.7 additive Ashfall rules
+
+The requested expansion intentionally extends the original item/NPC roster, world generation and spell list. `shared/expansion.ts` owns merchant prices, villagers/ghosts, chests and rooms; `shared/item-lore.ts` provides deterministic authored presentation. Gold and permanent poison immunity belong to the player. Optional version-1 save fields carry market stock/quotes, stories, delayed ghosts and room state; PostgreSQL JSONB and offline Preferences require no schema migration. Keys for chests are inventory items and never replace staircase keys.
+
+Curse damage advances on successful exploration moves and waits, with delayed ghost spawns measured by the same world-turn counter. Trade menus do not advance time. Entry/return choose unoccupied landing tiles, and NPCs remain in their current region; locked chests can be walked past after dismissal. All purchases, sales, key consumption, charged summons and full-bag swaps apply to a cloned game, then persist only on success.
+
+Weapons and staves now both occupy one hand, as requested. Extra Hand enables multiple gear slots. Older test-release saves are not supported. Equipment comparison applies the same replacement rule. New XP candies use the existing level-up and bonus-choice path. Combat hit/damage/initiative formulas otherwise remain unchanged.
