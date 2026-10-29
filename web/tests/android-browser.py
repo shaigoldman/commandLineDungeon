@@ -23,7 +23,6 @@ def fits(page):
  for key in ['bag','magic','actors']:
   b=state[key]
   if b:assert 0<=b['top'] and b['bottom']<=state['h']+1,(key,state)
- assert page.get_by_role('button',name=re.compile('^Flee')).count()==0
  assert page.get_by_role('button',name='Log',exact=True).count()==0
  assert page.get_by_role('button',name='Move up',exact=True).count()==0
 

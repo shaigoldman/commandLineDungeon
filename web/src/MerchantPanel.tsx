@@ -1,6 +1,7 @@
 import { describe } from "../shared/catalog";
 import { useState } from "react";
 import type { Actor, Game, Action } from "../shared/types";
+import { fleeChance } from "../shared/engine";
 import { itemIcon } from "./item-art";
 import { worldArt } from "./world-art";
 export function MerchantPanel({
@@ -44,7 +45,7 @@ export function MerchantPanel({
           Sell items
         </button>
         <button onClick={() => void send(g.encounter?.engaged || g.encounter?.origin === "enemy" ? { type: "flee" } : { type: "leave" })}>
-          {g.encounter?.engaged || g.encounter?.origin === "enemy" ? "Flee · enemy may strike" : "Leave peacefully"}
+          {g.encounter?.engaged || g.encounter?.origin === "enemy" ? `Flee · ${Math.round(fleeChance(g.player, m) * 100)}% chance` : "Leave peacefully"}
         </button>
       </div>
       {tab === "buy" ? (

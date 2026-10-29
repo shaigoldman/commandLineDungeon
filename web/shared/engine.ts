@@ -5,6 +5,7 @@ import {
   spawnGhosts,
   rememberVillager,
   summon,
+  makeVillager,
   buy,
   quote,
   openChest,
@@ -63,6 +64,10 @@ export function makeItem(g: Game, name: string): Item {
     i.description = `Summon a random mob next to you. ${i.uses} uses before breaking.`;
   }
   if (i.kind === "mana") i.description = "Fully restore 10 mana.";
+  if (name === "Pot of Gold") {
+    i.value = Math.min(50, 1 + Math.floor(-Math.log(Math.max(random(g), 1e-9)) * 9));
+    i.description = `A gremlin's hoard: ${i.value} gold coins.`;
+  }
   if (i.kind === "projectile")
     i.description = `Throw for ${i.value} damage. Dragons may dodge.`;
   if (i.kind === "stat") {
@@ -192,7 +197,7 @@ export function randomItem(g: Game, depth = g.floor): Item {
     pick(
       g,
       itemDefinitions.filter(
-        (d) => d[2] <= rarity && d[0] !== "Small Health Potion",
+        (d) => d[2] <= rarity && d[0] !== "Small Health Potion" && d[0] !== "Pot of Gold",
       ),
     )[0],
   );
@@ -381,9 +386,10 @@ export function generateFloor(g: Game) {
     ...(g.floor >= 3 ? ["Golem"] : []),
   ];
   for (let n = 0; n < 18; n++) {
+    const rare = random(g) < 0.035;
     const m = makeMonster(
       g,
-      pick(g, types),
+      rare ? pick(g, ["Gremlin", "Shadow", "Robot", "Dark Fairy", "Wild Villager"]) : pick(g, types),
       roll(g, 2) + (g.floor + 2) * g.floor,
     );
     Object.assign(m, position(g));
@@ -649,6 +655,7 @@ export function hitRate(a: Actor, b: Actor) {
   return Math.max(40, s.Accuracy + s.Speed - e.Speed * 1.2);
 }
 export function fleeChance(a: Actor, b: Actor) {
+  if (b.className === "Shadow") return 0.12;
   return Math.min(
     1,
     Math.max(
@@ -663,17 +670,17 @@ export function experience(monsterLevel: number, playerLevel: number) {
     ? 20 * (monsterLevel - playerLevel + 1)
     : Math.ceil(10 / (playerLevel - monsterLevel));
 }
-function hurt(g: Game, a: Actor, n: number, source = "Attack") {
+function hurt(g: Game, a: Actor, n: number, source = "Attack", reward = true) {
   if (source === "Attack") n = Math.max(0, n - Math.max(0, a.stats.Armor || 0));
   n = Math.trunc(n);
   a.hp = Math.max(0, a.hp - n);
-  log(g, `${a.name} takes ${n} ${source === "Poison" ? "poison " : ""}damage.`);
+  log(g, `${a.name} takes ${n} ${["Poison", "Fire"].includes(source) ? source.toLowerCase() + " " : ""}damage.`);
   if (a.hp <= 0) {
     if (a.id === "player") {
       g.status = "dead";
       g.combat = undefined;
       log(g, "Your journey ends here. Your score: " + g.score);
-    } else kill(g, a);
+    } else kill(g, a, reward, reward);
   }
 }
 function heal(a: Actor, n: number) {
@@ -685,9 +692,10 @@ function kill(g: Game, m: Actor, reward = true, drops = reward) {
   if (g.combat === m.id) g.combat = undefined;
   log(g, m.name + " falls.");
   if (m.merchant) {
-    villagerDeath(g, m);
+    villagerDeath(g, m, reward);
     return;
   }
+  if (m.className === "Wild Villager") villagerDeath(g, m, reward);
   if (reward) {
     const xp = experience(m.level, g.player.level);
     g.xp += xp;
@@ -700,11 +708,21 @@ function kill(g: Game, m: Actor, reward = true, drops = reward) {
       g.score += 100;
       log(g, "Acquired a Stair Key!");
     } else {
-      const i = randomItem(g, g.floor + g.player.stats.Luck * 0.01);
+      const i = m.className === "Gremlin"
+        ? makeItem(g, "Pot of Gold")
+        : m.className === "Dark Fairy"
+          ? chestReward(g)
+          : randomItem(g, g.floor + g.player.stats.Luck * 0.01);
       g.loot.push({ x: m.x, y: m.y, item: i });
     }
   }
-  if (reward) checkLevel(g);
+  if (m.className === "Robot") {
+    log(g, "The robot explodes!");
+    for (const a of [...g.monsters, g.player])
+      if (Math.abs(a.x - m.x) + Math.abs(a.y - m.y) <= 2)
+        hurt(g, a, 8 + Math.floor(m.level / 2), "Explosion", reward);
+  }
+  if (reward && g.status === "playing") checkLevel(g);
 }
 function checkLevel(g: Game) {
   if (g.xp >= 100 && !g.pendingLevels) {
@@ -729,6 +747,13 @@ function checkLevel(g: Game) {
   }
 }
 function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
+  if (a.burn) {
+    const [turns, damage] = a.burn;
+    hurt(g, a, damage, "Fire");
+    if (a.hp <= 0) return false;
+    if (turns <= 1) delete a.burn;
+    else a.burn[0]--;
+  }
   log(g, `${a.name} attacks ${b.name}.`);
   const physical = !unarmed && a.weapons.some((w) => w.kind === "weapon");
   const s = combatAttackStats(a, true, unarmed);
@@ -752,7 +777,7 @@ function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
     log(g, "Critical hit!");
   }
   const hpBeforeHit = b.hp;
-  hurt(g, b, damage);
+  hurt(g, b, damage, "Attack", a.id === "player");
   if (a.drain) heal(a, damage);
   if (
     a.curseChance &&
@@ -802,6 +827,7 @@ function monsterTurn(g: Game) {
       if (g.status !== "playing" || g.combat) break;
       if (g.player.stats.Speed > 5 && g.turn % 2 === 0 && m.stats.Speed <= 5)
         continue;
+      for (let step = 0; step < (m.className === "Shadow" ? 2 : 1); step++) {
       const [dx, dy] = pick(g, [
         [0, 1],
         [0, -1],
@@ -811,16 +837,28 @@ function monsterTurn(g: Game) {
       ]);
       const x = m.x + dx,
         y = m.y + dy;
+      const other = g.monsters.find((a) => a.id !== m.id && a.x === x && a.y === y);
+      if (m.className === "Shadow" && other && (other.merchant || other.npc)) {
+        strike(g, m, other);
+        continue;
+      }
       if (!m.boss && empty(g, x, y)) {
         m.x = x;
         m.y = y;
+        if (m.burn) {
+          const [turns, damage] = m.burn;
+          hurt(g, m, damage, "Fire");
+          if (m.hp <= 0) break;
+          if (turns <= 1) delete m.burn;
+          else m.burn[0]--;
+        }
       } else if (
         x === g.player.x &&
         y === g.player.y &&
         !m.npc &&
         !m.merchant &&
-        random(g) < 0.6 &&
-        (m.level <= g.player.level ||
+        random(g) < (m.className === "Shadow" ? 0.95 : 0.6) &&
+        (m.className === "Shadow" || m.level <= g.player.level ||
           random(g) <= Math.min(0.8, 0.48 * g.difficulty) * 1.1 * g.floor)
       ) {
         g.combat = m.id;
@@ -831,6 +869,8 @@ function monsterTurn(g: Game) {
           exchanges: 0,
         };
         log(g, m.name + " challenges you. Fight or flee.");
+        break;
+      }
       }
     }
 }
@@ -843,6 +883,11 @@ export function availableSpells(g: Game) {
       elements.includes(s.element) &&
       g.player.stats.Magic >= s.req &&
       g.player.stats.Mana >= s.cost &&
+      (s.name !== "Unseal" || (!g.pendingLoot && (
+        (g.stairs.locked && Math.abs(g.stairs.x - g.player.x) + Math.abs(g.stairs.y - g.player.y) <= 1) || !![
+        ...(g.chests || []).filter((c) => !c.opened),
+        ...(g.secretDoors || []).filter((d) => !d.unlocked),
+      ].find((o) => Math.abs(o.x - g.player.x) + Math.abs(o.y - g.player.y) <= 1)))) &&
       (s.when === "any" || s.when === (g.combat ? "combat" : "peace")),
   );
 }
@@ -1377,6 +1422,8 @@ export function act(input: Game, a: Action): Game {
     case "cast": {
       const s = availableSpells(g).find((s) => s.name === a.spell);
       if (!s) throw Error("Spell unavailable");
+      if (s.name === "Befriend" && (!m || m.boss || m.merchant || m.npc))
+        throw Error("Only ordinary enemies can be befriended.");
       p.stats.Mana -= s.cost;
       if (m && s.when === "combat")
         g.encounter = {
@@ -1389,6 +1436,34 @@ export function act(input: Game, a: Action): Game {
         };
       log(g, p.name + " cast " + s.name);
       switch (s.name) {
+        case "Befriend": {
+          const villager = makeVillager(g);
+          Object.assign(villager, { x: m!.x, y: m!.y });
+          g.monsters = g.monsters.map((actor) => actor.id === m!.id ? villager : actor);
+          g.combat = undefined;
+          g.encounter = undefined;
+          log(g, `${m!.name} becomes ${villager.name}, a peaceful villager.`);
+          break;
+        }
+        case "Unseal": {
+          const chest = (g.chests || []).find((c) => !c.opened && Math.abs(c.x-p.x)+Math.abs(c.y-p.y)<=1);
+          const door = (g.secretDoors || []).find((d) => !d.unlocked && Math.abs(d.x-p.x)+Math.abs(d.y-p.y)<=1);
+          if (chest) {
+            chest.locked = false;
+            openChest(g, chest.id);
+          } else if (door) {
+            door.unlocked = true;
+            enterSecret(g, door);
+          } else if (g.stairs.locked && Math.abs(g.stairs.x-p.x)+Math.abs(g.stairs.y-p.y)<=1) {
+            g.stairs.locked = false;
+            log(g, "The stair lock yields to wind magic.");
+          }
+          break;
+        }
+        case "Kindle":
+          m!.burn = [4, Math.max(2, 2 + Math.floor(p.stats.Magic / 5))];
+          log(g, `${m!.name} is burning: ${m!.burn[1]} damage when it moves.`);
+          break;
         case "Summon":
           summon(g);
           break;

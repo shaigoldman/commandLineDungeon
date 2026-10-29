@@ -319,6 +319,14 @@ export function itemCanvas(
     r(15, 9, 3, 14, "#b7e7cf");
     r(11, 15, 10, 3, "#b7e7cf");
     r(19, 20, 3, 6, "#3e5667");
+  } else if (key === "gold-Pot of Gold") {
+    r(12, 5, 4, 6, "#f6e598"); r(19, 4, 5, 7, "#e6b94f");
+    r(9, 8, 15, 4, "#f8da77"); r(7, 11, 19, 4, dark);
+    r(8, 12, 17, 2, "#f4d275");
+    r(6, 15, 5, 7, dark); r(7, 16, 3, 4, "#b0794b");
+    r(23, 15, 5, 7, dark); r(24, 16, 3, 4, "#b0794b");
+    r(10, 14, 14, 14, dark); r(12, 16, 10, 10, "#855039");
+    r(13, 17, 3, 8, "#c18a55"); r(12, 27, 10, 2, dark);
   } else if (key.startsWith("gold-")) {
     if (item.name !== "1 Gold Coin") {
       r(7, 25, 21, 5, dark);

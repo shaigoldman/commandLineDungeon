@@ -39,6 +39,11 @@ export const bonuses: Record<string, string> = {
   D: "Power",
 };
 export const monsterBase: Record<string, Stats> = {
+  Gremlin: { Health: 4, Power: 2, Luck: 25, Accuracy: 80, Speed: 24, Magic: 1 },
+  Shadow: { Health: 7, Power: 15, Luck: 0, Accuracy: 90, Speed: 1, Magic: 2 },
+  Robot: { Health: 48, Power: 8, Luck: 0, Accuracy: 80, Speed: 1, Magic: 1, Armor: 2 },
+  "Dark Fairy": { Health: 4, Power: 2, Luck: 80, Accuracy: 85, Speed: 19, Magic: 8 },
+  "Wild Villager": { Health: 18, Power: 7, Luck: 12, Accuracy: 85, Speed: 12, Magic: 2 },
   Zombie: { Health: 7, Power: 4, Luck: 0, Accuracy: 65, Speed: 1, Magic: 1 },
   Spider: { Health: 5, Power: 2, Luck: 0, Accuracy: 85, Speed: 5, Magic: 4 },
   Snake: { Health: 3, Power: 1, Luck: 0, Accuracy: 75, Speed: 3, Magic: 2 },
@@ -70,6 +75,11 @@ export const monsterBase: Record<string, Stats> = {
   Chieftan: { Health: 3, Power: 9, Luck: 0, Accuracy: 80, Speed: 9, Magic: 10 },
 };
 export const growth: Record<string, Stats> = {
+  Gremlin: { Health: 1, Power: 0.7, Accuracy: 1.5, Speed: 1.4 },
+  Shadow: { Health: 1.5, Power: 2.5, Accuracy: 1.8, Speed: 0.3 },
+  Robot: { Health: 6, Power: 1.7, Accuracy: 1, Speed: 0.2, Armor: 0.4 },
+  "Dark Fairy": { Health: 1, Power: 0.7, Accuracy: 1.2, Speed: 1.4, Luck: 0.8 },
+  "Wild Villager": { Health: 2.5, Power: 1.4, Accuracy: 1.2, Speed: 1.1 },
   Zombie: { Health: 4.5, Power: 6, Accuracy: 1.8, Speed: 1 / 3 },
   Spider: { Health: 5.3, Power: 2.2, Accuracy: 2.4, Speed: 4 },
   Snake: { Health: 6, Power: 4, Accuracy: 2, Speed: 2 },
@@ -85,6 +95,9 @@ export interface Spell {
   description: string;
 }
 export const spells: Spell[] = [
+  { name: "Befriend", element: "Water", cost: 8, req: 15, when: "combat", description: "Turn a non-boss enemy into a peaceful villager." },
+  { name: "Unseal", element: "Wind", cost: 8, req: 12, when: "peace", description: "Open an adjacent chest or secret door without a key." },
+  { name: "Kindle", element: "Fire", cost: 2, req: 3, when: "combat", description: "Ignite an enemy; fire damages it when it moves or attacks." },
   {
     name: "Summon",
     element: "Wind",
@@ -185,6 +198,7 @@ export const spells: Spell[] = [
   },
 ];
 export const itemDefinitions: [string, string, number, number, string?][] = [
+  ["Pot of Gold", "gold", 7, 0],
   ["Candy", "candy", 2, 10],
   ["Rare Candy", "candy", 7, 35],
   ["Ultra Candy", "candy", 10, 100],

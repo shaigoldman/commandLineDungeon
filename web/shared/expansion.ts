@@ -66,7 +66,7 @@ const farewells = [
 export function catalogItems(g: Game) {
   const names = [
     ...itemDefinitions
-      .filter((d) => !["weapon", "tome"].includes(d[1]))
+      .filter((d) => !["weapon", "tome"].includes(d[1]) && d[0] !== "Pot of Gold")
       .map((d) => d[0]),
     ...["Fragile", "Iron", "Steel", "Lucky", "Magic", "Obsidian"].flatMap((m) =>
       ["Sword", "Spear", "Axe"].map((w) => m + " " + w),
@@ -221,9 +221,9 @@ export function applyCurse(g: Game, turns = 12, damage = 3) {
     `CURSED: ${damage} HP per world turn for ${turns} turns. A Poison Antidote cures it.`,
   );
 }
-export function villagerDeath(g: Game, m: Actor) {
+export function villagerDeath(g: Game, m: Actor, curseHero = true) {
   log(g, `${m.name}: “${pick(g, farewells)}”`);
-  applyCurse(g);
+  if (curseHero) applyCurse(g);
   (g.haunting ??= []).push({ x: m.x, y: m.y, due: g.turn + 5, name: m.name });
 }
 export function spawnGhosts(g: Game) {
@@ -322,7 +322,7 @@ export function chestReward(g: Game, ultra = false) {
     g,
     pick(
       g,
-      itemDefinitions.filter((d) => d[2] >= min),
+      itemDefinitions.filter((d) => d[2] >= min && d[0] !== "Pot of Gold"),
     )[0],
   );
 }
@@ -399,7 +399,7 @@ export function expansionFloor(g: Game) {
     const loc = pick(g, spots());
     if (loc) addChest(g, loc.x, loc.y);
   }
-  for (let n = 0; n < 1 + roll(g, 2); n++) {
+  for (let n = 0; n < roll(g, 3); n++) {
     const loc = pick(g, spots());
     if (loc) {
       const m = makeVillager(g);

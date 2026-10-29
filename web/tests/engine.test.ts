@@ -41,7 +41,7 @@ describe("source mechanics", () => {
     expect(g.player.effects["Attack Booster"]).toBeUndefined();
   });
   it("preserves the original roster and extends it with Ashfall content", () => {
-    expect(spells).toHaveLength(12);
+    expect(spells).toHaveLength(15);
     for (const d of itemDefinitions) {
       const i = makeItem(game(), d[0]);
       expect(i.id).toBeTruthy();
@@ -64,9 +64,7 @@ describe("source mechanics", () => {
       expect(seen.size).toBe(g.tiles.flat().filter((t) => !t).length);
       expect(seen.has(g.stairs.x + "," + g.stairs.y)).toBe(true);
       expect(g.monsters.filter((m) => !m.merchant)).toHaveLength(19);
-      expect(
-        g.monsters.filter((m) => m.merchant).length,
-      ).toBeGreaterThanOrEqual(1);
+      expect(g.monsters.filter((m) => m.merchant).length).toBeLessThanOrEqual(2);
       const occupied = [
         g.player,
         ...g.monsters,

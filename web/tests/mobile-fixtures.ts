@@ -442,8 +442,37 @@ const stairKeyCarrier = structuredClone(guaranteedKill);
 stairKeyCarrier.monsters[0].key = true;
 stairKeyCarrier.monsters[0].name = "Stair Key carrier";
 stairKeyCarrier.keys = 0;
+const rareGremlin = openArena();
+rareGremlin.player.stats.Magic = 50;
+rareGremlin.player.hp = rareGremlin.player.stats.Health = 100;
+rareGremlin.monsters = [makeMonster(rareGremlin, "Gremlin", 1)];
+Object.assign(rareGremlin.monsters[0], { x: 16, y: 7, hp: 1 });
+rareGremlin.combat = rareGremlin.monsters[0].id;
+const rareRobot = structuredClone(rareGremlin);
+rareRobot.monsters = [makeMonster(rareRobot, "Robot", 1)];
+Object.assign(rareRobot.monsters[0], { x: 16, y: 7, hp: 1 });
+rareRobot.combat = rareRobot.monsters[0].id;
+const rareBefriend = openArena();
+rareBefriend.player.weapons = [makeItem(rareBefriend, "Water Staff")];
+rareBefriend.player.stats.Magic = 20;
+rareBefriend.combat = rareBefriend.monsters[0].id;
+const rareUnseal = openArena();
+rareUnseal.monsters = [];
+rareUnseal.player.stats.Magic = 20;
+addChest(rareUnseal, 16, 7);
+const rareKindle = openArena();
+rareKindle.player.weapons = [makeItem(rareKindle, "Fire Staff")];
+rareKindle.player.stats.Magic = 20;
+rareKindle.player.hp = rareKindle.player.stats.Health;
+rareKindle.monsters[0].hp = rareKindle.monsters[0].stats.Health = 100;
+rareKindle.combat = rareKindle.monsters[0].id;
 console.log(
   JSON.stringify({
+    rareGremlin,
+    rareRobot,
+    rareBefriend,
+    rareUnseal,
+    rareKindle,
     fairMarket,
     marketAuto,
     lockedStairs,

@@ -15,6 +15,7 @@ import {
   itemUseProblem,
   canUseFromFloor,
   floorEquipPlan,
+  fleeChance,
   hitRate,
 } from "../shared/engine";
 import {
@@ -422,6 +423,8 @@ export function PlayScreen({
     else if (after.keys > before.keys)
       announce("Stair Key acquired · unlocks locked stairs only.");
     else if (after.pendingLevels) announce("Level up! Choose a bonus.");
+    else if (entries.some((line) => line.includes("robot explodes")))
+      announce(`Robot explosion! ${Math.max(0, before.player.hp - after.player.hp)} HP lost nearby.`);
     else if (
       after.combat &&
       !before.combat &&
@@ -465,7 +468,7 @@ export function PlayScreen({
       );
     } else if (a.type === "cast")
       announce(
-        `Cast ${a.spell}.${after.player.hp !== before.player.hp ? ` HP ${after.player.hp > before.player.hp ? "+" : ""}${n(after.player.hp - before.player.hp)}.` : ""}${before.combat && !after.combat ? " Encounter ended." : ""}${before.player.effects.Poison && !after.player.effects.Poison ? " Poison cleared." : ""}`,
+        `Cast ${a.spell}.${a.spell === "Kindle" ? ` Enemy burns for ${after.monsters.find((m) => m.id === before.combat)?.burn?.[1] || 0} per move or attack.` : ""}${a.spell === "Unseal" && after.pendingLoot ? ` Chest opened: ${after.pendingLoot.name}.` : ""}${after.player.hp !== before.player.hp ? ` HP ${after.player.hp > before.player.hp ? "+" : ""}${n(after.player.hp - before.player.hp)}.` : ""}${before.combat && !after.combat ? " Encounter ended." : ""}${before.player.effects.Poison && !after.player.effects.Poison ? " Poison cleared." : ""}`,
       );
     else if (a.type !== "move" && a.type !== "wait" && a.type !== "talk")
       announce(after.log.slice(-2).join(" "));
@@ -749,7 +752,8 @@ export function PlayScreen({
               <span>
                 HP {Math.ceil(enemy.hp)}/{Math.ceil(enemy.stats.Health)} · ATK{" "}
                 {n(combatAttackStats(enemy).Attack)} · ARM{" "}
-                {n(enemy.stats.Armor || 0)} · SPD {n(enemy.stats.Speed)}
+                {n(enemy.stats.Armor || 0)} · SPD {n(enemy.stats.Speed)} · CRIT {chancePercent(criticalChance(enemy.stats.Luck))}
+                {enemy.burn ? ` · BURN ${enemy.burn[1]} × ${enemy.burn[0]}` : ""}
               </span>
               <meter min={0} max={enemy.stats.Health} value={enemy.hp} />
             </span>
@@ -915,6 +919,9 @@ export function PlayScreen({
                       {danger?.critical}
                     </p>
                   )}
+                  {enemy.className === "Robot" && (
+                    <p className="kill-warning">⚠ Robot explosion: on death, everyone within 2 tiles takes {8 + Math.floor(enemy.level / 2)} damage.</p>
+                  )}
                   <div className="context-actions">
                     {(enemy.npc || enemy.merchant) && (
                       <button
@@ -935,7 +942,7 @@ export function PlayScreen({
                       enemy.npc || enemy.merchant ? "" : "primary",
                     )}
                     {actButton(
-                      encounterExit.type === "flee" ? "Flee · enemy may strike" : "Leave encounter",
+                      encounterExit.type === "flee" ? `Flee · ${Math.round(fleeChance(p, enemy) * 100)}% chance` : "Leave encounter",
                       encounterExit,
                     )}
                     <small className="encounter-swipe-hint">Swipe the dungeon or press an arrow key to {encounterExit.type === "flee" ? "attempt to flee" : "leave"}.</small>

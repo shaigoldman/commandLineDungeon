@@ -12,6 +12,11 @@ export function rarityInfo(rarity: number) {
 export function loreOptions(item: Item): string[] {
   const n = item.name;
   const specific: Record<string, string[]> = {
+    "Pot of Gold": [
+      "Gremlins say the moon engine minted these from stolen sunsets.",
+      "“One pot per lifetime. I have had several lifetimes.” — Pip Bellwether",
+      "A tiny hoard with a large opinion of its own value.",
+    ],
     seismic: [
       "“That is not a doorbell.” — Tansy Bolt, immediately before Ashfall",
       "The observatory used these to stir the moon. The moon objected.",
@@ -69,7 +74,7 @@ export function loreOptions(item: Item): string[] {
     ],
   };
   return (
-    specific[item.kind] || [
+    specific[item.name] || specific[item.kind] || [
       "“I remember this from before the stairs went wrong.” — Dora Teaspoon",
       "Found beneath an observatory that insists it was always a dungeon.",
       "Bix Turnip believes it is the missing part of something important.",

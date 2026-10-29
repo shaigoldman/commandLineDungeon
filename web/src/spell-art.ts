@@ -27,7 +27,16 @@ export function spellIcon(name: string, element: string) {
   ) => {
     for (let i = 0; i < n; i++) r(a + dx * i, b + dy * i, 2, 2, c);
   };
-  if (name === "Summon") {
+  if (name === "Befriend") {
+    r(6, 7, 8, 13); r(19, 7, 8, 13); r(11, 18, 10, 9, "#f2e6c1");
+    r(9, 5, 4, 4, "#f2e6c1"); r(21, 5, 4, 4, "#f2e6c1");
+  } else if (name === "Unseal") {
+    r(7, 14, 18, 13, "#c9a866"); r(11, 6, 10, 11); r(14, 17, 4, 6, "#fff0b1");
+    r(22, 3, 4, 7, "#fff0b1"); r(20, 8, 9, 3, "#fff0b1");
+  } else if (name === "Kindle") {
+    r(9, 17, 15, 11, "#e4795c"); r(13, 8, 8, 13); r(17, 3, 4, 9, "#f5d885");
+    r(13, 21, 7, 7, "#fff0af");
+  } else if (name === "Summon") {
     for (let j = 0; j < 3; j++) {
       r(4 + j * 2, 25 - j * 2, 24 - j * 4, 2);
       r(5 + j * 2, 9 + j * 2, 2, 14 - j * 4);

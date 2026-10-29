@@ -16,6 +16,36 @@ export const palette: Record<string, string> = {
   c: "#7ecbd0",
 };
 export const patterns: Record<string, string[]> = {
+  Gremlin: [
+    "................", "..g..........g..", "..gg........gg..", "...gggggggggg...",
+    "....gGGGGGGg....", "....GoGGoGGG....", ".....GGrrGG.....", "......GGGG......",
+    "....ggGGGGgg....", "...gggGGGGggg...", "..g.gggggggg.g..", "....gg.dd.gg....",
+    ".....dd..dd.....", "....ooo..ooo....", "................", "................",
+  ],
+  Shadow: [
+    "................", "......dddd......", ".....dooodd.....", "....dooooood....",
+    "....dooRoodd....", ".....doooood....", "...dddddddddd...", "..ddodddddddodd..",
+    ".ddoodddddddoodd.", "...dddddddddd...", "....ddodddodd...", "....ddodddodd...",
+    "...ddo.....odd..", "..ddd.......ddd.", "................", "................",
+  ],
+  Robot: [
+    "................", "....dddddddd....", "....dBBBBBBd....", "....dBrrrBBd....",
+    "....dBBBBBBd....", ".....ddyydd.....", "..dddBBBBBBddd..", "..dBddBBBBddBd..",
+    "..dBddBBBBddBd..", "..dddBBBBBBddd..", ".....dBrrBd.....", ".....dBBBBd.....",
+    "....ddd..ddd....", "....dBd..dBd....", "....ooo..ooo....", "................",
+  ],
+  "Dark Fairy": [
+    "................", "..p..........p..", ".ppp........ppp.", "..ppp..hh..ppp..",
+    "...pp.hsssh.pp...", "....pphsshpp....", "...ppp.sssp.pp...", "..ppp.pPPp.ppp..",
+    ".pppp.pPPp.pppp.", "..ppp.pPPp.ppp..", "...pp.pPPp.pp...", ".....pPPp.......",
+    "......dd........", ".....d..d.......", "................", "................",
+  ],
+  "Wild Villager": [
+    "................", ".....hhh.h......", "....hhhghhh.....", ".....hsssh......",
+    "......sss.......", "....rrggrr......", "...rrrgggrrr....", "...s.rrggr.s....",
+    ".....rgggr......", ".....rgggr......", "....rrgggrr.....", ".....dd.dd......",
+    "....ddd.ddd.....", "....ooo.ooo.....", "................", "................",
+  ],
   Warrior: [
     "................",
     "......hhh.......",

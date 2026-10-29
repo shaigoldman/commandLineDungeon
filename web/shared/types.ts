@@ -32,6 +32,7 @@ export interface Actor {
   poisonImmune?: boolean;
   gold?: number;
   curseChance?: number;
+  burn?: [number, number];
   spawnTurn?: number;
   merchant?: Merchant;
   drain?: boolean;
