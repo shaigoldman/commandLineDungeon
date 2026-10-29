@@ -29,4 +29,4 @@ Real phone-browser playthroughs at 390×760 and 844×390 bought a Standard Key f
 
 The native Android package builds successfully with every bundled web asset matching the final Android frontend byte-for-byte. App and Preferences plugins are registered. Version **0.7.2-test**, code **10**, package `com.shaigoldman.commandlinedungeon.test`, minimum Android 8/API 26, target API 35. Its signing certificate matches the prior test release: `422324a1caf8aa56acd3c5b918635b0753959e597f131900db9fe4b478666087`. APK: **6,550,514 bytes**, SHA-256 `49ce78347d8b65799df98eba12e98e98d0c703e3bacf8d95c243802ede68e1c4`.
 
-Public download verification is pending publication. Older test-release saves are unsupported; start a new journey to see the new prices.
+Public download verified: [Android 0.7.2-test APK](https://github.com/shaigoldman/commandLineDungeon/raw/c3241ca90a4d566ebcc6ce3453fd828e84f5c4c9/web/downloads/command-line-dungeon-android-test.apk). The downloaded bytes match the signed package and the SHA-256 above. Older test-release saves are unsupported; start a new journey to see the new prices.

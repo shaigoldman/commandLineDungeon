@@ -14,3 +14,5 @@ Stair Keys now have an explicit name, blue staircase-bow icon, separate top-pane
 
 
 The v0.7.2 market balance reduces the steep rarity price curve: a Standard Key now costs 11–16 gold instead of 28–50, and a Rare Key 23–33 instead of 78–142. Normal buyback quotes rise to 40–55% of base value while remaining below asking prices. Coin stock costs at most face value, wanted-item premiums remain, and villagers cannot stock their own wanted item. Fixed prices still survive reloads. [Pricing examples and checks](web/docs/MARKET-BALANCE-V0.7.2.md).
+
+[Download Android 0.7.2-test](https://github.com/shaigoldman/commandLineDungeon/raw/c3241ca90a4d566ebcc6ce3453fd828e84f5c4c9/web/downloads/command-line-dungeon-android-test.apk). Public download, APK SHA-256, package metadata, signature and bundled assets are verified. Start a new journey to see the updated prices; old test-release saves are unsupported.
