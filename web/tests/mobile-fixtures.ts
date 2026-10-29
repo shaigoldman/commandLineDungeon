@@ -266,6 +266,24 @@ market.inventory = [
   makeItem(market, "Poison Antidote"),
 ];
 market.capacity = 10;
+const fairMarket = structuredClone(market);
+fairMarket.player.gold = 20;
+fairMarket.inventory = [];
+let fairSeller = makeVillager(fairMarket, true);
+for (
+  let attempt = 0;
+  attempt < 20 &&
+  !fairSeller.merchant!.stock.some(({ item }) => item.name === "Standard Key");
+  attempt++
+)
+  fairSeller = makeVillager(fairMarket, true);
+if (
+  !fairSeller.merchant!.stock.some(({ item }) => item.name === "Standard Key")
+)
+  throw Error("No fair-market key offer");
+Object.assign(fairSeller, { x: 16, y: 7 });
+fairMarket.monsters = [fairSeller];
+fairMarket.combat = fairSeller.id;
 const fullLoot = openArena("Scout");
 fullLoot.monsters = [];
 fullLoot.capacity = 2;
@@ -417,6 +435,7 @@ stairKeyCarrier.monsters[0].name = "Stair Key carrier";
 stairKeyCarrier.keys = 0;
 console.log(
   JSON.stringify({
+    fairMarket,
     lockedStairs,
     stairKeyReady,
     stairKeyCarrier,

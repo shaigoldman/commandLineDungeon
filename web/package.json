@@ -16,11 +16,12 @@
     "android:sync": "npm run build:android:web && cap sync android",
     "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug",
     "android:open": "cap open android",
-    "test:android:browser": "python3 tests/android-browser.py && python3 tests/expansion-browser.py && python3 tests/combat-loot-browser.py && python3 tests/refinement-browser.py && python3 tests/key-browser.py",
+    "test:android:browser": "python3 tests/android-browser.py && python3 tests/expansion-browser.py && python3 tests/combat-loot-browser.py && python3 tests/refinement-browser.py && python3 tests/key-browser.py && python3 tests/market-browser.py",
     "test:expansion:browser": "python3 tests/expansion-browser.py",
     "test:combat:browser": "python3 tests/combat-loot-browser.py",
     "test:refinement:browser": "python3 tests/refinement-browser.py",
-    "test:keys:browser": "python3 tests/key-browser.py"
+    "test:keys:browser": "python3 tests/key-browser.py",
+    "test:market:browser": "python3 tests/market-browser.py"
   },
   "dependencies": {
     "@capacitor/android": "^7.6.9",

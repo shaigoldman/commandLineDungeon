@@ -14,7 +14,7 @@ Android uses `LocalGameAPI` to run the shared engine locally. All successful gam
 
 Android progress is **separate from server progress**. A device journey code works only on the same installation. It does not retrieve a web save or transfer to another phone. The save panel makes this distinction explicit. Closing/reopening the app resumes the current journey; uninstalling or clearing app data removes local saves. This build does not implement cloud synchronization or cross-device save transfer.
 
-The package ID is `com.shaigoldman.commandlinedungeon.test`, version `0.7.1-test`, version code `9`, launcher name **Dungeon Test**. This is a debug-signed test package, distinct from any future store release. Native permissions are the normal Internet permission used by the WebView shell and an AndroidX internal signature permission; the game does not request contacts, location, or shared-storage access.
+The package ID is `com.shaigoldman.commandlinedungeon.test`, version `0.7.2-test`, version code `10`, launcher name **Dungeon Test**. This is a debug-signed test package, distinct from any future store release. Native permissions are the normal Internet permission used by the WebView shell and an AndroidX internal signature permission; the game does not request contacts, location, or shared-storage access.
 
 The workspace signing key is ignored under `work/android-user/`. Keep it for compatible rebuilds. A fresh checkout or CI may use a different test signing key; Android will reject an in-place update signed by that other key. Uninstalling to switch keys removes local progress. Release signing and Google Play publication need a separate owner-controlled production key and are not performed here.
 
@@ -117,3 +117,7 @@ The final v0.7 follow-up adds base/effect/gear breakdowns, precise critical prob
 ## Artwork and exploration refinement (0.7.1-test)
 
 Villagers and ghosts use new original, crisp pixel art in both map and dialogue views. Coin piles and gold chest rewards collect automatically without bag space, inspection or an extra turn; the hero panel shows an illustrated purse total. Each ordinary floor has one or two chests. Chest prompts allow swipe/keyboard movement, and item inspection retains its four-direction swipe area. Merchant encounters and item descriptions no longer reveal the surprise consequences of attacking villagers. Stair Keys have a distinct blue icon, separate counter, carrier label and staircase explanation; Standard/Rare chest and door keys explicitly do not unlock stairs. See [the release checklist](REFINEMENTS-V0.7.1.md).
+
+## Villager price balance (0.7.2-test)
+
+Villagers now ask less for ordinary gear, give stronger but still discounted buyback offers, and never sell the exact item they want to buy at a premium. Gold coins in their stock cost no more than face value. Prices remain fixed per villager when created and survive saved-game reloads. See [the price examples and test notes](MARKET-BALANCE-V0.7.2.md).

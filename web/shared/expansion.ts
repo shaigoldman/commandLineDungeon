@@ -79,10 +79,19 @@ export function catalogItems(g: Game) {
   return names.map((name) => makeItem(g, name));
 }
 export function marketValue(i: Item) {
+  // Gold coins keep their face value; rarity raises equipment prices gently.
+  if (i.kind === "gold") return i.value;
   return Math.max(
     2,
-    Math.round(3 + i.rarity * i.rarity * 1.8 + (i.attack || 0) * 2),
+    Math.round(
+      3 + i.rarity * 1.5 + i.rarity * i.rarity * 0.35 + (i.attack || 0) * 0.8,
+    ),
   );
+}
+function askingPrice(g: Game, item: Item) {
+  const multiplier =
+    item.kind === "gold" ? 0.8 + random(g) * 0.2 : 0.72 + random(g) * 0.33;
+  return Math.max(1, Math.ceil(marketValue(item) * multiplier));
 }
 export function makeVillager(g: Game, king = false): Actor {
   const [name, line] = pick(g, [...history]);
@@ -94,15 +103,17 @@ export function makeVillager(g: Game, king = false): Actor {
         .slice(0, Math.ceil(all.length / 2))
         .map((a) => a.item)
     : Array.from({ length: 3 + roll(g, 3) }, () => randomItem(g));
+  // A villager cannot sell the very item they are hunting for.
+  const wantedCandidates = [
+    "Fragile Axe",
+    "Mana Potion",
+    "Poison Antidote",
+    "Standard Key",
+    "Tiny Health Potion",
+  ].filter((name) => !stock.some((item) => item.name === name));
   const wanted =
-    random(g) < 0.35
-      ? pick(g, [
-          "Fragile Axe",
-          "Mana Potion",
-          "Poison Antidote",
-          "Standard Key",
-          "Tiny Health Potion",
-        ])
+    wantedCandidates.length && random(g) < 0.35
+      ? pick(g, wantedCandidates)
       : undefined;
   return {
     id: uid(g),
@@ -126,7 +137,7 @@ export function makeVillager(g: Game, king = false): Actor {
     merchant: {
       stock: stock.map((item) => ({
         item,
-        price: Math.ceil(marketValue(item) * (0.85 + random(g) * 0.7)),
+        price: askingPrice(g, item),
       })),
       buyPrices: {},
       taste: roll(g, 100000),
@@ -165,7 +176,7 @@ export function saleQuote(m: Actor, i: Item): number | null {
     ? Math.floor(marketValue(i) * shop.premium)
     : shop.dislikes.includes(i.kind)
       ? null
-      : Math.max(1, Math.floor(marketValue(i) * (0.25 + (h % 2500) / 10000)));
+      : Math.max(1, Math.floor(marketValue(i) * (0.4 + (h % 1500) / 10000)));
   shop.buyPrices[i.id] = price;
   return price;
 }
