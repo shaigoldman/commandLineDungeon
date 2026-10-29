@@ -356,6 +356,22 @@ body.playing-game {
   color: #e3dcc3;
   text-shadow: 0 1px 3px #000;
 }
+.loot-movement-hint {
+  position: absolute;
+  bottom: 7px;
+  left: 8px;
+  right: 8px;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid #d6b968;
+  border-radius: 4px;
+  background: #24343df2;
+  color: #f3dfaa;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.4;
+  pointer-events: none;
+}
 .play-toast {
   position: absolute;
   bottom: 5px;

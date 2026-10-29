@@ -77,6 +77,12 @@ export function PlayScreen({
     !!g.pendingLoot ||
     !!enemy;
   const canMove = !context && !busy && !panel && !selection;
+  const lootPaused =
+    !!g.pendingLoot && !enemy && !g.pendingLevels && g.status === "playing";
+  const lootMovementHint =
+    lootPaused && !panel && !selection && !busy
+      ? "Item at your feet. Inspect it, or choose Leave & resume to keep moving. The item stays here."
+      : undefined;
   const forecast = enemy ? outgoingDamage(p, enemy) : undefined;
   const staffInactive =
     p.weapons.some((i) => i.kind === "tome") && p.stats.Mana < 2;
@@ -154,6 +160,11 @@ export function PlayScreen({
           ?.focus();
         return;
       }
+      if (dirs[e.key] && lootMovementHint) {
+        e.preventDefault();
+        announce(lootMovementHint);
+        return;
+      }
       if (dirs[e.key] && canMove) {
         e.preventDefault();
         void send({ type: "move", dx: dirs[e.key][0], dy: dirs[e.key][1] });
@@ -170,7 +181,7 @@ export function PlayScreen({
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
-  }, [g, canMove, panel, selection, busy]);
+  }, [g, canMove, panel, selection, busy, lootMovementHint]);
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     const h = NativeApp.addListener("backButton", () => {
@@ -481,6 +492,7 @@ export function PlayScreen({
           action={lastAction}
           overview={overview}
           movementEnabled={canMove}
+          movementBlockedHint={lootMovementHint}
           onMove={(dx, dy) => {
             if (canMove) void send({ type: "move", dx, dy });
           }}
@@ -503,6 +515,13 @@ export function PlayScreen({
         {!context && !toast && g.turn < 3 && (
           <p className="swipe-hint">
             Swipe the dungeon to move · arrow keys also work
+          </p>
+        )}
+        {lootMovementHint && !toast && (
+          <p className="loot-movement-hint" role="status">
+            ITEM FOUND · Movement paused
+            <br />
+            Choose an item action or Leave &amp; resume below.
           </p>
         )}
         {enemy?.npc && (
@@ -655,7 +674,7 @@ export function PlayScreen({
                   <ItemIcon item={ground} />
                   <span>
                     <strong>{ground.name}</strong>
-                    <small>At your feet</small>
+                    <small>Movement paused · choose an action</small>
                   </span>
                   <button
                     className="primary"
@@ -665,7 +684,7 @@ export function PlayScreen({
                       ? "Compare / equip"
                       : "Inspect / use"}
                   </button>
-                  {actButton("Leave it", { type: "ignore" })}
+                  {actButton("Leave & resume", { type: "ignore" })}
                 </div>
               )}
               {!enemy && !ground && atStairs && (

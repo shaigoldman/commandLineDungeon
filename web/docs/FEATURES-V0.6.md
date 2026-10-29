@@ -32,6 +32,10 @@ This release implements the complete requested interaction and art update. The o
 | Clear critical hits              | New critical events get a prominent distinct notice and damage animation                                                                           | Fresh-log tests and deterministic critical-hit scenario          |
 | Better adventurer sprites        | Original shaded, portrait-matched grid units with idle, two walk and attack poses; held gear moves with the pose                                   | Four-class/frame raster tests and screenshots                    |
 
+## v0.6.1 clarity follow-up
+
+Newly found loot explicitly pauses movement. The map and item prompt say so, blocked swipes/arrow keys explain the required choice, and **Leave & resume** continues exploration without taking or deleting the item. Real touch and keyboard checks cover both Overview and Follow hero modes, unchanged state while blocked, and movement after dismissal.
+
 ## Earlier requests retained
 
 - Critical health remains explicit at 10% (Critical) and 1% (Last Breath), with a persistent red frame and readable HP.

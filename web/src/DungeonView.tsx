@@ -22,6 +22,7 @@ export function DungeonView({
   onMove,
   overview = false,
   movementEnabled = true,
+  movementBlockedHint,
   onHint,
 }: {
   game: Game;
@@ -29,12 +30,14 @@ export function DungeonView({
   onMove: (dx: number, dy: number) => void;
   overview?: boolean;
   movementEnabled?: boolean;
+  movementBlockedHint?: string;
   onHint?: (message: string) => void;
 }) {
   const host = useRef<HTMLDivElement>(null),
     gameRef = useRef(game),
     moveRef = useRef(onMove),
     enabledRef = useRef(movementEnabled),
+    blockedHintRef = useRef(movementBlockedHint),
     hintRef = useRef(onHint),
     overviewRef = useRef(overview);
   const actionRef = useRef(action);
@@ -42,6 +45,7 @@ export function DungeonView({
   gameRef.current = game;
   moveRef.current = onMove;
   enabledRef.current = movementEnabled;
+  blockedHintRef.current = movementBlockedHint;
   hintRef.current = onHint;
   overviewRef.current = overview;
   useEffect(() => {
@@ -821,7 +825,8 @@ export function DungeonView({
         let pointer: { id: number; x: number; y: number } | undefined;
         app.canvas.style.touchAction = "none";
         app.canvas.addEventListener("pointerdown", (e) => {
-          if (!e.isPrimary || !enabledRef.current) return;
+          if (!e.isPrimary || (!enabledRef.current && !blockedHintRef.current))
+            return;
           pointer = { id: e.pointerId, x: e.clientX, y: e.clientY };
           app.canvas.setPointerCapture(e.pointerId);
         });
@@ -831,7 +836,12 @@ export function DungeonView({
         app.canvas.addEventListener("pointerup", (e) => {
           const start = pointer;
           pointer = undefined;
-          if (!start || start.id !== e.pointerId || !enabledRef.current) return;
+          if (!start || start.id !== e.pointerId) return;
+          if (!enabledRef.current) {
+            if (blockedHintRef.current)
+              hintRef.current?.(blockedHintRef.current);
+            return;
+          }
           const swipe = swipeDirection(
             e.clientX - start.x,
             e.clientY - start.y,

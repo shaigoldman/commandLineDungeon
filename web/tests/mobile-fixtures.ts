@@ -162,6 +162,12 @@ function openArena(className = "Mage") {
 }
 const swipe = openArena("Scout");
 swipe.monsters = [];
+const lootPaused = structuredClone(swipe);
+const pausedItem = makeItem(lootPaused, "Small Health Potion");
+lootPaused.pendingLoot = pausedItem;
+lootPaused.loot = [
+  { x: lootPaused.player.x, y: lootPaused.player.y, item: pausedItem },
+];
 const poisonMove = structuredClone(swipe);
 poisonMove.player.effects.Poison = [3, 1];
 const staffLow = openArena();
@@ -229,6 +235,7 @@ console.log(
     explore,
     swipe,
     poisonMove,
+    lootPaused,
     staffLow,
     staffEmpty,
     groundThrow,
