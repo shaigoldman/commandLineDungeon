@@ -31,4 +31,4 @@ The existing baseline phone suite passes 90 viewport/state cases plus movement, 
 - APK size: **6,550,398 bytes**.
 - SHA-256: `b9254e59246e7468c22755ef58cbb1aee5732ca6d28e8307fc79bb2bde48ebab`.
 
-Public download verification is pending publication.
+Public download verified: [Android 0.7.1-test APK](https://github.com/shaigoldman/commandLineDungeon/raw/356de9bf0b0eac8038819b50b14f4be54eb488e7/web/downloads/command-line-dungeon-android-test.apk). The downloaded file matches the shipped APK byte-for-byte and has the SHA-256 above. The source, tests and artifact are published in [PR #1](https://github.com/shaigoldman/commandLineDungeon/pull/1).
