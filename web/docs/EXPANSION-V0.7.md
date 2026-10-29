@@ -28,7 +28,7 @@ All original Python files remain unchanged. Save/reload is verified within this 
 - [x] Save/reload preserves gold, immunity, stock/prices, purchases, delayed ghosts and secret rooms.
 - [x] Mechanics, API validation, deterministic playthroughs and browser interactions for every feature.
 - [x] Production build and native Android build/signature/bundled-asset verification.
-- [ ] Public APK checksum, commit and existing PR updated.
+- [x] Public APK checksum, commit and existing PR updated.
 
 ## Chosen rules
 
@@ -89,3 +89,5 @@ Critical chance is the exact probability for the original product of two uniform
 - APK SHA-256: `76301fdcae1a9b08013023ec6f38e5a3ca1acc0eb5e60129bff59aa11cc64bb0`.
 - Fresh ordinary-bot simulations: 60 games, 5,181 actions, zero rejected actions and zero invalid-state findings. There were 56 deaths, four action-cap stops and no wins; this is regression evidence, not a balance claim. Raw data: [simulation-v7.json](simulation-v7.json).
 - Physical Android testing remains pending. Start a new journey; old test-release saves are unsupported.
+
+Public download verification passed: [v0.7 Android APK](https://github.com/shaigoldman/commandLineDungeon/raw/04f94f95c397b2d898e1822893802cabac4f0fd9/web/downloads/command-line-dungeon-android-test.apk). The downloaded file matches the APK SHA-256 above byte-for-byte. The implementation and release notes are published through [PR #1](https://github.com/shaigoldman/commandLineDungeon/pull/1).
