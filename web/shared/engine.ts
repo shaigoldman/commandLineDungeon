@@ -819,13 +819,13 @@ function monsterTurn(g: Game) {
   for (let pass = 0; pass < (g.player.stats.Speed <= 5 ? 2 : 1); pass++)
     for (const m of [...g.monsters]) {
       if (!!g.inSecret !== m.x >= 29 || m.spawnTurn === g.turn) continue;
-      if (pass === 1 && m.stats.Speed <= 5) continue;
+      if (pass === 1 && (m.stats.Speed <= 5 || m.className === "Shadow")) continue;
       if (m.hp <= 0) {
         kill(g, m);
         continue;
       }
       if (g.status !== "playing" || g.combat) break;
-      if (g.player.stats.Speed > 5 && g.turn % 2 === 0 && m.stats.Speed <= 5)
+      if (g.player.stats.Speed > 5 && g.turn % 2 === 0 && m.stats.Speed <= 5 && m.className !== "Shadow")
         continue;
       for (let step = 0; step < (m.className === "Shadow" ? 2 : 1); step++) {
       const [dx, dy] = pick(g, [
@@ -883,6 +883,7 @@ export function availableSpells(g: Game) {
       elements.includes(s.element) &&
       g.player.stats.Magic >= s.req &&
       g.player.stats.Mana >= s.cost &&
+      (s.name !== "Befriend" || !!g.monsters.find((m) => m.id === g.combat && !m.boss && !m.merchant && !m.npc)) &&
       (s.name !== "Unseal" || (!g.pendingLoot && (
         (g.stairs.locked && Math.abs(g.stairs.x - g.player.x) + Math.abs(g.stairs.y - g.player.y) <= 1) || !![
         ...(g.chests || []).filter((c) => !c.opened),

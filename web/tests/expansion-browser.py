@@ -72,7 +72,9 @@ try:
   visible(page,'Item: Wind Staff').tap();visible(page,'Confirm equip').tap();assert len(saved(page)['player']['weapons'])==2
   print('PASS: stone charges/reload, candy EXP and level stats overlay, rarity/lore, staff replacement and Extra Hand',flush=True)
 
-  load(page,'lockedChest');visible(page,'Open chest').tap();page.wait_for_timeout(100);assert not saved(page)['inventory'];assert saved(page)['pendingLoot'];visible(page,'Pick up').tap()
+  load(page,'lockedChest');visible(page,'Open chest').tap();page.wait_for_timeout(100);assert not saved(page)['inventory'];assert saved(page)['pendingLoot']
+  if page.get_by_role('button',name='Pick up',exact=True).count():visible(page,'Pick up').tap()
+  else:visible(page,'Use from floor').tap()
   load(page,'secretDoor');visible(page,'Unlock secret door').tap();page.wait_for_timeout(750);assert saved(page)['inSecret'];expect(page.locator('.floor-name')).to_contain_text('Secret chamber');page.screenshot(path=str(root/'work/secret-room-v7.png'))
   swipe_map(page,60,0);page.wait_for_timeout(180);swipe_map(page,60,0);page.wait_for_timeout(180);swipe_map(page,60,0);page.wait_for_timeout(100);visible(page,'Open chest').tap();page.wait_for_timeout(100);reward=saved(page).get('pendingLoot');assert (reward and reward['rarity']>=6) or saved(page)['player'].get('gold',0)>0
   if reward:visible(page,'Pick up').tap();page.wait_for_timeout(100)

@@ -236,13 +236,13 @@ export function simulate(
             )
               a = { type: "pickup" };
             else a = { type: "ignore" };
-          } else if (g.pendingChest) {
+          } else if (g.pendingChest && !m) {
             a =
               !g.chests?.find((c) => c.id === g.pendingChest)?.locked ||
               g.inventory.some((i) => i.kind === "key")
                 ? { type: "open-chest", id: g.pendingChest }
                 : { type: "dismiss-object" };
-          } else if (g.pendingDoor) {
+          } else if (g.pendingDoor && !m) {
             a = g.inventory.some((i) => i.kind === "key" && i.value === 2)
               ? { type: "unlock-door", id: g.pendingDoor }
               : { type: "dismiss-object" };
@@ -325,7 +325,7 @@ export function simulate(
                 type: "cast",
                 spell: spells[Math.floor(rng() * spells.length)].name,
               };
-            else if (rng() < 0.01 && p.weapons.length)
+            else if (rng() < 0.01 && p.weapons.length && g.inventory.length + 1 + Number(p.weapons.length > 1) <= g.capacity)
               a = { type: "unequip", id: p.weapons[0].id };
             else if (rng() < 0.01 && g.inventory.length)
               a = { type: "drop", id: g.inventory[0].id };

@@ -50,6 +50,10 @@ describe("rare creatures and keyless magic", () => {
     const pot = g.loot.find((l) => l.item.name === "Pot of Gold")?.item;
     expect(pot).toBeDefined(); expect(pot!.value).toBeGreaterThanOrEqual(1); expect(pot!.value).toBeLessThanOrEqual(50);
     expect(g.xp).toBeGreaterThan(0);
+    const beforeGold = g.player.gold || 0;
+    g = act(g, { type: "move", dx: 1, dy: 0 });
+    expect(g.player.gold).toBe(beforeGold + pot!.value);
+    expect(g.loot.some((l) => l.item.id === pot!.id)).toBe(false);
     expect(catalogItems(g).some((i) => i.name === "Pot of Gold")).toBe(false);
     expect(Array.from({ length: 100 }, () => randomItem(g)).some((i) => i.name === "Pot of Gold")).toBe(false);
     const values = Array.from({ length: 1000 }, () => makeItem(g, "Pot of Gold").value);
@@ -94,6 +98,16 @@ describe("rare creatures and keyless magic", () => {
       if (Math.abs(after.monsters[0].x - 12) + Math.abs(after.monsters[0].y - 7) === 2) doubleMove = true;
     }
     expect(doubleMove).toBe(true);
+    let evenMove = false;
+    for (let seed = 1; seed <= 100; seed++) {
+      const trial = structuredClone(g); trial.seed = seed; trial.turn = 1;
+      trial.player.stats.Speed = 1;
+      const after = act(trial, { type: "wait" });
+      const distance = Math.abs(after.monsters[0].x - 12) + Math.abs(after.monsters[0].y - 7);
+      expect(distance).toBeLessThanOrEqual(2);
+      if (distance > 0) evenMove = true;
+    }
+    expect(evenMove).toBe(true);
     let struck = false;
     for (let seed = 1; seed <= 200 && !struck; seed++) {
       const trial = arena(seed); const attacker = target(trial, "Shadow", 6, 7);
@@ -127,6 +141,11 @@ describe("rare creatures and keyless magic", () => {
     g = act(g, { type: "cast", spell: "Befriend" });
     expect(g.combat).toBeUndefined(); expect(g.monsters[0].merchant).toBeDefined();
     expect(g.monsters[0].x).toBe(m.x); expect(g.xp).toBe(0);
+    const guarded = arena(14); const boss = target(guarded, "Zombie");
+    boss.boss = true; guarded.player.weapons = [makeItem(guarded, "Water Staff")];
+    expect(availableSpells(guarded).some((s) => s.name === "Befriend")).toBe(false);
+    expect(() => act(guarded, { type: "cast", spell: "Befriend" })).toThrow("Spell unavailable");
+    expect(guarded.player.stats.Mana).toBe(10);
     g = arena(8); g.player.weapons = [makeItem(g, "Wind Staff")];
     addChest(g, 6, 7); expect(availableSpells(g).some((s) => s.name === "Unseal")).toBe(true);
     g = act(g, { type: "cast", spell: "Unseal" });

@@ -10,7 +10,9 @@ try:
   scenes=[('lootPile','Pick up'),('stairPile','Ascend · leave floor items'),('guaranteedKill','Attack'),('missKill','Attack'),('firstThreat','Attack'),('dragonEncounter','Attack'),('combatLowHealth','Attack')]
   for width,height in ([] if os.environ.get('FOLLOWUP_SKIP_MATRIX') else [(320,480),(360,560),(390,760),(430,915),(844,390)]):
    page.set_viewport_size({'width':width,'height':height});print('Follow-up layouts',width,height,flush=True)
-   for scene,action in scenes:load(page,scene);fits(page);visible(page,action)
+   for scene,action in scenes:
+    print('Checking follow-up',scene,width,height,flush=True)
+    load(page,scene);fits(page);visible(page,action)
   if os.environ.get('FOLLOWUP_LAYOUT_ONLY'):
    assert not errors,errors;print('PASS: 35 targeted combat/loot/dragon/caster-low-health layouts',flush=True);browser.close();raise SystemExit(0)
   page.set_viewport_size({'width':390,'height':760});load(page,'lootPile');expect(page.get_by_role('navigation',name='Items at your feet').get_by_role('button')).to_have_count(3)
