@@ -56,7 +56,7 @@ try:
   print('PASS: visible villager last words and curse, no rewards, delayed ghost at death site',flush=True)
   load(page,'curse');expect(page.locator('.curse-chip')).to_contain_text('12 turns');visible(page,'Wait').tap();page.wait_for_timeout(100);expect(page.locator('.curse-chip')).to_contain_text('11 turns');visible(page,'Item: Poison Antidote').tap();visible(page,'Use item').tap();expect(page.locator('.curse-chip')).to_have_count(0)
   load(page,'summonReady');visible(page,'Cast Summon · 9 MP').tap();page.wait_for_timeout(100);assert len(saved(page)['monsters'])==1;assert saved(page)['player']['stats']['Mana']==1
-  load(page,'alchemizeReady');visible(page,'Cast Alchemize · 8 MP').tap();page.wait_for_timeout(100);assert saved(page)['player']['gold']>=3;expect(page.locator('.floor-name')).to_contain_text('gold')
+  load(page,'alchemizeReady');visible(page,'Cast Alchemize · 8 MP').tap();page.wait_for_timeout(100);assert saved(page)['player']['gold']>=3;expect(page.locator('.gold-purse')).to_contain_text('gold')
   load(page,'expansionBag');visible(page,'Item: Power Doubler').tap();visible(page,'Use item').tap();assert saved(page)['player']['stats']['Power']==20
   visible(page,'Item: 20 Gold Coins').tap();visible(page,'Use item').tap();assert saved(page)['player']['gold']==20
   visible(page,'Item: Seismic Shocker').tap();expect(page.get_by_role('dialog')).to_contain_text('yourself');visible(page,'Use item').tap();assert saved(page)['player']['hp']==95;assert saved(page)['monsters'][0]['hp']==15
@@ -74,7 +74,8 @@ try:
 
   load(page,'lockedChest');visible(page,'Open chest').tap();page.wait_for_timeout(100);assert not saved(page)['inventory'];assert saved(page)['pendingLoot'];visible(page,'Pick up').tap()
   load(page,'secretDoor');visible(page,'Unlock secret door').tap();page.wait_for_timeout(750);assert saved(page)['inSecret'];expect(page.locator('.floor-name')).to_contain_text('Secret chamber');page.screenshot(path=str(root/'work/secret-room-v7.png'))
-  swipe_map(page,60,0);page.wait_for_timeout(180);swipe_map(page,60,0);page.wait_for_timeout(180);swipe_map(page,60,0);page.wait_for_timeout(100);visible(page,'Open chest').tap();page.wait_for_timeout(100);assert saved(page)['pendingLoot']['rarity']>=6;visible(page,'Pick up').tap();page.wait_for_timeout(100)
+  swipe_map(page,60,0);page.wait_for_timeout(180);swipe_map(page,60,0);page.wait_for_timeout(180);swipe_map(page,60,0);page.wait_for_timeout(100);visible(page,'Open chest').tap();page.wait_for_timeout(100);reward=saved(page).get('pendingLoot');assert (reward and reward['rarity']>=6) or saved(page)['player'].get('gold',0)>0
+  if reward:visible(page,'Pick up').tap();page.wait_for_timeout(100)
   if saved(page)['pendingLevels']:visible(page,'Power +2').tap()
   page.reload();page.wait_for_selector('canvas');assert saved(page)['inSecret'];assert saved(page)['chests'][0]['opened']
   for _ in range(5):swipe_map(page,-60,0);page.wait_for_timeout(150)

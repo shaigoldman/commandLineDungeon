@@ -320,16 +320,51 @@ export function itemCanvas(
     r(11, 15, 10, 3, "#b7e7cf");
     r(19, 20, 3, 6, "#3e5667");
   } else if (key.startsWith("gold-")) {
-    r(7, 8, 18, 18, dark);
-    r(8, 7, 16, 18, "#b68642");
-    r(10, 8, 12, 15, "#eac66b");
-    r(11, 9, 9, 2, "#fff0af");
-    r(15, 11, 3, 10, "#a6743f");
-    r(12, 14, 9, 3, "#a6743f");
     if (item.name !== "1 Gold Coin") {
-      r(4, 22, 21, 3, "#8d6039");
-      r(5, 21, 21, 2, "#f0d382");
+      r(7, 25, 21, 5, dark);
+      r(8, 26, 19, 1, "#f0d382");
+      r(8, 27, 19, 2, "#9b6538");
+      r(10, 29, 15, 1, "#dca754");
     }
+    // Stepped round silhouette, shaded rim and a raised royal sun seal.
+    r(12, 4, 8, 1, dark);
+    r(9, 5, 14, 2, dark);
+    r(7, 7, 18, 3, dark);
+    r(6, 10, 20, 11, dark);
+    r(7, 21, 18, 3, dark);
+    r(9, 24, 14, 2, dark);
+    r(12, 26, 8, 1, dark);
+    r(10, 6, 12, 2, "#b68642");
+    r(8, 8, 16, 3, "#b68642");
+    r(7, 11, 18, 9, "#b68642");
+    r(8, 20, 16, 3, "#9b6538");
+    r(10, 23, 12, 2, "#9b6538");
+    r(11, 7, 10, 2, "#fff0af");
+    r(9, 9, 14, 3, "#f3d377");
+    r(8, 12, 16, 8, "#eac66b");
+    r(10, 20, 12, 3, "#eac66b");
+    r(9, 11, 1, 9, "#fff0af");
+    r(22, 12, 1, 8, "#bd8944");
+    r(13, 12, 6, 7, "#a6743f");
+    r(14, 11, 4, 9, "#a6743f");
+    r(12, 14, 8, 3, "#a6743f");
+    r(14, 12, 4, 6, "#f8df8b");
+    r(15, 13, 2, 3, "#fff0af");
+    r(13, 21, 6, 1, "#fff0af");
+  } else if (key === "stair-key") {
+    // Blue stair-shaped bow, visibly different from gold and purple chest keys.
+    r(5, 3, 17, 14, dark);
+    r(7, 5, 13, 10, "#84cadb");
+    r(9, 7, 9, 6, dark);
+    r(9, 11, 3, 2, "#d4f5e7");
+    r(12, 9, 3, 4, "#d4f5e7");
+    r(15, 7, 3, 6, "#d4f5e7");
+    r(11, 16, 6, 14, dark);
+    r(12, 16, 3, 12, "#84cadb");
+    r(12, 17, 1, 10, "#d4f5e7");
+    r(15, 22, 8, 3, "#84cadb");
+    r(19, 24, 4, 4, "#84cadb");
+    r(15, 27, 3, 2, "#84cadb");
   } else if (key.startsWith("key-")) {
     const color = item.name.startsWith("Rare") ? "#cf9bf2" : "#dfcb85";
     r(6, 4, 12, 12, dark);

@@ -383,7 +383,8 @@ export function expansionFloor(g: Game) {
     g.tiles
       .flatMap((row, y) => row.map((v, x) => ({ v, x, y })))
       .filter((t) => t.v === 0 && !used(t.x, t.y));
-  for (let n = 0; n < 1 + roll(g, 3); n++) {
+  const chestCount = 1 + roll(g, 2);
+  for (let n = 0; n < chestCount; n++) {
     const loc = pick(g, spots());
     if (loc) addChest(g, loc.x, loc.y);
   }

@@ -1436,3 +1436,41 @@ body.playing-game {
 .level-current-stats b {
   font-size: 17px;
 }
+
+.gold-purse {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #f5d884;
+  font:
+    700 11px/15px Arial,
+    sans-serif;
+}
+.gold-purse img {
+  width: 18px;
+  height: 18px;
+  image-rendering: pixelated;
+}
+.gold-purse small {
+  font-size: 9px;
+  color: #d4bf86;
+}
+
+.stair-key-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 5px;
+  color: #a9dfe8;
+  white-space: nowrap;
+  font-size: 9px;
+}
+.stair-key-count img {
+  width: 15px;
+  height: 15px;
+}
+.stair-lock-note {
+  flex-basis: 100%;
+  color: #c8dfda;
+  font-size: 10px;
+}

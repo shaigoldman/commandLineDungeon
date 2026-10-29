@@ -1,3 +1,4 @@
+import { itemIcon } from "./item-art";
 import { dragonArt } from "./dragon-art";
 import { itemLore, rarityInfo } from "../shared/item-lore";
 import { MerchantPanel } from "./MerchantPanel";
@@ -92,8 +93,6 @@ export function PlayScreen({
     g.status === "playing" &&
     !g.pendingLevels &&
     !enemy &&
-    !g.pendingChest &&
-    !g.pendingDoor &&
     !busy &&
     !panel &&
     !selection &&
@@ -405,7 +404,8 @@ export function PlayScreen({
         `Poison: −${n(Math.trunc(before.player.effects.Poison[1]))} HP. ${after.player.effects.Poison?.[0] || 0} steps remaining.`,
       );
     } else if (after.status === "dead") announce("Your journey has ended.");
-    else if (after.keys > before.keys) announce("Staircase key acquired!");
+    else if (after.keys > before.keys)
+      announce("Stair Key acquired · unlocks locked stairs only.");
     else if (after.pendingLevels) announce("Level up! Choose a bonus.");
     else if (
       after.combat &&
@@ -422,6 +422,10 @@ export function PlayScreen({
     )
       announce(
         `Energy restored: +${n(Math.max(0, after.player.hp - before.player.hp))} HP · +${n(Math.max(0, after.player.stats.Mana - before.player.stats.Mana))} MP`,
+      );
+    else if (entries.some((line) => line.startsWith("Collected ")))
+      announce(
+        entries.filter((line) => line.startsWith("Collected ")).join(" "),
       );
     else if (a.type === "attack")
       announce(
@@ -569,7 +573,6 @@ export function PlayScreen({
           {g.inSecret
             ? "Secret chamber"
             : `F${g.floor + 1} · ${floorTheme(g.floor).name}`}{" "}
-          · ◉ {p.gold || 0} gold
         </span>
         <button onClick={() => setPanel("save")}>
           {isDeviceGame ? "Saved on phone" : "Saved journey"} ●
@@ -596,6 +599,26 @@ export function PlayScreen({
                   Lv {p.level} {p.className}
                 </small>
               </strong>
+              <span className="gold-purse" aria-label={`${p.gold || 0} gold`}>
+                <img
+                  src={itemIcon({ kind: "gold", name: "1 Gold Coin" })}
+                  alt=""
+                />
+                <b>{p.gold || 0}</b>
+                <small>gold</small>
+                {(g.keys > 0 || g.stairs.locked) && (
+                  <span
+                    className="stair-key-count"
+                    title="Stair Keys unlock stairs only; Standard and Rare Keys open chests/doors."
+                  >
+                    <img
+                      src={itemIcon({ kind: "stair-key", name: "Stair Key" })}
+                      alt="Stair Key"
+                    />
+                    {g.keys} Stair {g.keys === 1 ? "Key" : "Keys"}
+                  </span>
+                )}
+              </span>
               <span className="held-line">
                 {p.weapons.slice(-2).map((i) => (
                   <ItemIcon key={i.id} item={i} />
@@ -727,9 +750,9 @@ export function PlayScreen({
           movementBlockedHint={
             lootMovementHint ||
             (activeChest
-              ? "Chest ahead. Open it or choose Leave chest to keep exploring."
+              ? "Chest found. Open it, or swipe to leave it and move."
               : activeDoor
-                ? "Secret door ahead. Unlock it with a Rare Key, or choose Leave door."
+                ? "Secret door found. Unlock it, or swipe to move away."
                 : undefined)
           }
           onMove={(dx, dy) => {
@@ -759,7 +782,7 @@ export function PlayScreen({
         )}
         {lootMovementHint && !toast && (
           <p className="loot-movement-hint" role="status">
-            ITEM FOUND · Movement paused
+            ITEM FOUND
             <br />
             Swipe to leave the loot and move.
           </p>
@@ -876,12 +899,6 @@ export function PlayScreen({
                       {danger?.critical}
                     </p>
                   )}
-                  {enemy.merchant && (
-                    <p className="kill-warning">
-                      Harming villagers: no loot or EXP. Killing brings a long
-                      curse and a ghost.
-                    </p>
-                  )}
                   <div className="context-actions">
                     {(enemy.npc || enemy.merchant) && (
                       <button
@@ -973,6 +990,7 @@ export function PlayScreen({
                     type: "open-chest",
                     id: activeChest.id,
                   })}
+                  <small>Swipe the dungeon to leave this chest and move.</small>
                   {actButton("Leave chest", { type: "dismiss-object" })}
                 </div>
               )}
@@ -992,6 +1010,13 @@ export function PlayScreen({
                   {ground && (
                     <small>
                       Loot is on the stairs. You can ascend and leave it behind.
+                    </small>
+                  )}
+                  {g.stairs.locked && (
+                    <small className="stair-lock-note">
+                      {g.keys
+                        ? "Uses 1 Stair Key to unlock these stairs."
+                        : "Locked stairs · needs a Stair Key from this floor’s key carrier. Chest/door keys won’t fit."}
                     </small>
                   )}
                   {actButton("Ascend", { type: "ascend" }, false, "primary")}
@@ -1476,7 +1501,11 @@ export function PlayScreen({
                 <h2>{p.name} · Full stats</h2>
                 <p>
                   Lv {p.level} {p.className} · XP {n(g.xp)}/100 · Score{" "}
-                  {n(g.score)} · Keys {g.keys}
+                  {n(g.score)} · Stair Keys {g.keys}
+                </p>
+                <p>
+                  Stair Keys unlock stairs only and are tracked separately from
+                  the Standard and Rare Keys in your bag.
                 </p>
                 {p.poisonImmune && (
                   <p>POISON IMMUNITY · permanent; curses still affect you.</p>
@@ -1577,6 +1606,11 @@ export function PlayScreen({
             ) : panel === "enemy" && enemy ? (
               <>
                 <h2>{enemy.name} · Enemy stats</h2>
+                {enemy.key && (
+                  <p>
+                    Carries a Stair Key · unlocks this floor’s locked stairs.
+                  </p>
+                )}
                 {statList(enemy)}
                 <p>
                   Enemy damage {danger?.normal} · Critical {danger?.critical} (
@@ -1726,6 +1760,11 @@ export function PlayScreen({
                   Magic appears only when spells are ready to cast. Tap a spell
                   card to cast. Attack exchanges blows; using items does not
                   spend a normal combat round. End encounter leaves safely.
+                </p>
+                <p>
+                  Stair Keys come from a floor’s key carrier and unlock stairs
+                  only. Standard Keys open chests; Rare Keys open chests or
+                  secret doors.
                 </p>
                 <p>
                   Poison is shown in the top panel and damages you on successful

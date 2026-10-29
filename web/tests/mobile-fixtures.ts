@@ -391,8 +391,37 @@ Object.assign(redDragon, {
 });
 dragonEncounter.monsters = [redDragon];
 dragonEncounter.combat = redDragon.id;
+const goldAhead = openArena("Scout");
+goldAhead.monsters = [];
+goldAhead.inventory = [];
+goldAhead.capacity = 0;
+goldAhead.player.gold = 7;
+goldAhead.loot = [{ x: 16, y: 7, item: makeItem(goldAhead, "20 Gold Coins") }];
+const goldChest = structuredClone(lockedChest);
+goldChest.chests![0].reward = makeItem(goldChest, "10 Gold Coins");
+const lockedStairs = structuredClone(stairs);
+lockedStairs.stairs.locked = true;
+lockedStairs.keys = 0;
+lockedStairs.monsters = [];
+lockedStairs.loot = [];
+lockedStairs.pendingLoot = undefined;
+lockedStairs.inventory = [
+  makeItem(lockedStairs, "Standard Key"),
+  makeItem(lockedStairs, "Rare Key"),
+];
+const stairKeyReady = structuredClone(lockedStairs);
+stairKeyReady.keys = 1;
+const stairKeyCarrier = structuredClone(guaranteedKill);
+stairKeyCarrier.monsters[0].key = true;
+stairKeyCarrier.monsters[0].name = "Stair Key carrier";
+stairKeyCarrier.keys = 0;
 console.log(
   JSON.stringify({
+    lockedStairs,
+    stairKeyReady,
+    stairKeyCarrier,
+    goldAhead,
+    goldChest,
     explore,
     swipe,
     poisonMove,

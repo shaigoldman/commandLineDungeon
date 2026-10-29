@@ -116,10 +116,6 @@ export function MerchantPanel({
           {g.marketNotice}
         </p>
       )}
-      <p>
-        Villagers are fragile, fast, and protected by a deadly curse. Killing
-        one gives no loot or EXP.
-      </p>
     </>
   );
 }

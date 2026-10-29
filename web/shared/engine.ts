@@ -147,14 +147,14 @@ export function makeItem(g: Game, name: string): Item {
   const desc: Record<string, string> = {
     antidote: "Cure poison and curses.",
     seismic:
-      "Deal exactly 5 damage to every monster, NPC and yourself, ignoring armor. Killing villagers brings a curse.",
+      "Deal exactly 5 damage to every monster, NPC and yourself, ignoring armor.",
     immunity: "Permanent poison immunity. Curses are not poison.",
     double: `Permanently double ${i.stat}.`,
     gold: `Add ${i.value} gold to your purse. No bag slot needed.`,
     key:
       i.value === 2
-        ? "Opens a chest or secret door; consumed once."
-        : "Opens a regular chest; consumed once.",
+        ? "Opens chests or secret doors, not stairs; consumed once."
+        : "Opens regular chests only, not stairs; consumed once.",
     rope: "Guarantee escape from combat.",
     nuke: "Destroy all monsters and yourself unless shielded.",
     shield: "Protect against one nuke.",
@@ -638,7 +638,10 @@ export function itemUseProblem(g: Game, i: Item): string | undefined {
     return "You have no poison or curse.";
   if (i.kind === "immunity" && g.player.poisonImmune)
     return "Already immune to poison.";
-  if (i.kind === "key") return "Use this at a chest or secret door.";
+  if (i.kind === "key")
+    return i.value === 2
+      ? "Use at chests or secret doors, not stairs."
+      : "Use at regular chests only, not stairs.";
 }
 export function hitRate(a: Actor, b: Actor) {
   const s = attackStats(a),
@@ -695,7 +698,7 @@ function kill(g: Game, m: Actor, reward = true, drops = reward) {
     if (m.key) {
       g.keys++;
       g.score += 100;
-      log(g, "Acquired the staircase key!");
+      log(g, "Acquired a Stair Key!");
     } else {
       const i = randomItem(g, g.floor + g.player.stats.Luck * 0.01);
       g.loot.push({ x: m.x, y: m.y, item: i });
@@ -991,6 +994,23 @@ function use(g: Game, i: Item) {
   if (!["teleport", "trash"].includes(i.kind))
     g.inventory = g.inventory.filter((a) => a.id !== i.id);
 }
+/** Coins never interrupt exploration, take bag space, or need inspection. */
+function collectFloorGold(g: Game) {
+  const coins = g.loot.filter(
+    (l) => l.x === g.player.x && l.y === g.player.y && l.item.kind === "gold",
+  );
+  if (!coins.length) return;
+  const ids = new Set(coins.map((l) => l.item.id));
+  const amount = coins.reduce((sum, l) => sum + l.item.value, 0);
+  g.player.gold = (g.player.gold || 0) + amount;
+  g.loot = g.loot.filter((l) => !ids.has(l.item.id));
+  if (g.pendingLoot && ids.has(g.pendingLoot.id)) {
+    g.pendingLoot = g.loot.find(
+      (l) => l.x === g.player.x && l.y === g.player.y,
+    )?.item;
+  }
+  log(g, `Collected ${amount} gold.`);
+}
 export function act(input: Game, a: Action): Game {
   const g = structuredClone(input),
     p = g.player;
@@ -1137,6 +1157,7 @@ export function act(input: Game, a: Action): Game {
           log(g, "Health pod restored your health.");
         }
       }
+      collectFloorGold(g);
       const loot = g.loot.find((i) => i.x === x && i.y === y);
       if (loot) g.pendingLoot = loot.item;
       monsterTurn(g);
@@ -1428,7 +1449,10 @@ export function act(input: Game, a: Action): Game {
       if (m || p.x !== g.stairs.x || p.y !== g.stairs.y)
         throw Error("Stand on the cleared stairs first.");
       if (g.stairs.locked) {
-        if (!g.keys) throw Error("Find the key carrier first.");
+        if (!g.keys)
+          throw Error(
+            "A Stair Key is required. Defeat this floor’s key carrier; Standard and Rare Keys cannot unlock stairs.",
+          );
         g.keys--;
         g.stairs.locked = false;
       }
@@ -1589,5 +1613,6 @@ export function act(input: Game, a: Action): Game {
     default:
       throw Error("Unknown action");
   }
+  collectFloorGold(g);
   return g;
 }

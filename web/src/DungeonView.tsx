@@ -130,8 +130,10 @@ export function DungeonView({
           "Chest",
           "UltraChest",
           "SecretDoor",
-        ])
+        ]) {
           textures[kind] = Texture.from(worldArt(kind));
+          textures[kind].source.scaleMode = "nearest";
+        }
         textures.Dragon = Texture.from(dragonArt());
         textures.Dragon.source.scaleMode = "nearest";
         const itemTextures = new Map<string, Texture>();
@@ -210,7 +212,8 @@ export function DungeonView({
               g.player.stats.Mana > before.player.stats.Mana);
           const acquired =
             changed &&
-            ["pickup", "use-floor", "equip-floor"].includes(actionType);
+            (["pickup", "use-floor", "equip-floor"].includes(actionType) ||
+              (g.player.gold || 0) > (before.player.gold || 0));
           const attacked =
             changed &&
             (actionType === "attack" ||

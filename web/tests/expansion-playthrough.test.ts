@@ -379,8 +379,14 @@ describe("Ashfall playthroughs", () => {
         expect(g.player.hp).toBe(95);
       }
       if (deal === "Crown of Plenty") {
-        expect(g.player.gold).toBe(60);
-        expect(g.pendingLoot!.rarity).toBeGreaterThanOrEqual(6);
+        if (g.pendingLoot) {
+          expect(g.player.gold).toBe(60);
+          expect(g.pendingLoot.rarity).toBeGreaterThanOrEqual(6);
+        } else {
+          // A coin gift goes directly to the purse, never to inspection.
+          expect(g.player.gold).toBe(80);
+          expect(g.loot).toHaveLength(0);
+        }
       }
       if (deal === "Royal Ascension") {
         expect(g.player.stats.Health).toBe(90);
