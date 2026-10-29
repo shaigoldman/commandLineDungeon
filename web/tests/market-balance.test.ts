@@ -66,4 +66,34 @@ describe("villager prices", () => {
       g.monsters[0].merchant!.stock.some((s) => s.item.id === offer!.item.id),
     ).toBe(false);
   });
+  it("applies an automatic stat purchase during peaceful villager trade", () => {
+    let g = fresh(19);
+    const m = makeVillager(g, true);
+    const boost = makeItem(g, "Power Boost");
+    m.merchant!.stock = [{ item: boost, price: 3 }];
+    Object.assign(m, { x: g.player.x + 1, y: g.player.y });
+    g.monsters = [m];
+    g.combat = m.id;
+    g.player.gold = 10;
+    const before = g.player.stats.Power;
+    g = act(g, { type: "buy", id: boost.id });
+    expect(g.player.stats.Power).toBe(before + boost.value);
+    expect(g.player.gold).toBe(7);
+    expect(g.combat).toBe(m.id);
+    expect(g.monsters[0].merchant!.stock).toHaveLength(0);
+  });
+  it("requires fleeing after an enemy starts the encounter or an exchange occurs", () => {
+    let g = fresh(20);
+    const m = makeVillager(g);
+    Object.assign(m, { x: g.player.x + 1, y: g.player.y });
+    g.monsters = [m];
+    g.combat = m.id;
+    g.encounter = { enemyId: m.id, origin: "inspection", engaged: false, exchanges: 0 };
+    expect(act(g, { type: "leave" }).combat).toBeUndefined();
+    g.encounter.engaged = true;
+    expect(() => act(g, { type: "leave" })).toThrow("must flee");
+    g.encounter.engaged = false;
+    g.encounter.origin = "enemy";
+    expect(() => act(g, { type: "leave" })).toThrow("must flee");
+  });
 });

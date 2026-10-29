@@ -1028,7 +1028,13 @@ export function act(input: Game, a: Action): Game {
       if (!m?.merchant || Math.abs(m.x - p.x) + Math.abs(m.y - p.y) > 1)
         throw Error("No villager shop in this encounter.");
       const item = buy(g, m, a.id);
-      if (item.auto) use(g, item);
+      if (item.auto) {
+        // Trading is a peaceful action even when the villager is the current encounter.
+        const encounter = g.combat;
+        g.combat = undefined;
+        use(g, item);
+        g.combat = encounter;
+      }
       else g.inventory.push(item);
       g.marketNotice = `Bought ${item.name}.`;
       log(g, g.marketNotice);
@@ -1340,6 +1346,8 @@ export function act(input: Game, a: Action): Game {
       }
       break;
     case "leave":
+      if (m && (g.encounter?.engaged || g.encounter?.origin === "enemy"))
+        throw Error("You must flee to escape this encounter.");
       g.combat = undefined;
       g.encounter = undefined;
       log(g, "You end the encounter.");

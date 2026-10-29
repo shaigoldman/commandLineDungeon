@@ -43,8 +43,8 @@ export function MerchantPanel({
         <button aria-pressed={tab === "sell"} onClick={() => setTab("sell")}>
           Sell items
         </button>
-        <button onClick={() => void send({ type: "leave" })}>
-          Leave peacefully
+        <button onClick={() => void send(g.encounter?.engaged || g.encounter?.origin === "enemy" ? { type: "flee" } : { type: "leave" })}>
+          {g.encounter?.engaged || g.encounter?.origin === "enemy" ? "Flee · enemy may strike" : "Leave peacefully"}
         </button>
       </div>
       {tab === "buy" ? (

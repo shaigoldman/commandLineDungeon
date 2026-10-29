@@ -97,6 +97,13 @@ export function PlayScreen({
     !panel &&
     !selection &&
     !swapPickup;
+  const canSwipeEncounter =
+    !!enemy && !busy && !panel && !selection && !swapPickup &&
+    !g.pendingLevels && g.status === "playing";
+  const encounterExit: Action =
+    g.encounter?.engaged || g.encounter?.origin === "enemy"
+      ? { type: "flee" }
+      : { type: "leave" };
   const lootPaused =
     !!g.pendingLoot && !enemy && !g.pendingLevels && g.status === "playing";
   const lootMovementHint =
@@ -226,6 +233,11 @@ export function PlayScreen({
     setIgnoreStairs(true);
     void send({ type: "move", dx, dy });
   }
+  function swipeAwayFromEncounter() {
+    setSelection(null);
+    setPanel(null);
+    void send(encounterExit);
+  }
   const origin = g.encounter?.enemyId === enemy?.id ? g.encounter : undefined;
   function announce(message: string) {
     setToast(message.replace(/\b\d+\.\d{2,}\b/g, (v) => n(Number(v))));
@@ -298,7 +310,10 @@ export function PlayScreen({
         announce(lootMovementHint);
         return;
       }
-      if (dirs[e.key] && canMove) {
+      if (dirs[e.key] && canSwipeEncounter) {
+        e.preventDefault();
+        void send(encounterExit);
+      } else if (dirs[e.key] && canMove) {
         e.preventDefault();
         void send({ type: "move", dx: dirs[e.key][0], dy: dirs[e.key][1] });
       } else if (
@@ -314,7 +329,7 @@ export function PlayScreen({
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
-  }, [g, canMove, panel, selection, busy, lootMovementHint, swapPickup]);
+  }, [g, canMove, canSwipeEncounter, panel, selection, busy, lootMovementHint, swapPickup]);
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     const h = NativeApp.addListener("backButton", () => {
@@ -746,7 +761,7 @@ export function PlayScreen({
           game={g}
           action={lastAction}
           overview={overview}
-          movementEnabled={canMove}
+          movementEnabled={canMove || canSwipeEncounter}
           movementBlockedHint={
             lootMovementHint ||
             (activeChest
@@ -757,6 +772,7 @@ export function PlayScreen({
           }
           onMove={(dx, dy) => {
             if (canMove) void send({ type: "move", dx, dy });
+            else if (canSwipeEncounter) void send(encounterExit);
             else if (g.pendingLoot) moveFromLoot(dx, dy);
           }}
           onHint={announce}
@@ -919,9 +935,10 @@ export function PlayScreen({
                       enemy.npc || enemy.merchant ? "" : "primary",
                     )}
                     {actButton(
-                      origin?.engaged ? "End encounter" : "Close inspection",
-                      { type: "leave" },
+                      encounterExit.type === "flee" ? "Flee · enemy may strike" : "Leave encounter",
+                      encounterExit,
                     )}
+                    <small className="encounter-swipe-hint">Swipe the dungeon or press an arrow key to {encounterExit.type === "flee" ? "attempt to flee" : "leave"}.</small>
                     {ground && (
                       <button
                         onClick={() =>
@@ -1147,9 +1164,8 @@ export function PlayScreen({
           onPointerDown={(e) => {
             swipedLoot.current = false;
             if (
-              !selection?.ground ||
-              enemy ||
-              panel ||
+              !(selection?.ground || (enemy && (panel === "npc" || panel === "enemy"))) ||
+              (panel && panel !== "npc" && panel !== "enemy") ||
               swapPickup ||
               !e.isPrimary ||
               (e.target as HTMLElement).closest("button,input,select")
@@ -1179,7 +1195,8 @@ export function PlayScreen({
             if (direction.dy && scrolls && !start.zone && !start.outside)
               return;
             swipedLoot.current = true;
-            moveFromLoot(direction.dx, direction.dy);
+            if (enemy) swipeAwayFromEncounter();
+            else moveFromLoot(direction.dx, direction.dy);
           }}
           onClick={() => {
             if (!swipedLoot.current) closeDetails();

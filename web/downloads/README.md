@@ -11,7 +11,7 @@ Open that link in your Android phone's browser, download the APK, open it from D
 - Uninstalling or clearing app storage removes these local saves.
 - This is a debug-signed test APK, not a Google Play release. Updates signed with the same key can install in place; save compatibility across test versions is unsupported. A build signed by a different local/CI key cannot replace it without uninstalling.
 
-The current **0.7.2-test** build makes villager prices attainable earlier, offers more for ordinary sellable items, keeps wanted-item premiums, and avoids shops selling their own wanted items. [Price examples and verification](../docs/MARKET-BALANCE-V0.7.2.md).
+The current **0.7.3-test** build fixes automatic item purchases from villagers and restores a visible flee action when an enemy attacks. Swipe the dungeon or an open villager dialog to leave an inspection, or attempt to flee an active fight. Failed fleeing may cost HP. Villager prices retain the [0.7.2 balance](../docs/MARKET-BALANCE-V0.7.2.md).
 
 The earlier **0.7.1-test** build refines villager/ghost pixel art, keeps villager encounters spoiler-free, spawns one or two chests per floor, automatically collects coins without inspection, shows an illustrated coin purse in the hero panel, allows swiping away from chests and loot, and distinguishes blue Stair Keys from Standard/Rare chest and door keys. See the [refinement checklist](../docs/REFINEMENTS-V0.7.1.md).
 

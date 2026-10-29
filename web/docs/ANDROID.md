@@ -14,7 +14,7 @@ Android uses `LocalGameAPI` to run the shared engine locally. All successful gam
 
 Android progress is **separate from server progress**. A device journey code works only on the same installation. It does not retrieve a web save or transfer to another phone. The save panel makes this distinction explicit. Closing/reopening the app resumes the current journey; uninstalling or clearing app data removes local saves. This build does not implement cloud synchronization or cross-device save transfer.
 
-The package ID is `com.shaigoldman.commandlinedungeon.test`, version `0.7.2-test`, version code `10`, launcher name **Dungeon Test**. This is a debug-signed test package, distinct from any future store release. Native permissions are the normal Internet permission used by the WebView shell and an AndroidX internal signature permission; the game does not request contacts, location, or shared-storage access.
+The package ID is `com.shaigoldman.commandlinedungeon.test`, version `0.7.3-test`, version code `11`, launcher name **Dungeon Test**. This is a debug-signed test package, distinct from any future store release. Native permissions are the normal Internet permission used by the WebView shell and an AndroidX internal signature permission; the game does not request contacts, location, or shared-storage access.
 
 The workspace signing key is ignored under `work/android-user/`. Keep it for compatible rebuilds. A fresh checkout or CI may use a different test signing key; Android will reject an in-place update signed by that other key. Uninstalling to switch keys removes local progress. Release signing and Google Play publication need a separate owner-controlled production key and are not performed here.
 

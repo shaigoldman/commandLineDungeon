@@ -284,6 +284,15 @@ if (
 Object.assign(fairSeller, { x: 16, y: 7 });
 fairMarket.monsters = [fairSeller];
 fairMarket.combat = fairSeller.id;
+const marketAuto = structuredClone(market);
+const statOffer = makeItem(marketAuto, "Power Boost");
+marketAuto.monsters[0].merchant!.stock = [{ item: statOffer, price: 3 }];
+marketAuto.encounter = {
+  enemyId: marketAuto.monsters[0].id,
+  origin: "inspection",
+  engaged: false,
+  exchanges: 0,
+};
 const fullLoot = openArena("Scout");
 fullLoot.monsters = [];
 fullLoot.capacity = 2;
@@ -436,6 +445,7 @@ stairKeyCarrier.keys = 0;
 console.log(
   JSON.stringify({
     fairMarket,
+    marketAuto,
     lockedStairs,
     stairKeyReady,
     stairKeyCarrier,
