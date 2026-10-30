@@ -1,0 +1,112 @@
+{
+  "powered": false,
+  "seedsPerBuild": 5,
+  "maxActionsPerGame": 600,
+  "games": 60,
+  "actions": 7552,
+  "rejections": 0,
+  "rejectionReasons": {},
+  "wins": 0,
+  "deaths": 55,
+  "capped": 5,
+  "coverage": {
+    "move": 5594,
+    "attack": 574,
+    "pickup": 388,
+    "use": 327,
+    "level": 22,
+    "drop": 54,
+    "ignore": 402,
+    "flee": 93,
+    "unequip": 20,
+    "ascend": 2,
+    "cast": 76
+  },
+  "byBuild": {
+    "Warrior/Wind/Normal": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 3,
+      "capped": 2,
+      "highestFloor": 2
+    },
+    "Warrior/Wind/Hard": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 5,
+      "capped": 0,
+      "highestFloor": 1
+    },
+    "Knight/Wind/Normal": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 3,
+      "capped": 2,
+      "highestFloor": 1
+    },
+    "Knight/Wind/Hard": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 5,
+      "capped": 0,
+      "highestFloor": 1
+    },
+    "Scout/Wind/Normal": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 4,
+      "capped": 1,
+      "highestFloor": 2
+    },
+    "Scout/Wind/Hard": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 5,
+      "capped": 0,
+      "highestFloor": 1
+    },
+    "Mage/Wind/Normal": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 5,
+      "capped": 0,
+      "highestFloor": 1
+    },
+    "Mage/Wind/Hard": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 5,
+      "capped": 0,
+      "highestFloor": 1
+    },
+    "Mage/Fire/Normal": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 5,
+      "capped": 0,
+      "highestFloor": 1
+    },
+    "Mage/Fire/Hard": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 5,
+      "capped": 0,
+      "highestFloor": 1
+    },
+    "Mage/Water/Normal": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 5,
+      "capped": 0,
+      "highestFloor": 1
+    },
+    "Mage/Water/Hard": {
+      "games": 5,
+      "wins": 0,
+      "deaths": 5,
+      "capped": 0,
+      "highestFloor": 1
+    }
+  },
+  "findings": {}
+}

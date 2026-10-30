@@ -1,0 +1,114 @@
+{
+  "powered": false,
+  "seedsPerBuild": 50,
+  "maxActionsPerGame": 600,
+  "games": 600,
+  "actions": 71130,
+  "rejections": 4,
+  "rejectionReasons": {
+    "Inventory full. Use or drop an item before unequipping.": 4
+  },
+  "wins": 0,
+  "deaths": 561,
+  "capped": 39,
+  "coverage": {
+    "move": 52560,
+    "attack": 5307,
+    "pickup": 3844,
+    "use": 3392,
+    "level": 195,
+    "drop": 496,
+    "ignore": 2996,
+    "flee": 1093,
+    "unequip": 174,
+    "ascend": 19,
+    "cast": 1054
+  },
+  "byBuild": {
+    "Warrior/Wind/Normal": {
+      "games": 50,
+      "wins": 0,
+      "deaths": 36,
+      "capped": 14,
+      "highestFloor": 3
+    },
+    "Warrior/Wind/Hard": {
+      "games": 50,
+      "wins": 0,
+      "deaths": 49,
+      "capped": 1,
+      "highestFloor": 1
+    },
+    "Knight/Wind/Normal": {
+      "games": 50,
+      "wins": 0,
+      "deaths": 42,
+      "capped": 8,
+      "highestFloor": 2
+    },
+    "Knight/Wind/Hard": {
+      "games": 50,
+      "wins": 0,
+      "deaths": 49,
+      "capped": 1,
+      "highestFloor": 1
+    },
+    "Scout/Wind/Normal": {
+      "games": 50,
+      "wins": 0,
+      "deaths": 38,
+      "capped": 12,
+      "highestFloor": 2
+    },
+    "Scout/Wind/Hard": {
+      "games": 50,
+      "wins": 0,
+      "deaths": 50,
+      "capped": 0,
+      "highestFloor": 1
+    },
+    "Mage/Wind/Normal": {
+      "games": 50,
+      "wins": 0,
+      "deaths": 49,
+      "capped": 1,
+      "highestFloor": 2
+    },
+    "Mage/Wind/Hard": {
+      "games": 50,
+      "wins": 0,
+      "deaths": 50,
+      "capped": 0,
+      "highestFloor": 1
+    },
+    "Mage/Fire/Normal": {
+      "games": 50,
+      "wins": 0,
+      "deaths": 49,
+      "capped": 1,
+      "highestFloor": 1
+    },
+    "Mage/Fire/Hard": {
+      "games": 50,
+      "wins": 0,
+      "deaths": 50,
+      "capped": 0,
+      "highestFloor": 1
+    },
+    "Mage/Water/Normal": {
+      "games": 50,
+      "wins": 0,
+      "deaths": 49,
+      "capped": 1,
+      "highestFloor": 2
+    },
+    "Mage/Water/Hard": {
+      "games": 50,
+      "wins": 0,
+      "deaths": 50,
+      "capped": 0,
+      "highestFloor": 1
+    }
+  },
+  "findings": {}
+}

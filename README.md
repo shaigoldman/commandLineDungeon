@@ -1,19 +1,10 @@
-# commandLineDungeon
+# Command Line Dungeon
 
-How to play:
+The original Python game lives in [`python/`](python/). Its source and bundled options files are unchanged. To play it, run from that directory so its saves and options resolve correctly:
 
-1. Open terminal in mac
+```sh
+cd python
+python3 game.py
+```
 
-2. Zoom in with command+ (on some computers, command shift +).
-
-3. Change into desktop directory:
-
-	cd Desktop
-
-4. Install the game:
-
-	git clone https://github.com/shaigoldman/commandLineDungeon.git && cd commandLineDungeon
-
-5. Play:
-
-	python game.py
+The browser and Android remake lives in [`web/`](web/). See its [README](web/README.md) for setup, testing, and deployment.

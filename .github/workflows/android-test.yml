@@ -1,0 +1,41 @@
+name: Android test APK
+on:
+  push:
+    paths: ['web/**', '.github/workflows/android-test.yml']
+  pull_request:
+    paths: ['web/**', '.github/workflows/android-test.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    env:
+      ANDROID_USER_HOME: ${{ github.workspace }}/web/work/android-user
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+      - uses: actions/cache@v4
+        with:
+          path: web/work/android-user/debug.keystore
+          key: dungeon-android-test-signing-v1
+      - run: npm ci
+      - run: npx vitest run tests/local-api.test.ts
+      - run: npm run android:apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dungeon-android-test-apk
+          path: web/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
