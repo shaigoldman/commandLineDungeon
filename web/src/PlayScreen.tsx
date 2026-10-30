@@ -79,6 +79,8 @@ export function PlayScreen({
     [toast, setToast] = useState(""),
     [poisonFlash, setPoisonFlash] = useState(0),
     [curseFlash, setCurseFlash] = useState(0),
+    [trapNotice, setTrapNotice] = useState<{ message: string; revision: number } | null>(null),
+    [energyFullNotice, setEnergyFullNotice] = useState(0),
     [goldFlash, setGoldFlash] = useState<{ amount: number; revision: number } | null>(null),
     [trade, setTrade] = useState("");
   const [swapPickup, setSwapPickup] = useState<Item | null>(null);
@@ -407,6 +409,16 @@ export function PlayScreen({
     )
       setPanel(null);
     const entries = freshGameLog(before, after);
+    const trapMessages = entries.filter((line) => line.startsWith("TRAP:"));
+    if (trapMessages.length) {
+      const notice = { message: trapMessages.join(" "), revision: after.revision };
+      setTrapNotice(notice);
+      setTimeout(() => setTrapNotice((current) => current?.revision === notice.revision ? null : current), 3600);
+    }
+    if (entries.some((line) => line.startsWith("ENERGY FULL:"))) {
+      setEnergyFullNotice(after.revision);
+      setTimeout(() => setEnergyFullNotice((current) => current === after.revision ? 0 : current), 3000);
+    }
     const gainedGold = (after.player.gold || 0) - (before.player.gold || 0);
     if (gainedGold > 0) {
       setGoldFlash({ amount: gainedGold, revision: after.revision });
@@ -473,7 +485,9 @@ export function PlayScreen({
         entries.filter((line) => line.startsWith("Collected ")).join(" "),
       );
     else if (broken) announce(broken);
-    else if (entries.some((line) => line.startsWith("TRAP:"))) announce(entries.filter((line) => line.startsWith("TRAP:")).join(" "));
+    else if (trapMessages.length) announce(trapMessages.join(" "));
+    else if (entries.some((line) => line.startsWith("ENERGY FULL:")))
+      announce("Energy pod had no effect. It remains here for later.");
     else if (a.type === "attack")
       announce(
         (after.encounter?.result || entries.slice(-3).join(" ")) +
@@ -607,6 +621,18 @@ export function PlayScreen({
     .filter((l) => l.x === p.x && l.y === p.y)
     .map((l) => l.item);
   const ground = g.pendingLoot || groundPile[0];
+  if (g.status === "dead") return (
+    <main className="death-screen" data-testid="death-screen">
+      <div className="death-screen-content">
+        <span className="death-symbol" aria-hidden="true">✦</span>
+        <p className="death-eyebrow">Your journey has ended</p>
+        <h1>You Died</h1>
+        <p className="death-hero">{p.name} · Level {p.level} · Floor {g.floor + 1}</p>
+        <div className="death-score"><span>Final score</span><strong>{n(g.score)}</strong></div>
+        <button className="death-restart" onClick={onNew}>Begin a new journey</button>
+      </div>
+    </main>
+  );
   return (
     <main
       className={
@@ -897,18 +923,28 @@ export function PlayScreen({
         {!!curseFlash && (
           <div key={curseFlash} className="poison-flash curse-flash" data-testid="curse-flash" />
         )}
+        {trapNotice && (
+          <div key={trapNotice.revision} className="trap-alert" role="alert" data-testid="trap-alert">
+            <div className="trap-alert-flash" aria-hidden="true" />
+            <div className="trap-alert-card">
+              <strong>⚠ TRAP!</strong>
+              <span>{trapNotice.message.replace(/^TRAP:\s*/, "")}</span>
+            </div>
+          </div>
+        )}
+        {!!energyFullNotice && (
+          <div key={energyFullNotice} className="energy-full-notice" role="status" data-testid="energy-full-notice">
+            <strong>ENERGY FULL</strong>
+            <span>No energy restored. This pod remains here for later.</span>
+          </div>
+        )}
       </section>
       {context && (
         <section
           className="play-context"
           aria-hidden={!!selection || !!swapPickup || !!panel}
         >
-          {g.status === "dead" ? (
-            <>
-              <strong>Your journey ends here · Score {n(g.score)}</strong>
-              <button onClick={onNew}>Begin a new journey</button>
-            </>
-          ) : g.status === "won" ? (
+          {g.status === "won" ? (
             <>
               <strong>Ruthagor defeated · Score {n(g.score)}</strong>
               {actButton("Continue exploring", { type: "continue" })}

@@ -35,6 +35,28 @@ body.playing-game {
   color: #e8e2cc;
   font-family: Arial, sans-serif;
 }
+.death-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+  color: #f6e8cf;
+  background: radial-gradient(circle at 50% 42%, #49303b 0%, #192530 58%, #0b1520 100%);
+  text-align: center;
+  font-family: Georgia, serif;
+}
+.death-screen-content { width: min(100%, 440px); }
+.death-symbol { display: block; color: #d7ae76; font-size: 64px; text-shadow: 0 0 32px #d7805a; }
+.death-eyebrow { margin: 8px 0; color: #d8b9a4; font: 700 13px Arial, sans-serif; letter-spacing: 0.2em; text-transform: uppercase; }
+.death-screen h1 { margin: 12px 0; color: #ffdfb0; font-size: clamp(52px, 16vw, 76px); line-height: 1; text-shadow: 3px 4px #3c1925; }
+.death-hero { color: #e5d4c1; font-size: 17px; }
+.death-score { display: grid; gap: 4px; margin: 32px auto; padding: 18px; border: 2px solid #b99668; border-radius: 6px; background: #172733d9; }
+.death-score span { font: 700 13px Arial, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; }
+.death-score strong { color: #ffe4a7; font-size: 42px; }
+.death-restart { width: 100%; min-height: 58px; border: 2px solid #ffe0a1; border-radius: 6px; background: #c8a366; color: #18212a; font: 800 19px Georgia, serif; cursor: pointer; }
+.death-restart:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
 .play-shell button {
   touch-action: manipulation;
   cursor: pointer;
@@ -413,6 +435,64 @@ body.playing-game {
   animation: poison-pulse 0.65s ease-out forwards;
 }
 .curse-flash { background: #9c4fbe; }
+.trap-alert {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.trap-alert-flash {
+  position: absolute;
+  inset: 0;
+  background: #ed6b46;
+  animation: trap-screen-flash 0.85s ease-out forwards;
+}
+.trap-alert-card {
+  position: relative;
+  width: min(88vw, 420px);
+  padding: 18px 22px;
+  border: 3px solid #ffd58a;
+  border-radius: 8px;
+  background: #471f2cf2;
+  box-shadow: 0 0 0 5px #1c1528b8, 0 12px 32px #000b;
+  color: #fff3da;
+  text-align: center;
+  text-shadow: 1px 2px #241521;
+  animation: trap-card-pulse 0.25s ease-out;
+}
+.trap-alert-card strong, .trap-alert-card span { display: block; }
+.trap-alert-card strong { color: #ffe28d; font: 900 28px Georgia, serif; letter-spacing: 0.08em; }
+.trap-alert-card span { margin-top: 8px; font-size: 17px; line-height: 1.35; }
+.energy-full-notice {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 54;
+  width: min(82vw, 380px);
+  box-sizing: border-box;
+  transform: translate(-50%, -50%);
+  padding: 18px;
+  border: 2px solid #aed8e7;
+  border-radius: 8px;
+  background: #193a4df5;
+  box-shadow: 0 8px 30px #000b;
+  color: #e5f8ff;
+  text-align: center;
+  pointer-events: none;
+}
+.energy-full-notice strong, .energy-full-notice span { display: block; }
+.energy-full-notice strong { font: 900 22px Georgia, serif; letter-spacing: 0.07em; }
+.energy-full-notice span { margin-top: 7px; font-size: 15px; line-height: 1.4; }
+@keyframes trap-screen-flash {
+  0%, 25% { opacity: 0.65; }
+  100% { opacity: 0; }
+}
+@keyframes trap-card-pulse {
+  from { transform: scale(1.18); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
 @keyframes poison-pulse {
   0%,
   30% {
@@ -1197,6 +1277,8 @@ body.playing-game {
     animation: none;
     opacity: 0;
   }
+  .trap-alert-flash { animation: none; opacity: 0.28; }
+  .trap-alert-card { animation: none; }
   .is-poisoned .play-map {
     outline: 2px solid #8bbd69;
   }

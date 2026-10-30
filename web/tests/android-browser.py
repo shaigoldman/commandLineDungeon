@@ -9,7 +9,8 @@ server=subprocess.Popen(['python3','-m','http.server','3191','--bind','127.0.0.1
 def saved(page):
  return page.evaluate('''()=>{const k=Object.keys(localStorage).find(k=>k.endsWith('dungeon.android.saves.v1'));return JSON.parse(localStorage.getItem(k)).games[localStorage.getItem('dungeon-key')];}''')
 def load(page,name):
- page.evaluate('''game=>{const k=Object.keys(localStorage).find(k=>k.endsWith('dungeon.android.saves.v1'));const all=JSON.parse(localStorage.getItem(k));all.games[localStorage.getItem('dungeon-key')]=game;localStorage.setItem(k,JSON.stringify(all));}''',fixtures[name]);page.reload();page.wait_for_selector('canvas');expect(page.locator('.inventory-ribbon')).to_be_visible()
+ page.evaluate('''game=>{const k=Object.keys(localStorage).find(k=>k.endsWith('dungeon.android.saves.v1'));const all=JSON.parse(localStorage.getItem(k));all.games[localStorage.getItem('dungeon-key')]=game;localStorage.setItem(k,JSON.stringify(all));}''',fixtures[name]);page.reload();page.wait_for_selector('[data-testid=death-screen]' if name=='dead' else 'canvas')
+ if name!='dead':expect(page.locator('.inventory-ribbon')).to_be_visible()
 def visible(page,name):
  b=page.get_by_role('button',name=name,exact=True);expect(b).to_be_visible()
  if b.evaluate("el=>!!el.closest('.item-carousel,.spell-carousel,.play-modal')"):b.scroll_into_view_if_needed();page.wait_for_timeout(80)
@@ -51,7 +52,10 @@ try:
    page.set_viewport_size({'width':width,'height':height});print(f'Checking {width}x{height}',flush=True)
    for scene,action in scenes:
     load(page,scene)
-    try:fits(page);visible(page,action)
+    try:
+     if scene=='dead':
+      expect(page.get_by_test_id('death-screen')).to_be_visible();expect(page.locator('.death-score')).to_be_visible();visible(page,action)
+     else:fits(page);visible(page,action)
     except Exception:page.screenshot(path=str(root/'work/redesign-failure.png'));print('Failed',scene,width,height,flush=True);raise
   page.set_viewport_size({'width':390,'height':760});load(page,'swipe');assert page.locator('.magic-ribbon').count()==0;before=saved(page);swipe_map(page,65,0);page.wait_for_timeout(250);after=saved(page);assert after['player']['x']==before['player']['x']+1 and after['turn']==before['turn']+1
   visible(page,'Wait').tap();page.wait_for_timeout(100);assert saved(page)['turn']==after['turn']+1;swipe_map(page,-60,0);page.wait_for_timeout(150);assert saved(page)['player']['x']==before['player']['x']

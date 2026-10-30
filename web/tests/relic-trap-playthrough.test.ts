@@ -16,6 +16,14 @@ function base(seed = 813) {
 function trap(kind: Trap["kind"]): Trap { return { id: `trap-${kind}`, x: 11, y: 7, kind, revealed: false }; }
 
 describe("new relic and trap playthroughs", () => {
+  it("leaves a full-health energy pod in place and reports why it had no effect", () => {
+    let g = base();
+    g.pods = [{ x: 11, y: 7, max: false }];
+    g = act(g, { type: "move", dx: 1, dy: 0 });
+    expect(g.pods).toHaveLength(1);
+    expect(g.log.at(-1)).toContain("ENERGY FULL:");
+    expect(g.player.hp).toBe(100);
+  });
   it("charges jewels and crowns their rolled gold price for the chosen permanent stat", () => {
     let g = base(); g.player.gold = 20;
     const jewel = makeItem(g, "Strength Jewel"), crown = makeItem(g, "Luck Crown");

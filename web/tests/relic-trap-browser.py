@@ -14,7 +14,7 @@ def saved(page):
 def load(page, name):
     page.evaluate('''game=>{const k=Object.keys(localStorage).find(k=>k.endsWith('dungeon.android.saves.v1'));const all=JSON.parse(localStorage.getItem(k));all.games[localStorage.getItem('dungeon-key')]=game;localStorage.setItem(k,JSON.stringify(all));}''', fixtures[name])
     page.reload()
-    page.wait_for_selector("canvas")
+    page.wait_for_selector("[data-testid=death-screen]" if name == "dead" else "canvas")
 
 try:
     for _ in range(40):
@@ -58,10 +58,25 @@ try:
         x, y = box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
         page.mouse.move(x, y); page.mouse.down(); page.mouse.move(x + 65, y, steps=6); page.mouse.up()
         expect(page.locator(".play-toast")).to_contain_text("TRAP:")
+        expect(page.get_by_test_id("trap-alert")).to_contain_text("TRAP!")
+        expect(page.get_by_test_id("trap-alert")).to_contain_text("fairy stole")
+        page.wait_for_function("()=>Number(getComputedStyle(document.querySelector('.trap-alert-flash')).opacity)>0", timeout=1000)
         assert saved(page)["traps"][0]["revealed"]
         assert saved(page)["player"]["gold"] < before
+
+        load(page, "fullEnergyPod")
+        page.keyboard.press("ArrowRight")
+        expect(page.get_by_test_id("energy-full-notice")).to_contain_text("ENERGY FULL")
+        expect(page.get_by_test_id("energy-full-notice")).to_contain_text("remains here")
+        assert len(saved(page)["pods"]) == 1
+
+        load(page, "dead")
+        expect(page.get_by_test_id("death-screen")).to_be_visible()
+        expect(page.get_by_role("heading", name="You Died")).to_be_visible()
+        expect(page.locator(".death-score")).to_contain_text(str(fixtures["dead"]["score"]))
+        expect(page.get_by_role("button", name="Begin a new journey")).to_be_visible()
         browser.close()
-    print("PASS: Anvil and Blade Shard targets, weapon-break alert, shield HUD, swipe-triggered trap reveal and gold loss")
+    print("PASS: relic controls, shield HUD, trap alert, full energy notice and death screen")
 finally:
     server.terminate()
     server.wait(timeout=5)

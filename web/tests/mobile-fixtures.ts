@@ -62,6 +62,14 @@ const dead = structuredClone(explore);
 dead.status = "dead";
 dead.player.hp = 0;
 dead.log.push("Your journey has ended.");
+const fullEnergyPod = structuredClone(explore);
+fullEnergyPod.player.hp = fullEnergyPod.player.stats.Health;
+fullEnergyPod.inventory = fullEnergyPod.inventory.filter((item) => item.kind !== "tome");
+fullEnergyPod.player.weapons = fullEnergyPod.player.weapons.filter((item) => item.kind !== "tome");
+fullEnergyPod.monsters = [];
+fullEnergyPod.traps = [];
+fullEnergyPod.pods = [{ x: fullEnergyPod.player.x + 1, y: fullEnergyPod.player.y, max: false }];
+fullEnergyPod.tiles[fullEnergyPod.player.y][fullEnergyPod.player.x + 1] = 0;
 let won = structuredClone(explore);
 won.floor = 2;
 generateFloor(won);
@@ -550,6 +558,7 @@ console.log(
     fullBag,
     level,
     dead,
+    fullEnergyPod,
     won,
     stairs,
     critical,

@@ -1875,6 +1875,8 @@ export function act(input: Game, a: Action): Game {
           heal(p, pod.max ? p.stats.Health : p.stats.Health / 4 + 1);
           g.pods = g.pods.filter((i) => i !== pod);
           log(g, "Health pod restored your health.");
+        } else {
+          log(g, "ENERGY FULL: No energy restored. This pod remains here for later.");
         }
       }
       collectFloorGold(g);
