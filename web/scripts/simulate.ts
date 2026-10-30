@@ -21,7 +21,7 @@ export function violations(g: Game): string[] {
     errors.push("invalid-player-health-bounds");
   if (!Number.isInteger(p.gold || 0) || (p.gold || 0) < 0)
     errors.push("invalid-gold-purse");
-  if (p.stats.Mana < 0 || p.stats.Mana > 10) errors.push("invalid-mana");
+  if (p.stats.Mana < 0 || p.stats.Mana > (p.maxMana || 10)) errors.push("invalid-mana");
   if (g.monsters.some((m) => m.hp <= 0)) errors.push("unremoved-dead-monster");
   if (
     actors.some(

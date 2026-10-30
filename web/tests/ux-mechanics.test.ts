@@ -87,7 +87,7 @@ describe("floor items and combat safety forecast", () => {
     expect(m.effects["Attack Booster"]).toEqual([1, 50]);
     m.stats.Mana = 1;
     expect(incomingDamage(m, g.player).normal).toBe(
-      Math.ceil(m.stats.Power * 1.5),
+      Math.trunc(m.stats.Power + Math.ceil(m.stats.Power * 0.5)),
     );
   });
 });

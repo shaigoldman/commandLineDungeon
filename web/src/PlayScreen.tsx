@@ -17,6 +17,9 @@ import {
   floorEquipPlan,
   fleeChance,
   hitRate,
+  capacityOf,
+  manaCap,
+  spellCost,
 } from "../shared/engine";
 import {
   adjacentEnemies,
@@ -72,6 +75,7 @@ export function PlayScreen({
     [overview, setOverview] = useState(false),
     [toast, setToast] = useState(""),
     [poisonFlash, setPoisonFlash] = useState(0),
+    [curseFlash, setCurseFlash] = useState(0),
     [trade, setTrade] = useState("");
   const [swapPickup, setSwapPickup] = useState<Item | null>(null);
   const modal = useRef<HTMLDivElement>(null),
@@ -208,7 +212,7 @@ export function PlayScreen({
     if (!incoming) return;
     if (
       !incoming.auto &&
-      g.inventory.length + Number(p.weapons.length > 0) >= g.capacity
+      g.inventory.length + Number(p.weapons.length > 0) >= capacityOf(g)
     )
       setSwapPickup(incoming);
     else void send({ type: "pickup", id: incoming.id });
@@ -382,7 +386,12 @@ export function PlayScreen({
       after.pendingLoot &&
       (after.pendingLoot.id !== before.pendingLoot?.id ||
         !!before.pendingLevels);
-    setSelection(opensLoot ? { item: after.pendingLoot!, ground: true } : null);
+    const usedItem = (a.type === "use" || a.type === "use-floor") && selection?.item.id === a.id;
+    const remaining = usedItem && (a.type === "use"
+      ? after.inventory.find((item) => item.id === a.id)
+      : after.loot.find((entry) => entry.item.id === a.id)?.item);
+    setSelection(opensLoot ? { item: after.pendingLoot!, ground: true } : remaining && after.status === "playing" && !after.pendingLevels
+      ? { item: remaining, ground: a.type === "use-floor" } : null);
     setSwapPickup(null);
     if (after.pendingLevels && after.status === "playing") setPanel("level");
     else if (
@@ -405,6 +414,8 @@ export function PlayScreen({
     }
     const moved =
       after.player.x !== before.player.x || after.player.y !== before.player.y;
+    if (before.player.effects.Curse && after.turn > before.turn && after.player.hp < before.player.hp)
+      requestAnimationFrame(() => requestAnimationFrame(() => setCurseFlash(after.revision)));
     const curseNotice = entries.find((s) => s.startsWith("CURSED:"));
     if (curseNotice)
       announce(
@@ -675,6 +686,8 @@ export function PlayScreen({
                   {p.effects.Poison[0]} steps
                 </span>
               )}
+              {p.effects["Critical Star"] && <span className="weapon-uses">★ Next landed hit: critical</span>}
+              {p.effects["Speedy Boots"] && <span className="weapon-uses">✦ Next enemy attack: 99% dodge</span>}
             </span>
           </button>
           <div
@@ -697,9 +710,9 @@ export function PlayScreen({
               value={p.hp}
             />
             <label>
-              MP <b>{n(p.stats.Mana)}/10</b>
+              MP <b>{n(p.stats.Mana)}/{manaCap(p)}</b>
             </label>
-            <meter min={0} max={10} value={p.stats.Mana} />
+            <meter min={0} max={manaCap(p)} value={p.stats.Mana} />
           </div>
         </section>
         {enemy && (
@@ -857,6 +870,9 @@ export function PlayScreen({
             className="poison-flash"
             data-testid="poison-flash"
           />
+        )}
+        {!!curseFlash && (
+          <div key={curseFlash} className="poison-flash curse-flash" data-testid="curse-flash" />
         )}
       </section>
       {context && (
@@ -1064,7 +1080,7 @@ export function PlayScreen({
       )}
       <section className="inventory-ribbon" aria-label="Inventory items">
         <span className="ribbon-label">
-          BAG {g.inventory.length + Number(p.weapons.length > 0)}/{g.capacity}
+          BAG {g.inventory.length + Number(p.weapons.length > 0)}/{capacityOf(g) === Infinity ? "∞" : capacityOf(g)}
         </span>
         <div className="item-carousel">
           {groundPile.map((item, index) => (
@@ -1112,6 +1128,8 @@ export function PlayScreen({
                   <em>
                     {item.kind === "weapon"
                       ? `${item.uses}/${item.maxUses} uses`
+                      : item.uses && item.maxUses
+                        ? `${item.uses}/${item.maxUses} uses`
                       : item.kind === "tome"
                         ? item.element
                         : problem || "View / use"}
@@ -1151,7 +1169,7 @@ export function PlayScreen({
                 className="spell-card"
                 key={s.name}
                 disabled={busy || g.status !== "playing" || !!g.pendingLevels}
-                aria-label={`Cast ${s.name} · ${s.cost} MP`}
+                aria-label={`Cast ${s.name} · ${spellCost(g, s)} MP`}
                 onClick={() => void send({ type: "cast", spell: s.name })}
               >
                 <img
@@ -1159,7 +1177,7 @@ export function PlayScreen({
                   alt={s.name + " spell sprite"}
                 />
                 <strong>{s.name}</strong>
-                <small>{s.cost} MP · Cast</small>
+                <small>{spellCost(g, s)} MP · Cast</small>
               </button>
             ))}
           </div>
@@ -1401,7 +1419,7 @@ export function PlayScreen({
                             g.inventory.length +
                               1 +
                               Number(p.weapons.length > 1) >
-                              g.capacity,
+                              capacityOf(g),
                           )
                         : actButton(
                             selection.ground
@@ -1454,7 +1472,11 @@ export function PlayScreen({
                             )}
                           </>
                         )}
-                        {canUseFromFloor(picked) &&
+                        {picked.kind === "mana-star" && availableSpells(g, { free: true }).map((s) =>
+                          actButton(`Cast ${s.name} free`, { type: "use-floor", id: picked.id, spell: s.name }, false, "primary"))}
+                        {picked.kind === "spiked-potion" && ["Health", "Power", "Luck", "Speed", "Magic", "Accuracy", "Armor"].map((stat) =>
+                          actButton(`+5 ${stat} · pay half HP`, { type: "use-floor", id: picked.id, spell: stat }, false, "primary"))}
+                        {!["mana-star", "spiked-potion"].includes(picked.kind) && canUseFromFloor(picked) &&
                           actButton(
                             picked.kind === "teleport"
                               ? "Use once & teleport"
@@ -1474,7 +1496,11 @@ export function PlayScreen({
                             {itemUseProblem(g, picked)}
                           </p>
                         )}
-                        {actButton(
+                        {picked.kind === "mana-star" && availableSpells(g, { free: true }).map((s) =>
+                          actButton(`Cast ${s.name} free`, { type: "use", id: picked.id, spell: s.name }, false, "primary"))}
+                        {picked.kind === "spiked-potion" && ["Health", "Power", "Luck", "Speed", "Magic", "Accuracy", "Armor"].map((stat) =>
+                          actButton(`+5 ${stat} · pay half HP`, { type: "use", id: picked.id, spell: stat }, false, "primary"))}
+                        {!["mana-star", "spiked-potion"].includes(picked.kind) && actButton(
                           picked.kind === "projectile"
                             ? "Throw at " + (enemy?.name || "enemy")
                             : picked.kind === "teleport"
@@ -1576,7 +1602,7 @@ export function PlayScreen({
                     <h3>Known magic</h3>
                     {knownSpells.map((s) => (
                       <p key={s.name}>
-                        <b>{s.name}</b> · Magic {s.req} · {s.cost} MP
+                        <b>{s.name}</b> · Magic {s.req} · {spellCost(g, s)} MP
                         <br />
                         {s.description}
                         <br />
@@ -1587,7 +1613,7 @@ export function PlayScreen({
                               ? "Choose your level bonus first"
                               : p.stats.Magic < s.req
                                 ? "Increase Magic to unlock"
-                                : p.stats.Mana < s.cost
+                                : p.stats.Mana < spellCost(g, s)
                                   ? "Not enough mana"
                                   : s.when === "combat"
                                     ? "Requires an encounter"

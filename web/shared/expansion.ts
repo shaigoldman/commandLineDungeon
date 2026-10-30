@@ -1,7 +1,7 @@
 /** Ashfall market rules. All RNG is part of the persisted game seed. */
 import type { Actor, Game, Item, SecretDoor } from "./types";
 import { itemDefinitions } from "./catalog";
-import { makeItem, makeMonster, random, randomItem, log } from "./engine";
+import { makeItem, makeMonster, random, randomItem, log, capacityOf } from "./engine";
 const roll = (g: Game, n: number) => Math.floor(random(g) * n);
 const pick = <T>(g: Game, a: T[]) => a[roll(g, a.length)];
 const uid = (g: Game) => "ash-" + roll(g, 2 ** 32).toString(36);
@@ -187,7 +187,7 @@ export function buy(g: Game, m: Actor, id: string) {
   if ((g.player.gold || 0) < offer.price) throw Error("Not enough gold.");
   if (
     !offer.item.auto &&
-    g.inventory.length + Number(g.player.weapons.length > 0) >= g.capacity
+    g.inventory.length + Number(g.player.weapons.length > 0) >= capacityOf(g)
   )
     throw Error("Your bag is full.");
   g.player.gold = (g.player.gold || 0) - offer.price;
@@ -205,6 +205,8 @@ export function quote(g: Game, m: Actor, id: string, sell = false) {
       : `${m.name} offers ${n} gold for ${i.name}${m.merchant.wanted === i.name ? " — my most wanted item!" : ""}.`;
   log(g, g.marketNotice);
   if (sell && n !== null) {
+    if (i.kind === "infinite-bag" && g.inventory.length - 1 + Number(g.player.weapons.length > 0) > g.capacity)
+      throw Error("Bag too full to sell the Infinite Bag.");
     g.inventory = g.inventory.filter((a) => a.id !== id);
     g.player.gold = (g.player.gold || 0) + n;
     g.marketNotice = `Sold ${i.name} for ${n} gold.`;
@@ -422,9 +424,14 @@ export function openChest(g: Game, id: string) {
   if (c.locked) {
     const k =
       g.inventory.find((i) => i.kind === "key" && i.value === 1) ||
-      g.inventory.find((i) => i.kind === "key" && i.value === 2);
+      g.inventory.find((i) => i.kind === "key" && i.value === 2) ||
+      g.inventory.find((i) => i.kind === "reusable-key" && (i.uses || 0) > 0);
     if (!k) throw Error("A Standard Key or Rare Key is required.");
-    g.inventory = g.inventory.filter((i) => i.id !== k.id);
+    if (k.kind === "reusable-key") {
+      k.uses!--;
+      if (!k.uses) g.inventory = g.inventory.filter((i) => i.id !== k.id);
+      else k.description = `Opens ${k.value === 2 ? "chests or secret doors" : "chests"}. ${k.uses} uses remaining.`;
+    } else g.inventory = g.inventory.filter((i) => i.id !== k.id);
     log(g, `Used ${k.name}.`);
   }
   c.opened = true;
@@ -497,9 +504,14 @@ export function unlockDoor(g: Game, id: string) {
   if (g.combat || g.pendingLoot)
     throw Error("Finish the encounter or item first.");
   if (!d.unlocked) {
-    const k = g.inventory.find((i) => i.kind === "key" && i.value === 2);
+    const k = g.inventory.find((i) => i.kind === "key" && i.value === 2) ||
+      g.inventory.find((i) => i.kind === "reusable-key" && i.value === 2 && (i.uses || 0) > 0);
     if (!k) throw Error("A Rare Key opens this secret door.");
-    g.inventory = g.inventory.filter((i) => i.id !== k.id);
+    if (k.kind === "reusable-key") {
+      k.uses!--;
+      if (!k.uses) g.inventory = g.inventory.filter((i) => i.id !== k.id);
+      else k.description = `Opens chests or secret doors. ${k.uses} uses remaining.`;
+    } else g.inventory = g.inventory.filter((i) => i.id !== k.id);
     d.unlocked = true;
   }
   enterSecret(g, d);

@@ -412,6 +412,7 @@ body.playing-game {
   z-index: 40;
   animation: poison-pulse 0.65s ease-out forwards;
 }
+.curse-flash { background: #9c4fbe; }
 @keyframes poison-pulse {
   0%,
   30% {

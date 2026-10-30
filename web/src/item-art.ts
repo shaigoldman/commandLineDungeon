@@ -21,14 +21,22 @@ export function itemArtKey(item: Pick<Item, "kind" | "name" | "element">) {
       ? "missile"
       : name.includes("bomb")
         ? "bomb"
+        : name.includes("boomerang")
+          ? "boomerang"
         : name.includes("javelin")
           ? "javelin"
           : "knife";
   if (item.kind === "tome") return "staff-" + (item.element || "Mystery");
   if (item.kind === "candy") return "candy-" + item.name;
   if (item.kind === "double") return "double-" + item.name.split(" ")[0];
-  if (item.kind === "gold" || item.kind === "key")
-    return item.kind + "-" + item.name;
+  if (item.kind === "gold" || item.kind === "key" || item.kind === "cursed-gold")
+    return (item.kind === "cursed-gold" ? "gold" : item.kind) + "-" + item.name;
+  if (item.kind === "reusable-key") return name.includes("door") ? "key-Rare Key" : "key-Standard Key";
+  if (["mystery-potion", "reusable-heal", "super-potion", "poison-potion", "health-pot", "spiked-potion", "cursed-potion"].includes(item.kind)) return "heal";
+  if (["mana-rock", "mana-shard", "mana-gem", "mana-diamond", "mana-pod", "health-drain"].includes(item.kind)) return "mana";
+  if (["charm", "magic-scales", "infinite-bag", "invisibility", "stealth", "speedy-boots"].includes(item.kind)) return "armor";
+  if (["stairfinder", "energy-magnet", "energy-generator", "item-magnet"].includes(item.kind)) return "boost";
+  if (["mana-star", "magic-book", "cleanser", "bad-candy", "critical-star", "cursed-candy"].includes(item.kind)) return "candy-" + item.name;
   return item.kind;
 }
 export function itemCanvas(
@@ -101,6 +109,10 @@ export function itemCanvas(
       r(15, 18, 2, 7, shine);
       r(12, 21, 8, 2, shine);
     }
+  } else if (key === "boomerang") {
+    r(5, 6, 7, 21, dark); r(9, 21, 17, 7, dark);
+    r(7, 7, 4, 18, gold); r(11, 23, 14, 4, gold);
+    r(8, 8, 2, 10, shine); r(18, 24, 5, 2, shine);
   } else if (shape === "sword" || shape === "broadsword" || key === "knife") {
     blade(key === "knife");
     if (shape === "broadsword")

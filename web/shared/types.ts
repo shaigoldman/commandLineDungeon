@@ -33,6 +33,9 @@ export interface Actor {
   gold?: number;
   curseChance?: number;
   burn?: [number, number];
+  maxMana?: number;
+  magicScale?: boolean;
+  passiveStats?: Stats;
   spawnTurn?: number;
   merchant?: Merchant;
   drain?: boolean;
@@ -113,6 +116,7 @@ export interface Game {
   pendingDoor?: string;
   haunting?: { x: number; y: number; due: number; name: string }[];
   inSecret?: string;
+  stealthSteps?: number;
   chronicles?: string[];
   marketNotice?: string;
   revision: number;
@@ -129,12 +133,12 @@ export type Action =
         | "ignore"
         | "talk";
     }
-  | { type: "use-floor" | "equip-floor"; id?: string }
+  | { type: "use-floor" | "equip-floor"; id?: string; spell?: string }
   | { type: "pickup"; id?: string }
   | { type: "pickup-swap"; id: string; incomingId?: string }
   | { type: "throw-floor"; id: string; target: string }
   | { type: "attack"; unarmed?: boolean }
-  | { type: "use" | "drop" | "unequip"; id: string }
+  | { type: "use" | "drop" | "unequip"; id: string; spell?: string }
   | { type: "deal"; id?: string }
   | { type: "cast"; spell: string }
   | { type: "level"; stat: string }

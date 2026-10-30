@@ -11,7 +11,9 @@ Open that link in your Android phone's browser, download the APK, open it from D
 - Uninstalling or clearing app storage removes these local saves.
 - This is a debug-signed test APK, not a Google Play release. Updates signed with the same key can install in place; save compatibility across test versions is unsupported. A build signed by a different local/CI key cannot replace it without uninstalling.
 
-The current **0.7.4-test** build makes ordinary villagers rarer and adds Gremlins, Shadows, Robots, Dark Fairies, and Wild Villagers across all floors. Gremlins alone drop gold pots; Shadows hunt NPCs and are hard to flee; Robots explode; Dark Fairies drop better treasure; Wild Villagers can become ghosts. Water gains Befriend, Wind gains Unseal, and Fire gains Kindle. See the [feature checklist](../docs/RARE-CREATURES-V0.7.4.md).
+The current **0.7.5-test** build adds charged relics, carried stat charms and Infinite Bag, Fire Mana Expansion, Critical Star, Speedy Boots, cursed candy/potion/gold and a purple curse damage pulse. Multiuse item details stay open for consecutive uses. See the full [item checklist](../docs/NEW-ITEMS-V0.7.5.md).
+
+The earlier **0.7.4-test** build makes ordinary villagers rarer and adds Gremlins, Shadows, Robots, Dark Fairies, and Wild Villagers across all floors. Gremlins alone drop gold pots; Shadows hunt NPCs and are hard to flee; Robots explode; Dark Fairies drop better treasure; Wild Villagers can become ghosts. Water gains Befriend, Wind gains Unseal, and Fire gains Kindle. See the [feature checklist](../docs/RARE-CREATURES-V0.7.4.md).
 
 The **0.7.3-test** build fixed automatic shop purchases and restored the flee action for enemy-initiated combat. Swiping leaves a peaceful encounter or attempts to flee a fight. Villager prices retain the [0.7.2 balance](../docs/MARKET-BALANCE-V0.7.2.md).
 
