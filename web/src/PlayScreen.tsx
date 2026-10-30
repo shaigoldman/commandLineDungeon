@@ -1582,9 +1582,9 @@ export function PlayScreen({
                           <button key={item.id + element} className="upgrade-choice" disabled={busy || (item.kind === "infinite-bag" && g.inventory.length - 1 + Number(p.weapons.length > 0) > g.capacity)} onClick={() => void send({ type: "use", id: picked.id, target: item.id, spell: element })}>
                             <ItemIcon item={item} /><span><b>{item.name} → {element} Staff</b><small>Consumes Magic Wand</small></span>
                           </button>))}
-                        {picked.kind === "energy-harness" && [...g.pods].sort((a, b) => Math.abs(a.x - p.x) + Math.abs(a.y - p.y) - Math.abs(b.x - p.x) - Math.abs(b.y - p.y)).map((pod) =>
+                        {picked.kind === "energy-harness" && g.pods.filter((pod) => Math.abs(pod.x - p.x) + Math.abs(pod.y - p.y) === 1).map((pod) =>
                           <button key={`${pod.x},${pod.y}`} className="upgrade-choice" disabled={busy} onClick={() => void send({ type: "use", id: picked.id, target: `${pod.x},${pod.y}` })}>
-                            <span><b>Convert {pod.max ? "large" : "small"} energy pod</b><small>At {pod.x},{pod.y} · {Math.abs(pod.x - p.x) + Math.abs(pod.y - p.y)} steps away · item appears there</small></span>
+                            <span><b>Convert adjacent {pod.max ? "large" : "small"} energy pod</b><small>At {pod.x},{pod.y} · item appears there</small></span>
                           </button>)}
                         {! ["mana-star", "spiked-potion", "anvil", "blade-shard", "magic-scabbard", "alchemy-book", "magic-wand", "energy-harness"].includes(picked.kind) && actButton(
                           picked.kind === "projectile"

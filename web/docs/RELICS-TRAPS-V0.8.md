@@ -19,7 +19,7 @@ All effects use the shared TypeScript game rules, so browser, server saves, and 
 | Mana Channel | Reusable conversion of current mana to equal gold. |
 | Gold Chalice | Pays 10 gold for a random rare item. |
 | Magic Wand | Converts a selected bag item into a Fire, Wind, or Water staff. |
-| Energy Harness | Select an existing energy pod and turn it into a floor item at that spot. |
+| Energy Harness | Select an adjacent energy pod and turn it into a floor item at that spot. |
 | Fire gold spell | Gild, a lower-cost 1–6 gold spell, joins Alchemize. |
 | Shields | Fragile through Obsidian; equip as a weapon, gain high Armor with a small attack/weight penalty, spend one block when a direct attack lands. |
 | Mysterious lore | Item flavor and villager dialogue refer to “that day” and related clues without naming the event. |

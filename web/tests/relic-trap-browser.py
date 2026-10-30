@@ -64,6 +64,14 @@ try:
         assert saved(page)["traps"][0]["revealed"]
         assert saved(page)["player"]["gold"] < before
 
+        load(page, "harnessUi")
+        page.get_by_role("button", name="Item: Energy Harness").tap()
+        expect(page.get_by_role("button", name="Convert adjacent small energy pod", exact=False)).to_be_visible()
+        expect(page.get_by_role("button", name="Convert adjacent large energy pod", exact=False)).to_have_count(0)
+        page.get_by_role("button", name="Convert adjacent small energy pod", exact=False).tap()
+        assert len(saved(page)["pods"]) == 1
+        assert saved(page)["pods"][0]["x"] == 17
+
         load(page, "fullEnergyPod")
         page.keyboard.press("ArrowRight")
         expect(page.get_by_test_id("energy-full-notice")).to_contain_text("ENERGY FULL")

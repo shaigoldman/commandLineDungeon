@@ -115,7 +115,7 @@ export function makeItem(g: Game, name: string): Item {
     "Mana Channel": "Turn all your current mana into an equal amount of gold.",
     "Gold Chalice": "Spend 10 gold to receive a random rare item.",
     "Magic Wand": "Turn one chosen bag item into a basic Fire, Wind, or Water staff.",
-    "Energy Harness": "Turn a chosen floor energy pod into an item.",
+    "Energy Harness": "Turn an adjacent energy pod into an item.",
     "Reusable Key": `Opens chests. ${i.uses} uses remaining.`,
     "Reusable Door Key": `Opens chests or secret doors. ${i.uses} uses remaining.`,
     "Mystery Potion": "A random boon (70%) or small setback (30%).",
@@ -794,7 +794,8 @@ export function itemUseProblem(g: Game, i: Item): string | undefined {
   if (i.kind === "mana-channel" && g.player.stats.Mana <= 0) return "No mana to convert.";
   if (i.kind === "gold-chalice" && (g.player.gold || 0) < 10) return "Need 10 gold.";
   if (i.kind === "magic-wand" && !g.inventory.some((item) => item.id !== i.id)) return "Keep an item to turn into a staff.";
-  if (i.kind === "energy-harness" && !g.pods.length) return "No energy pod remains on this floor.";
+  if (i.kind === "energy-harness" && !g.pods.some((pod) => Math.abs(pod.x - g.player.x) + Math.abs(pod.y - g.player.y) === 1))
+    return "Stand beside an energy pod to use this.";
   if (i.kind === "anvil" && !g.inventory.some((weapon) => nextWeaponName(weapon)))
     return "Keep an upgradeable, unequipped weapon in your bag first.";
   if (i.kind === "blade-shard" && !g.inventory.some((weapon) => weapon.kind === "weapon" && (weapon.uses || 0) < (weapon.maxUses || 0)))
@@ -1315,7 +1316,8 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
     }
     case "energy-harness": {
       const pod = g.pods.find((pod) => `${pod.x},${pod.y}` === targetId);
-      if (!pod) throw Error("Choose an energy pod on this floor.");
+      if (!pod || Math.abs(pod.x - p.x) + Math.abs(pod.y - p.y) !== 1)
+        throw Error("Choose an adjacent energy pod.");
       g.pods = g.pods.filter((other) => other !== pod);
       const reward = randomItem(g, g.floor + 1);
       g.loot.push({ x: pod.x, y: pod.y, item: reward });

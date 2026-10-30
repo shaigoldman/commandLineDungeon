@@ -481,6 +481,10 @@ relicUi.inventory = [relicSword, makeItem(relicUi, "Anvil"), makeItem(relicUi, "
 const trapUi = openArena("Scout");
 trapUi.monsters = []; trapUi.traps = [{ id: "visible-after-step", x: 16, y: 7, kind: "fairy", revealed: false }];
 trapUi.player.gold = 30;
+const harnessUi = openArena("Warrior");
+harnessUi.monsters = []; harnessUi.traps = [];
+harnessUi.inventory = [makeItem(harnessUi, "Energy Harness")];
+harnessUi.pods = [{ x: 16, y: 7, max: false }, { x: 17, y: 7, max: true }];
 const breakUi = openArena("Warrior");
 breakUi.traps = []; breakUi.player.weapons = [makeItem(breakUi, "Fragile Sword")];
 breakUi.player.weapons[0].uses = 1;
@@ -494,6 +498,7 @@ console.log(
   JSON.stringify({
     relicUi,
     trapUi,
+    harnessUi,
     breakUi,
     shieldUi,
     rareGremlin,
