@@ -69,6 +69,7 @@ try:
         expect(page.get_by_test_id("energy-full-notice")).to_contain_text("ENERGY FULL")
         expect(page.get_by_test_id("energy-full-notice")).to_contain_text("remains here")
         assert len(saved(page)["pods"]) == 1
+        expect(page.get_by_test_id("energy-full-notice")).to_have_count(0, timeout=2500)
 
         load(page, "dead")
         expect(page.get_by_test_id("death-screen")).to_be_visible()

@@ -417,7 +417,7 @@ export function PlayScreen({
     }
     if (entries.some((line) => line.startsWith("ENERGY FULL:"))) {
       setEnergyFullNotice(after.revision);
-      setTimeout(() => setEnergyFullNotice((current) => current === after.revision ? 0 : current), 3000);
+      setTimeout(() => setEnergyFullNotice((current) => current === after.revision ? 0 : current), 1800);
     }
     const gainedGold = (after.player.gold || 0) - (before.player.gold || 0);
     if (gainedGold > 0) {
