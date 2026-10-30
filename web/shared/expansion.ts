@@ -1,7 +1,7 @@
 /** Ashfall market rules. All RNG is part of the persisted game seed. */
 import type { Actor, Game, Item, SecretDoor } from "./types";
 import { itemDefinitions } from "./catalog";
-import { makeItem, makeMonster, random, randomItem, log, capacityOf } from "./engine";
+import { makeItem, makeMonster, random, randomItem, pickItemDefinition, log, capacityOf } from "./engine";
 const roll = (g: Game, n: number) => Math.floor(random(g) * n);
 const pick = <T>(g: Game, a: T[]) => a[roll(g, a.length)];
 const uid = (g: Game) => "ash-" + roll(g, 2 ** 32).toString(36);
@@ -213,11 +213,12 @@ export function quote(g: Game, m: Actor, id: string, sell = false) {
     log(g, g.marketNotice);
   }
 }
-export function applyCurse(g: Game, turns = 12, damage = 3) {
+export function applyCurse(g: Game, turns = 12, damage = 3, source?: string) {
   turns = Math.max(turns, (g.player.effects.Poison?.[0] || 0) + 6);
   damage = Math.max(damage, (g.player.effects.Poison?.[1] || 0) + 2);
   const old = g.player.effects.Curse || [0, 0];
   g.player.effects.Curse = [Math.max(old[0], turns), Math.max(old[1], damage)];
+  if (source) g.player.curseSource = source;
   log(
     g,
     `CURSED: ${damage} HP per world turn for ${turns} turns. A Poison Antidote cures it.`,
@@ -225,7 +226,7 @@ export function applyCurse(g: Game, turns = 12, damage = 3) {
 }
 export function villagerDeath(g: Game, m: Actor, curseHero = true) {
   log(g, `${m.name}: “${pick(g, farewells)}”`);
-  if (curseHero) applyCurse(g);
+  if (curseHero) applyCurse(g, 12, 3, m.name);
   (g.haunting ??= []).push({ x: m.x, y: m.y, due: g.turn + 5, name: m.name });
 }
 export function spawnGhosts(g: Game) {
@@ -322,10 +323,7 @@ export function chestReward(g: Game, ultra = false) {
     min = ultra ? (r < 0.3 ? 9 : 6) : r < 0.15 ? 9 : r < 0.65 ? 6 : 3;
   return makeItem(
     g,
-    pick(
-      g,
-      itemDefinitions.filter((d) => d[2] >= min && d[0] !== "Pot of Gold"),
-    )[0],
+    pickItemDefinition(g, itemDefinitions.filter((d) => d[2] >= min && d[0] !== "Pot of Gold"))[0],
   );
 }
 export function addChest(

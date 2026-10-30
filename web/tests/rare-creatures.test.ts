@@ -75,6 +75,7 @@ describe("rare creatures and keyless magic", () => {
     doomed.player.hp = 1; doomed.xp = 99;
     doomed = act(doomed, { type: "attack" });
     expect(doomed.status).toBe("dead");
+    expect(doomed.death).toMatchObject({ source: "Explosion", attacker: dyingRobot.name });
     expect(doomed.player.hp).toBe(0);
   });
   it("gives dark fairies rarer loot and wild villagers EXP, curse and a delayed ghost", () => {

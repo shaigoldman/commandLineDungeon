@@ -30,6 +30,8 @@ export interface Actor {
   y: number;
   level: number;
   poison?: [number, number];
+  poisonSource?: string;
+  curseSource?: string;
   poisonImmune?: boolean;
   gold?: number;
   curseChance?: number;
@@ -118,6 +120,7 @@ export interface Game {
   pendingLoot?: Item;
   pendingLevels: number;
   status: "playing" | "dead" | "won";
+  death?: { source: string; attacker?: string; damage: number; floor: number; turn: number };
   log: string[];
   logSerial?: number;
   chests?: Chest[];

@@ -1,4 +1,6 @@
 import { itemIcon } from "./item-art";
+import { deathStory } from "../shared/death-story";
+import { itemOutcome, type ItemOutcome } from "../shared/item-outcome";
 import { dragonArt } from "./dragon-art";
 import { itemLore, rarityInfo } from "../shared/item-lore";
 import { MerchantPanel } from "./MerchantPanel";
@@ -82,6 +84,7 @@ export function PlayScreen({
     [trapNotice, setTrapNotice] = useState<{ message: string; revision: number } | null>(null),
     [energyFullNotice, setEnergyFullNotice] = useState(0),
     [goldFlash, setGoldFlash] = useState<{ amount: number; revision: number } | null>(null),
+    [itemResult, setItemResult] = useState<ItemOutcome | null>(null),
     [trade, setTrade] = useState("");
   const [swapPickup, setSwapPickup] = useState<Item | null>(null);
   const modal = useRef<HTMLDivElement>(null),
@@ -409,6 +412,15 @@ export function PlayScreen({
     )
       setPanel(null);
     const entries = freshGameLog(before, after);
+    if (a.type === "use" || a.type === "use-floor") {
+      const used = [...before.inventory, ...before.player.weapons, ...before.loot.map((loot) => loot.item)]
+        .find((item) => item.id === a.id);
+      if (used && !["weapon", "tome"].includes(used.kind)) {
+        const result = itemOutcome(before, after, used, entries);
+        setItemResult(result);
+        setTimeout(() => setItemResult((current) => current?.revision === result.revision ? null : current), 2800);
+      }
+    }
     const trapMessages = entries.filter((line) => line.startsWith("TRAP:"));
     if (trapMessages.length) {
       const notice = { message: trapMessages.join(" "), revision: after.revision };
@@ -621,18 +633,26 @@ export function PlayScreen({
     .filter((l) => l.x === p.x && l.y === p.y)
     .map((l) => l.item);
   const ground = g.pendingLoot || groundPile[0];
-  if (g.status === "dead") return (
+  if (g.status === "dead") {
+    const story = deathStory(g);
+    return (
     <main className="death-screen" data-testid="death-screen">
       <div className="death-screen-content">
         <span className="death-symbol" aria-hidden="true">✦</span>
         <p className="death-eyebrow">Your journey has ended</p>
         <h1>You Died</h1>
         <p className="death-hero">{p.name} · Level {p.level} · Floor {g.floor + 1}</p>
+        <section className="death-cause" aria-label="How you died">
+          <strong>{story.cause}</strong>
+          <p>{story.context}</p>
+          <em>“{story.flavor}”</em>
+        </section>
         <div className="death-score"><span>Final score</span><strong>{n(g.score)}</strong></div>
         <button className="death-restart" onClick={onNew}>Begin a new journey</button>
       </div>
     </main>
-  );
+    );
+  }
   return (
     <main
       className={
@@ -936,6 +956,12 @@ export function PlayScreen({
           <div key={energyFullNotice} className="energy-full-notice" role="status" data-testid="energy-full-notice">
             <strong>ENERGY FULL</strong>
             <span>No energy restored. This pod remains here for later.</span>
+          </div>
+        )}
+        {itemResult && (
+          <div key={itemResult.revision} className="item-result-notice" role="status" data-testid="item-result-notice">
+            {itemResult.reward && <ItemIcon item={itemResult.reward} />}
+            <span><strong>{itemResult.title}</strong><small>{itemResult.detail}</small></span>
           </div>
         )}
       </section>
@@ -1582,9 +1608,9 @@ export function PlayScreen({
                           <button key={item.id + element} className="upgrade-choice" disabled={busy || (item.kind === "infinite-bag" && g.inventory.length - 1 + Number(p.weapons.length > 0) > g.capacity)} onClick={() => void send({ type: "use", id: picked.id, target: item.id, spell: element })}>
                             <ItemIcon item={item} /><span><b>{item.name} → {element} Staff</b><small>Consumes Magic Wand</small></span>
                           </button>))}
-                        {picked.kind === "energy-harness" && [...g.pods].sort((a, b) => Math.abs(a.x - p.x) + Math.abs(a.y - p.y) - Math.abs(b.x - p.x) - Math.abs(b.y - p.y)).map((pod) =>
+                        {picked.kind === "energy-harness" && g.pods.filter((pod) => Math.abs(pod.x - p.x) + Math.abs(pod.y - p.y) === 1).map((pod) =>
                           <button key={`${pod.x},${pod.y}`} className="upgrade-choice" disabled={busy} onClick={() => void send({ type: "use", id: picked.id, target: `${pod.x},${pod.y}` })}>
-                            <span><b>Convert {pod.max ? "large" : "small"} energy pod</b><small>At {pod.x},{pod.y} · {Math.abs(pod.x - p.x) + Math.abs(pod.y - p.y)} steps away · item appears there</small></span>
+                            <span><b>Convert adjacent {pod.max ? "large" : "small"} energy pod</b><small>At {pod.x},{pod.y} · item appears there</small></span>
                           </button>)}
                         {! ["mana-star", "spiked-potion", "anvil", "blade-shard", "magic-scabbard", "alchemy-book", "magic-wand", "energy-harness"].includes(picked.kind) && actButton(
                           picked.kind === "projectile"

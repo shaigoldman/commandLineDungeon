@@ -115,7 +115,7 @@ export function makeItem(g: Game, name: string): Item {
     "Mana Channel": "Turn all your current mana into an equal amount of gold.",
     "Gold Chalice": "Spend 10 gold to receive a random rare item.",
     "Magic Wand": "Turn one chosen bag item into a basic Fire, Wind, or Water staff.",
-    "Energy Harness": "Turn a chosen floor energy pod into an item.",
+    "Energy Harness": "Turn an adjacent energy pod into an item.",
     "Reusable Key": `Opens chests. ${i.uses} uses remaining.`,
     "Reusable Door Key": `Opens chests or secret doors. ${i.uses} uses remaining.`,
     "Mystery Potion": "A random boon (70%) or small setback (30%).",
@@ -124,7 +124,7 @@ export function makeItem(g: Game, name: string): Item {
     "Stealth Shoes": `Prevent enemy ambushes for ${i.duration} moves.`,
     "Stairfinder": "Teleport to the stairs once.",
     "Ultrastairfinder": "Teleport to the stairs as often as you like.",
-    "Mana Rock": "Pay 1 HP for 1 mana. Never breaks.",
+    "Mana Rock": "Spend 1 mana to restore 1 HP. Never breaks.",
     "Mana Shard": "Pay 10 HP to restore 10 mana.",
     "Mana Gem": "While carried, spells cost 1 less mana.",
     "Mana Diamond": "While carried, spells cost 2 less mana.",
@@ -275,19 +275,40 @@ export function randomItem(g: Game, depth = g.floor): Item {
     for (let j = 0; j < 100 - v; j++) rars.push(n);
   }
   const rarity = pick(g, rars) + 1;
+  // Currency has its own draw, below the ordinary common-item pool.
+  if (random(g) < 0.34) {
+    const coins = itemDefinitions.filter((d) => d[1] === "gold" && d[0] !== "Pot of Gold" && d[2] <= rarity);
+    const weights = coins.map((d) => ({ "1 Gold Coin": 12, "5 Gold Coins": 5, "10 Gold Coins": 2, "20 Gold Coins": 1 })[d[0]] || 1);
+    let draw = random(g) * weights.reduce((a, b) => a + b, 0);
+    for (let n = 0; n < coins.length; n++) if ((draw -= weights[n]) < 0) return makeItem(g, coins[n][0]);
+    return makeItem(g, coins.at(-1)![0]);
+  }
   const candidates = itemDefinitions.filter(
-    (d) => d[2] <= rarity && d[0] !== "Small Health Potion" && d[0] !== "Pot of Gold",
+    (d) => d[2] <= rarity && d[0] !== "Small Health Potion" && d[1] !== "gold",
   );
-  // Keys are useful only when one appears before its chest; give them a modest weight boost.
-  for (const name of ["Standard Key", "Rare Key"])
-    if (candidates.some((d) => d[0] === name)) {
-      const key = candidates.find((d) => d[0] === name)!;
-      candidates.push(key, key, key);
-    }
-  return makeItem(
-    g,
-    pick(g, candidates)[0],
-  );
+  return makeItem(g, pickItemDefinition(g, candidates, true)[0]);
+}
+type ItemDefinition = (typeof itemDefinitions)[number];
+const variantFamilies = new Set(["jewel", "crown", "double", "stat", "boost", "heal", "gold", "key", "projectile", "bag", "reusable-key", "reusable-heal", "candy", "mana-star", "greedy-amulet", "stairfinder", "gentle-grip"]);
+/** First select an item family, then a variant; seven stats no longer mean seven tickets. */
+export function pickItemDefinition(g: Game, definitions: ItemDefinition[], boostKeys = false): ItemDefinition {
+  if (!definitions.length) throw Error("No item candidates.");
+  const groups = new Map<string, ItemDefinition[]>();
+  for (const definition of definitions) {
+    const family = variantFamilies.has(definition[1]) ? definition[1] : definition[0];
+    const group = groups.get(family) || [];
+    group.push(definition);
+    groups.set(family, group);
+  }
+  const families = [...groups.keys()];
+  if (boostKeys && groups.has("key")) families.push("key", "key", "key");
+  const variants = groups.get(pick(g, families))!;
+  if (variants.length === 1) return variants[0];
+  const minimum = Math.min(...variants.map((d) => d[2]));
+  const weights = variants.map((d) => 1 / (1 + d[2] - minimum));
+  let draw = random(g) * weights.reduce((a, b) => a + b, 0);
+  for (let n = 0; n < variants.length; n++) if ((draw -= weights[n]) < 0) return variants[n];
+  return variants.at(-1)!;
 }
 function rarityTier(rarity: number) {
   return rarity >= 9 ? 3 : rarity >= 6 ? 2 : rarity >= 3 ? 1 : 0;
@@ -296,8 +317,8 @@ function transmute(g: Game, original: Item) {
   if (random(g) < 0.06) return makeItem(g, "Piece of Trash");
   const tier = Math.min(3, rarityTier(original.rarity) + 1 + (random(g) < 0.12 ? 1 : 0));
   const bounds = [[1, 2], [3, 5], [6, 8], [9, 11]][tier];
-  const names = itemDefinitions.filter((d) => d[2] >= bounds[0] && d[2] <= bounds[1] && d[0] !== "Pot of Gold").map((d) => d[0]);
-  return makeItem(g, pick(g, names));
+  const candidates = itemDefinitions.filter((d) => d[2] >= bounds[0] && d[2] <= bounds[1] && d[0] !== "Pot of Gold");
+  return makeItem(g, pickItemDefinition(g, candidates)[0]);
 }
 
 function randomName(g: Game, maxlen: number) {
@@ -794,7 +815,8 @@ export function itemUseProblem(g: Game, i: Item): string | undefined {
   if (i.kind === "mana-channel" && g.player.stats.Mana <= 0) return "No mana to convert.";
   if (i.kind === "gold-chalice" && (g.player.gold || 0) < 10) return "Need 10 gold.";
   if (i.kind === "magic-wand" && !g.inventory.some((item) => item.id !== i.id)) return "Keep an item to turn into a staff.";
-  if (i.kind === "energy-harness" && !g.pods.length) return "No energy pod remains on this floor.";
+  if (i.kind === "energy-harness" && !g.pods.some((pod) => Math.abs(pod.x - g.player.x) + Math.abs(pod.y - g.player.y) === 1))
+    return "Stand beside an energy pod to use this.";
   if (i.kind === "anvil" && !g.inventory.some((weapon) => nextWeaponName(weapon)))
     return "Keep an upgradeable, unequipped weapon in your bag first.";
   if (i.kind === "blade-shard" && !g.inventory.some((weapon) => weapon.kind === "weapon" && (weapon.uses || 0) < (weapon.maxUses || 0)))
@@ -805,8 +827,8 @@ export function itemUseProblem(g: Game, i: Item): string | undefined {
     return "A guardian resists conversion.";
   if (i.kind === "mana-star" && !availableSpells(g, { free: true }).length)
     return "No accessible spell for this encounter.";
-  if (i.kind === "mana-rock" && (g.player.hp <= 1 || g.player.stats.Mana >= manaCap(g.player)))
-    return "Need more than 1 HP and room for mana.";
+  if (i.kind === "mana-rock" && (g.player.stats.Mana < 1 || g.player.hp >= g.player.stats.Health))
+    return "Need at least 1 mana and room to heal.";
   if (i.kind === "mana-shard" && (g.player.hp <= 10 || g.player.stats.Mana >= manaCap(g.player)))
     return "Need more than 10 HP and room for mana.";
   if (i.kind === "health-pot" && (!(g.player.gold || 0) || g.player.hp >= g.player.stats.Health))
@@ -857,13 +879,15 @@ export function experience(monsterLevel: number, playerLevel: number) {
     ? 20 * (monsterLevel - playerLevel + 1)
     : Math.ceil(10 / (playerLevel - monsterLevel));
 }
-function hurt(g: Game, a: Actor, n: number, source = "Attack", reward = true) {
+function hurt(g: Game, a: Actor, n: number, source = "Attack", reward = true, attacker?: Actor) {
   if (source === "Attack") n = Math.max(0, n - armorOf(a));
   n = Math.trunc(n);
   a.hp = Math.max(0, a.hp - n);
   log(g, `${a.name} takes ${n} ${["Poison", "Fire"].includes(source) ? source.toLowerCase() + " " : ""}damage.`);
   if (a.hp <= 0) {
     if (a.id === "player") {
+      if (!g.death)
+        g.death = { source, attacker: attacker?.name || (source === "Poison" ? a.poisonSource : source === "Curse" ? a.curseSource : undefined), damage: n, floor: g.floor + 1, turn: g.turn };
       g.status = "dead";
       g.combat = undefined;
       log(g, "Your journey ends here. Your score: " + g.score);
@@ -913,7 +937,7 @@ function kill(g: Game, m: Actor, reward = true, drops = reward) {
     log(g, "The robot explodes!");
     for (const a of [...g.monsters, g.player])
       if (Math.abs(a.x - m.x) + Math.abs(a.y - m.y) <= 2)
-        hurt(g, a, 8 + Math.floor(m.level / 2), "Explosion", reward);
+        hurt(g, a, 8 + Math.floor(m.level / 2), "Explosion", reward, m);
   }
   if (reward && g.status === "playing") checkLevel(g);
 }
@@ -977,7 +1001,7 @@ function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
     log(g, "Critical hit!");
   }
   const hpBeforeHit = b.hp;
-  hurt(g, b, damage, "Attack", a.id === "player");
+  hurt(g, b, damage, "Attack", a.id === "player", a);
   for (const shield of [...b.weapons].filter((weapon) => weapon.armorBonus))
     if (--shield.uses! <= 0) {
       b.weapons = b.weapons.filter((weapon) => weapon.id !== shield.id);
@@ -991,13 +1015,14 @@ function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
     b.hp < hpBeforeHit &&
     random(g) < a.curseChance
   )
-    applyCurse(g);
+    applyCurse(g, 12, 3, a.name);
   if (a.poison && b.hp > 0 && !b.poisonImmune) {
     const old = b.effects.Poison || [0, 0];
     b.effects.Poison = [
       Math.max(old[0], a.poison[0]),
       Math.max(old[1], a.poison[1]),
     ];
+    b.poisonSource = a.name;
     log(g, b.name + " is poisoned.");
   }
   if (a.id === "player" && g.inventory.some((i) => i.kind === "mana-pod"))
@@ -1018,9 +1043,9 @@ function monsterTurn(g: Game) {
     hurt(g, g.player, curse[1], "Curse");
     if (--curse[0] <= 0) delete g.player.effects.Curse;
   }
+  if (g.status === "dead") return;
   spawnGhosts(g);
   if (g.player.hp <= 0) {
-    hurt(g, g.player, 0, "Exhaustion");
     return;
   }
   for (let pass = 0; pass < (g.player.stats.Speed <= 5 ? 2 : 1); pass++)
@@ -1296,8 +1321,8 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
     case "gold-chalice": {
       if ((p.gold || 0) < 10) throw Error("Need 10 gold.");
       p.gold! -= 10;
-      const candidates = itemDefinitions.filter((d) => d[2] >= 6 && d[2] < 9 && d[0] !== "Pot of Gold");
-      const reward = makeItem(g, pick(g, candidates)[0]);
+      const candidates = itemDefinitions.filter((d) => d[2] >= 6 && d[2] < 9 && d[1] !== "gold");
+      const reward = makeItem(g, pickItemDefinition(g, candidates)[0]);
       if (g.inventory.length + Number(p.weapons.length > 0) + (g.inventory.some((item) => item.id === i.id) ? 0 : 1) > capacityOf(g))
         g.loot.push({ x: p.x, y: p.y, item: reward });
       else g.inventory.push(reward);
@@ -1315,7 +1340,8 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
     }
     case "energy-harness": {
       const pod = g.pods.find((pod) => `${pod.x},${pod.y}` === targetId);
-      if (!pod) throw Error("Choose an energy pod on this floor.");
+      if (!pod || Math.abs(pod.x - p.x) + Math.abs(pod.y - p.y) !== 1)
+        throw Error("Choose an adjacent energy pod.");
       g.pods = g.pods.filter((other) => other !== pod);
       const reward = randomItem(g, g.floor + 1);
       g.loot.push({ x: pod.x, y: pod.y, item: reward });
@@ -1339,11 +1365,11 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       break;
     }
     case "cursed-candy":
-      addXP(g, 100); checkLevel(g); applyCurse(g); break;
+      addXP(g, 100); checkLevel(g); applyCurse(g, 12, 3, i.name); break;
     case "cursed-potion":
-      p.hp = p.stats.Health; applyCurse(g); break;
+      p.hp = p.stats.Health; applyCurse(g, 12, 3, i.name); break;
     case "cursed-gold":
-      p.gold = (p.gold || 0) + 10; applyCurse(g); break;
+      p.gold = (p.gold || 0) + 10; applyCurse(g, 12, 3, i.name); break;
     case "critical-star":
       p.effects["Critical Star"] = [1, 1]; break;
     case "speedy-boots":
@@ -1418,9 +1444,9 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       break;
     }
     case "mana-rock":
-      if (p.hp <= 1 || p.stats.Mana >= manaCap(p)) throw Error("Need HP and room for mana.");
-      p.hp--; p.stats.Mana++;
-      log(g, "Mana Rock: 1 HP became 1 mana.");
+      if (p.stats.Mana < 1 || p.hp >= p.stats.Health) throw Error("Need mana and room to heal.");
+      p.stats.Mana--; heal(p, 1);
+      log(g, "Mana Rock: 1 mana became 1 HP.");
       return;
     case "mana-shard":
       if (p.hp <= 10 || p.stats.Mana >= manaCap(p)) throw Error("Need more than 10 HP and room for mana.");
@@ -1643,7 +1669,7 @@ function collectFloorGold(g: Game) {
   const ids = new Set(coins.map((l) => l.item.id));
   const amount = coins.reduce((sum, l) => sum + l.item.value, 0);
   g.player.gold = (g.player.gold || 0) + amount;
-  for (const coin of coins) if (coin.item.kind === "cursed-gold") applyCurse(g);
+  for (const coin of coins) if (coin.item.kind === "cursed-gold") applyCurse(g, 12, 3, coin.item.name);
   g.loot = g.loot.filter((l) => !ids.has(l.item.id));
   if (g.pendingLoot && ids.has(g.pendingLoot.id)) {
     g.pendingLoot = g.loot.find(
@@ -1662,11 +1688,12 @@ function triggerTrap(g: Game) {
     case "poison": {
       const prior = p.effects.Poison || [0, 0];
       p.effects.Poison = [Math.max(prior[0], 2 + strength), Math.max(prior[1], strength)];
+      p.poisonSource = "Poison trap";
       log(g, `TRAP: Poison! ${p.effects.Poison[1]} damage for ${p.effects.Poison[0]} steps.`);
       break;
     }
     case "curse":
-      applyCurse(g, 5 + strength * 2, strength + 1);
+      applyCurse(g, 5 + strength * 2, strength + 1, "Curse trap");
       log(g, "TRAP: A curse clings to you.");
       break;
     case "rust": {

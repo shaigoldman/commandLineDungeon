@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { act, armorOf, combatAttackStats, generateFloor, makeItem, makeMonster, newGame, randomItem } from "../shared/engine";
+import { act, armorOf, combatAttackStats, generateFloor, itemUseProblem, makeItem, makeMonster, newGame, randomItem } from "../shared/engine";
 import { itemDefinitions } from "../shared/catalog";
 import type { Trap } from "../shared/types";
 import { loreOptions } from "../shared/item-lore";
@@ -113,16 +113,28 @@ describe("new relic and trap playthroughs", () => {
 
   it("turns a chosen energy pod into floor loot and casts accessible Fire gold magic", () => {
     let g = base(); const harness = makeItem(g, "Energy Harness"); g.inventory.push(harness);
-    g.pods = [{ x: 12, y: 7, max: false }];
-    g = act(g, { type: "use", id: harness.id, target: "12,7" });
+    g.pods = [{ x: 11, y: 7, max: false }];
+    g = act(g, { type: "use", id: harness.id, target: "11,7" });
     expect(g.pods).toHaveLength(0);
-    expect(g.loot.some((loot) => loot.x === 12 && loot.y === 7)).toBe(true);
+    expect(g.loot.some((loot) => loot.x === 11 && loot.y === 7)).toBe(true);
     const staff = makeItem(g, "Fire Staff"); g.inventory.push(staff);
     g = act(g, { type: "use", id: staff.id });
     const before = g.player.gold || 0;
     g = act(g, { type: "cast", spell: "Gild" });
     expect(g.player.gold).toBeGreaterThan(before);
     expect(g.player.stats.Mana).toBe(6);
+  });
+
+  it("only converts cardinally adjacent energy pods, even when a distant pod is chosen directly", () => {
+    const g = base(); const harness = makeItem(g, "Energy Harness"); g.inventory.push(harness);
+    g.pods = [{ x: 12, y: 7, max: false }, { x: 11, y: 8, max: true }];
+    expect(itemUseProblem(g, harness)).toContain("Stand beside");
+    expect(() => act(g, { type: "use", id: harness.id, target: "12,7" })).toThrow();
+    expect(() => act(g, { type: "use", id: harness.id, target: "11,8" })).toThrow();
+    g.pods.push({ x: 11, y: 7, max: false });
+    expect(itemUseProblem(g, harness)).toBeUndefined();
+    expect(() => act(g, { type: "use", id: harness.id, target: "12,7" })).toThrow("adjacent");
+    expect(g.pods).toHaveLength(3);
   });
 
   it("shields absorb direct attacks and spend blocks, not attacks", () => {

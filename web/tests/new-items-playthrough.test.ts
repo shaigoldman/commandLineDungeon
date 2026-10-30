@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { act, availableSpells, capacityOf, makeItem, makeMonster, newGame, spellCost } from "../shared/engine";
+import { act, availableSpells, capacityOf, itemUseProblem, makeItem, makeMonster, newGame, spellCost } from "../shared/engine";
 import { itemDefinitions, spells } from "../shared/catalog";
 
 function start() {
@@ -29,7 +29,7 @@ describe("new item playthroughs", () => {
   it("applies carried passives, frees capacity and restores stats when dropped", () => {
     let g = start();
     const charm = makeItem(g, "Mystic Charm");
-    const before = g.player.stats[charm.stat!];
+    const before = g.player.stats[charm.stat!] || 0;
     g.inventory.push(charm, makeItem(g, "Infinite Bag"), makeItem(g, "Mana Gem"), makeItem(g, "Mana Diamond"));
     g.capacity = 1;
     g = act(g, { type: "wait" });
@@ -56,7 +56,7 @@ describe("new item playthroughs", () => {
     expect(g.inventory.find((i) => i.id === star.id)).toBeUndefined();
   });
 
-  it("uses charged potions in succession and trades health for mana", () => {
+  it("uses charged potions in succession and trades mana for health with Mana Rock", () => {
     let g = start();
     const potion = makeItem(g, "Reusable Tiny Potion"); potion.uses = potion.maxUses = 3;
     const rock = makeItem(g, "Mana Rock");
@@ -68,9 +68,14 @@ describe("new item playthroughs", () => {
     }
     const hp = g.player.hp, mana = g.player.stats.Mana;
     g = act(g, { type: "use", id: rock.id });
-    expect(g.player.hp).toBe(hp - 1);
-    expect(g.player.stats.Mana).toBe(mana + 1);
+    expect(g.player.hp).toBe(hp + 1);
+    expect(g.player.stats.Mana).toBe(mana - 1);
     expect(g.inventory.some((i) => i.id === rock.id)).toBe(true);
+    g.player.hp = g.player.stats.Health;
+    expect(itemUseProblem(g, rock)).toContain("room to heal");
+    g.player.hp--;
+    g.player.stats.Mana = 0;
+    expect(itemUseProblem(g, rock)).toContain("at least 1 mana");
   });
 
   it("turns an enemy into a peaceful villager and keeps the ultra stairfinder", () => {

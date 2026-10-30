@@ -61,6 +61,7 @@ level = act(level, { type: "use", id: pill.id });
 const dead = structuredClone(explore);
 dead.status = "dead";
 dead.player.hp = 0;
+dead.death = { source: "Attack", attacker: "Zombie", damage: 6, floor: 1, turn: 12 };
 dead.log.push("Your journey has ended.");
 const fullEnergyPod = structuredClone(explore);
 fullEnergyPod.player.hp = fullEnergyPod.player.stats.Health;
@@ -481,6 +482,14 @@ relicUi.inventory = [relicSword, makeItem(relicUi, "Anvil"), makeItem(relicUi, "
 const trapUi = openArena("Scout");
 trapUi.monsters = []; trapUi.traps = [{ id: "visible-after-step", x: 16, y: 7, kind: "fairy", revealed: false }];
 trapUi.player.gold = 30;
+const harnessUi = openArena("Warrior");
+harnessUi.monsters = []; harnessUi.traps = [];
+harnessUi.inventory = [makeItem(harnessUi, "Energy Harness")];
+harnessUi.pods = [{ x: 16, y: 7, max: false }, { x: 17, y: 7, max: true }];
+const outcomeUi = openArena("Warrior");
+outcomeUi.monsters = []; outcomeUi.traps = [];
+outcomeUi.player.hp = 5; outcomeUi.player.gold = 20;
+outcomeUi.inventory = [makeItem(outcomeUi, "Health Pot"), makeItem(outcomeUi, "Gold Chalice"), makeItem(outcomeUi, "Mana Rock"), makeItem(outcomeUi, "Health Drain")];
 const breakUi = openArena("Warrior");
 breakUi.traps = []; breakUi.player.weapons = [makeItem(breakUi, "Fragile Sword")];
 breakUi.player.weapons[0].uses = 1;
@@ -494,6 +503,8 @@ console.log(
   JSON.stringify({
     relicUi,
     trapUi,
+    harnessUi,
+    outcomeUi,
     breakUi,
     shieldUi,
     rareGremlin,
