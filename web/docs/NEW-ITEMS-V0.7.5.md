@@ -37,5 +37,6 @@ All entries are in the shared TypeScript engine used by the browser, server and 
 | Cursed Potion | Uncommon; restore full health and gain a curse. |
 | Cursed Gold | Uncommon; automatically collect ten gold and a curse on touch. |
 | Curse pulse | Purple screen flash on every cursed world turn that deals damage. |
+| Gold feedback | An animated gold gain next to the purse and an exact gain/total notice; cursed gold announces both the ten coins and curse. |
 
 Checks: source Python tests, TypeScript mechanics and playthrough tests, seeded simulations, production build, and Android APK verification. Older test saves are unsupported as requested.

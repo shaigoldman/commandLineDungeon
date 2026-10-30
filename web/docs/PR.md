@@ -23,4 +23,6 @@ The v0.7.4 update makes ordinary villagers appear 0–2 times per floor and adds
 
 The v0.7.5 update adds the requested charged relics, carried charms and Infinite Bag, Fire Mana Expansion, Critical Star, Speedy Boots, cursed candy/potion/gold and purple curse feedback. Health Pot, Health Drain and Spiked Potion add health/stat trades. Charged item details remain open for repeated use. The [item checklist](web/docs/NEW-ITEMS-V0.7.5.md) tracks each behavior. Validation includes 166 TypeScript tests, six Python tests, 80 parity fixtures, a 600-game/54,666-action seeded simulation, production builds and signed Android 0.7.5-test (code 13).
 
-[Download Android 0.7.5-test](https://github.com/shaigoldman/commandLineDungeon/raw/refs/heads/feat/browser-rpg/web/downloads/command-line-dungeon-android-test.apk). APK SHA-256: `1ca1dc9f7aabd4143d45173a3f7832fa5b07bcdca8220ed23de30b726bfe673a`.
+[Download Android 0.7.5-test](https://github.com/shaigoldman/commandLineDungeon/raw/refs/heads/feat/browser-rpg/web/downloads/command-line-dungeon-android-test.apk). APK SHA-256: `fb6480ac542d45b2df9c607638eec85d01b4b1fc7845580f7968b378e8add324`.
+
+Gold gains now show an animated `+N gold` beside the purse and an exact gain/total notice. Cursed gold displays both the gain and curse. The mobile inspection test caught and fixed an overly broad consecutive-use modal rule: reusable Teleporters now close their inspection after use, while charged and exchange items remain open.

@@ -76,6 +76,7 @@ export function PlayScreen({
     [toast, setToast] = useState(""),
     [poisonFlash, setPoisonFlash] = useState(0),
     [curseFlash, setCurseFlash] = useState(0),
+    [goldFlash, setGoldFlash] = useState<{ amount: number; revision: number } | null>(null),
     [trade, setTrade] = useState("");
   const [swapPickup, setSwapPickup] = useState<Item | null>(null);
   const modal = useRef<HTMLDivElement>(null),
@@ -390,7 +391,8 @@ export function PlayScreen({
     const remaining = usedItem && (a.type === "use"
       ? after.inventory.find((item) => item.id === a.id)
       : after.loot.find((entry) => entry.item.id === a.id)?.item);
-    setSelection(opensLoot ? { item: after.pendingLoot!, ground: true } : remaining && after.status === "playing" && !after.pendingLevels
+    const consecutiveUse = remaining && (remaining.uses !== undefined || ["health-pot", "health-drain", "mana-rock", "energy-magnet"].includes(remaining.kind) || (remaining.kind === "stairfinder" && remaining.value < 0));
+    setSelection(opensLoot ? { item: after.pendingLoot!, ground: true } : consecutiveUse && after.status === "playing" && !after.pendingLevels
       ? { item: remaining, ground: a.type === "use-floor" } : null);
     setSwapPickup(null);
     if (after.pendingLevels && after.status === "playing") setPanel("level");
@@ -401,6 +403,11 @@ export function PlayScreen({
     )
       setPanel(null);
     const entries = freshGameLog(before, after);
+    const gainedGold = (after.player.gold || 0) - (before.player.gold || 0);
+    if (gainedGold > 0) {
+      setGoldFlash({ amount: gainedGold, revision: after.revision });
+      setTimeout(() => setGoldFlash((current) => current?.revision === after.revision ? null : current), 2400);
+    }
     if (["buy", "quote", "sell"].includes(a.type)) {
       announce(after.marketNotice || "Trade complete.");
       return;
@@ -416,17 +423,17 @@ export function PlayScreen({
       after.player.x !== before.player.x || after.player.y !== before.player.y;
     if (before.player.effects.Curse && after.turn > before.turn && after.player.hp < before.player.hp)
       requestAnimationFrame(() => requestAnimationFrame(() => setCurseFlash(after.revision)));
+    if (a.type === "move" && moved && before.player.effects.Poison)
+      requestAnimationFrame(() => requestAnimationFrame(() => setPoisonFlash(after.revision)));
     const curseNotice = entries.find((s) => s.startsWith("CURSED:"));
     if (curseNotice)
       announce(
-        [entries.find((line) => line.includes(": “")), curseNotice]
+        [gainedGold > 0 ? `+${gainedGold} gold.` : undefined, entries.find((line) => line.includes(": “")), curseNotice]
           .filter(Boolean)
           .join(" "),
       );
+    else if (gainedGold > 0) announce(`✦ +${gainedGold} gold · ${after.player.gold} total`);
     else if (a.type === "move" && moved && before.player.effects.Poison) {
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => setPoisonFlash(after.revision)),
-      );
       announce(
         `Poison: −${n(Math.trunc(before.player.effects.Poison[1]))} HP. ${after.player.effects.Poison?.[0] || 0} steps remaining.`,
       );
@@ -635,6 +642,7 @@ export function PlayScreen({
                 />
                 <b>{p.gold || 0}</b>
                 <small>gold</small>
+                {goldFlash && <span key={goldFlash.revision} className="gold-gain" role="status">+{goldFlash.amount} gold</span>}
                 {(g.keys > 0 || g.stairs.locked) && (
                   <span
                     className="stair-key-count"
