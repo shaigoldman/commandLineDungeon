@@ -16,7 +16,7 @@
     "android:sync": "npm run build:android:web && cap sync android",
     "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug",
     "android:open": "cap open android",
-    "test:android:browser": "python3 tests/android-browser.py && python3 tests/expansion-browser.py && python3 tests/combat-loot-browser.py && python3 tests/refinement-browser.py && python3 tests/key-browser.py && python3 tests/market-browser.py && python3 tests/rare-browser.py",
+    "test:android:browser": "python3 tests/android-browser.py && python3 tests/expansion-browser.py && python3 tests/combat-loot-browser.py && python3 tests/refinement-browser.py && python3 tests/key-browser.py && python3 tests/market-browser.py && python3 tests/rare-browser.py && python3 tests/relic-trap-browser.py",
     "test:expansion:browser": "python3 tests/expansion-browser.py",
     "test:combat:browser": "python3 tests/combat-loot-browser.py",
     "test:refinement:browser": "python3 tests/refinement-browser.py",

@@ -18,7 +18,7 @@ export function loreOptions(item: Item): string[] {
       "A tiny hoard with a large opinion of its own value.",
     ],
     seismic: [
-      "“That is not a doorbell.” — Tansy Bolt, immediately before Ashfall",
+      "“That is not a doorbell.” — Tansy Bolt, just before that day",
       "The observatory used these to stir the moon. The moon objected.",
       "Its maker engraved a safety warning on the inside.",
     ],
@@ -29,8 +29,8 @@ export function loreOptions(item: Item): string[] {
     ],
     gold: [
       "King Niblet insists the royal face is on both sides. Neither side agrees.",
-      "“Gold survived the apocalypse. My pension did not.” — Ada Candle",
-      "When the world folded, debts folded with it. Coins proved less obliging.",
+      "“Gold survived that day. My pension did not.” — Ada Candle",
+      "Debts changed shape after that day. Coins proved less obliging.",
     ],
     key: [
       "Dora swears every key in the dungeon once opened her pantry.",
@@ -50,7 +50,7 @@ export function loreOptions(item: Item): string[] {
     double: [
       "The emperor ordered twice the power. Nobody doubled the instruction manual.",
       "“Use one mirror. Two mirrors start a committee.” — Orla Soot",
-      "A reflection from the world before it folded, looking decidedly stronger.",
+      "A reflection from before that event, looking decidedly stronger.",
     ],
     heal: [
       "Mabel still calls it soup. The apothecaries have stopped arguing.",

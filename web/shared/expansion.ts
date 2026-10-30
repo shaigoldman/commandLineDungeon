@@ -12,7 +12,7 @@ export const history = [
   ],
   [
     "Pip Bellwether",
-    "Three nights before Ashfall, the palace bells rang thirteen times. We only owned twelve bells. The thirteenth sounded hungry.",
+    "Three nights before that day, the palace bells rang thirteen times. We only owned twelve bells. The thirteenth sounded hungry.",
   ],
   [
     "Orla Soot",
@@ -32,7 +32,7 @@ export const history = [
   ],
   [
     "Dora Teaspoon",
-    "The engine did not destroy the world. It folded it. My kitchen is now floor nine. Please return my kettle.",
+    "That day did not end things. It rearranged them. My kitchen is now floor nine. Please return my kettle.",
   ],
   [
     "Fenwick Moss",
@@ -40,11 +40,11 @@ export const history = [
   ],
   [
     "Ada Candle",
-    "Our king saved us by declaring the apocalypse a public holiday. We still owe him three days of work.",
+    "Our king declared that day a public holiday. We still owe him three days of work.",
   ],
   [
     "Nell Thread",
-    "The ghosts remember the world before the fold. They do not want revenge. Mostly they want their deposits back.",
+    "The ghosts remember what came before. They do not want revenge. Mostly they want their deposits back.",
   ],
   [
     "Bix Turnip",
@@ -146,12 +146,12 @@ export function makeVillager(g: Game, king = false): Actor {
       premium: 1.5 + random(g) * 1.5,
       line:
         (king
-          ? "My coronation happened during a roof collapse. The crown is technically a saucepan. I declared Ashfall a holiday. "
+          ? "My coronation happened during a roof collapse. The crown is technically a saucepan. I declared that day a holiday. "
           : line) +
         (wanted ? ` Have you seen a ${wanted}? I’m looking for one…` : ""),
       refusal: pick(g, [
         "Last time I bought that, my soup became sentient.",
-        "My wife said: one more of those and I become the apocalypse.",
+        "My wife said: one more of those and I become the next event.",
         "That clashes with my emergency curtains.",
         "I am allergic to terrible business decisions.",
       ]),
@@ -275,7 +275,7 @@ export function makeChief(g: Game, emperor = false): Actor {
       : pick(g, ["Health Gain", "Stat", "Random Item"]),
     done: false,
     line: emperor
-      ? "The world folded because my astronomer said “a little more power.” Shall we make a smaller mistake together?"
+      ? "The astronomer asked for “a little more power” just before that day. Shall we make a smaller mistake together?"
       : "A stranger called me here. Was it you, or the bell?",
   };
   return m;

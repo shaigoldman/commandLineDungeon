@@ -41,7 +41,7 @@ describe("source mechanics", () => {
     expect(g.player.effects["Attack Booster"]).toBeUndefined();
   });
   it("preserves the original roster and extends it with Ashfall content", () => {
-    expect(spells).toHaveLength(16);
+    expect(spells).toHaveLength(17);
     for (const d of itemDefinitions) {
       const i = makeItem(game(), d[0]);
       expect(i.id).toBeTruthy();

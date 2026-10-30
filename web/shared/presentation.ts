@@ -6,6 +6,7 @@ import {
   hitRate,
   floorEquipPlan,
   itemUseProblem,
+  armorOf,
 } from "./engine";
 export const displayNumber = (n: number) =>
   Number.isFinite(n)
@@ -45,6 +46,7 @@ export function equipmentComparison(g: Game, item: Item, ground = false) {
     before: beforeStats[name],
     after: afterStats[name],
   }));
+  rows.push({ name: "Armor", before: armorOf(g.player), after: armorOf(after) });
   rows.push({
     name: "Crit chance %",
     before: criticalChance(beforeStats.Luck),
@@ -60,11 +62,11 @@ export function equipmentComparison(g: Game, item: Item, ground = false) {
       name: "Damage / hit",
       before: Math.max(
         0,
-        Math.trunc(beforeStats.Attack - Math.max(0, enemy.stats.Armor || 0)),
+        Math.trunc(beforeStats.Attack - armorOf(enemy)),
       ),
       after: Math.max(
         0,
-        Math.trunc(afterStats.Attack - Math.max(0, enemy.stats.Armor || 0)),
+        Math.trunc(afterStats.Attack - armorOf(enemy)),
       ),
     });
     rows.push({
@@ -144,14 +146,14 @@ export function outgoingDamage(player: Actor, enemy: Actor) {
     e = attackStats(defender, true, defender.weapons.length > 0, false);
   const normal = Math.max(
     0,
-    Math.trunc(s.Attack - Math.max(0, enemy.stats.Armor || 0)),
+    Math.trunc(s.Attack - armorOf(enemy)),
   );
   return {
     normal,
     critical: Math.max(
       0,
       Math.trunc(
-        s.Attack * (s.Luck > 0 ? 3 : 1) - Math.max(0, enemy.stats.Armor || 0),
+        s.Attack * (s.Luck > 0 ? 3 : 1) - armorOf(enemy),
       ),
     ),
     hit: Math.min(100, Math.max(40, h.Accuracy + h.Speed - e.Speed * 1.2)),
@@ -164,7 +166,7 @@ export function retaliationRisk(player: Actor, enemy: Actor) {
     incoming = Math.max(
       0,
       Math.trunc(
-        combatAttackStats(enemy).Attack - Math.max(0, player.stats.Armor || 0),
+        combatAttackStats(enemy).Attack - armorOf(player),
       ),
     );
   const crit = Math.max(
@@ -172,7 +174,7 @@ export function retaliationRisk(player: Actor, enemy: Actor) {
     Math.trunc(
       combatAttackStats(enemy).Attack *
         (combatAttackStats(enemy).Luck > 0 ? 3 : 1) -
-        Math.max(0, player.stats.Armor || 0),
+        armorOf(player),
     ),
   );
   const first = attackInitiative(player) >= enemy.stats.Speed,
@@ -204,7 +206,7 @@ export function combatBreakdown(actor: Actor) {
   };
   const boosted = attackStats(actor, false, false, magical),
     now = combatAttackStats(actor);
-  return Object.entries(base).map(([stat, value]) => {
+  const rows = Object.entries(base).map(([stat, value]) => {
     const modeBase = stat === "Attack" && magical ? actor.stats.Magic : value;
     const effects = boosted[stat] - modeBase;
     return {
@@ -215,6 +217,7 @@ export function combatBreakdown(actor: Actor) {
       now: now[stat],
     };
   });
+  return rows;
 }
 export function freshLog(before: string[], after: string[]) {
   for (

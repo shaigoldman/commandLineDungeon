@@ -29,6 +29,7 @@ function base(seed = 1) {
   g.pods = [];
   g.chests = [];
   g.secretDoors = [];
+  g.traps = [];
   g.inventory = [];
   g.capacity = 100;
   return g;

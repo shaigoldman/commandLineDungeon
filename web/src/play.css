@@ -438,6 +438,25 @@ body.playing-game {
   z-index: 5;
   text-shadow: 1px 2px #342337;
 }
+.break-notice {
+  position: absolute;
+  top: 98px;
+  left: 10px;
+  right: 10px;
+  z-index: 6;
+  padding: 9px;
+  border: 2px solid #f1a080;
+  background: #591e29f2;
+  color: #fff0dc;
+  text-align: center;
+  font: 800 14px Georgia, serif;
+  pointer-events: none;
+  animation: break-pulse 0.5s ease-out;
+}
+@keyframes break-pulse { from { transform: scale(1.08); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.upgrade-choice { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; margin: 5px 0; }
+.upgrade-choice img { width: 32px; height: 32px; image-rendering: pixelated; }
+.upgrade-choice span, .upgrade-choice small { display: block; }
 .play-context {
   flex: none;
   padding: 4px 5px;

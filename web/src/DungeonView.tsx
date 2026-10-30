@@ -583,6 +583,21 @@ export function DungeonView({
               rect(x + 17, y + 32, 14, 3, 0x5b827f);
               rect(x + 21, y + 35, 6, 1, 0x293e45);
             }
+          for (const trap of g.traps || [])
+            if (trap.revealed && visible(trap.x, trap.y)) {
+              const x = trap.x * TILE, y = trap.y * TILE;
+              const colors: Record<string, number> = { poison: 0x83bf70, curse: 0xb57acf, rust: 0xc08a61, trip: 0xd4b776, fairy: 0xf2abda, sap: 0x76bba5, monster: 0xe28b8b };
+              const c = colors[trap.kind];
+              rect(x + 9, y + 29, 30, 4, 0x283442);
+              rect(x + 11, y + 15, 26, 16, 0x263342);
+              rect(x + 13, y + 17, 22, 12, c);
+              rect(x + 17, y + 20, 14, 2, 0x273442);
+              rect(x + 20, y + 18, 8, 8, 0x273442);
+              rect(x + 22, y + 19, 4, 6, c);
+              const sigil = new Text({ text: ({ poison: "P", curse: "C", rust: "R", trip: "T", fairy: "F", sap: "S", monster: "M" } as Record<string, string>)[trap.kind], style: { fontSize: 11, fill: 0xf9efd2, fontWeight: "bold" } });
+              sigil.x = x + 21; sigil.y = y + 17;
+              world.addChild(sigil);
+            }
           for (const l of g.loot)
             if (visible(l.x, l.y)) {
               const x = l.x * TILE,

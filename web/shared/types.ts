@@ -13,6 +13,7 @@ export interface Item {
   luck?: number;
   uses?: number;
   maxUses?: number;
+  armorBonus?: number;
   element?: string;
   auto?: boolean;
   description: string;
@@ -35,6 +36,8 @@ export interface Actor {
   burn?: [number, number];
   maxMana?: number;
   magicScale?: boolean;
+  sharpening?: boolean;
+  skillBook?: boolean;
   passiveStats?: Stats;
   spawnTurn?: number;
   merchant?: Merchant;
@@ -77,6 +80,13 @@ export interface SecretDoor {
   outcome: string;
   roomMade?: boolean;
 }
+export interface Trap {
+  id: string;
+  x: number;
+  y: number;
+  kind: "poison" | "curse" | "rust" | "trip" | "fairy" | "sap" | "monster";
+  revealed: boolean;
+}
 export interface Game {
   version: 1;
   seed: number;
@@ -112,6 +122,8 @@ export interface Game {
   logSerial?: number;
   chests?: Chest[];
   secretDoors?: SecretDoor[];
+  traps?: Trap[];
+  expDoubles?: number;
   pendingChest?: string;
   pendingDoor?: string;
   haunting?: { x: number; y: number; due: number; name: string }[];
@@ -138,7 +150,7 @@ export type Action =
   | { type: "pickup-swap"; id: string; incomingId?: string }
   | { type: "throw-floor"; id: string; target: string }
   | { type: "attack"; unarmed?: boolean }
-  | { type: "use" | "drop" | "unequip"; id: string; spell?: string }
+  | { type: "use" | "drop" | "unequip"; id: string; spell?: string; target?: string }
   | { type: "deal"; id?: string }
   | { type: "cast"; spell: string }
   | { type: "level"; stat: string }

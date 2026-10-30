@@ -466,8 +466,28 @@ rareKindle.player.stats.Magic = 20;
 rareKindle.player.hp = rareKindle.player.stats.Health;
 rareKindle.monsters[0].hp = rareKindle.monsters[0].stats.Health = 100;
 rareKindle.combat = rareKindle.monsters[0].id;
+const relicUi = openArena("Warrior");
+relicUi.monsters = []; relicUi.traps = []; relicUi.capacity = 20;
+const relicSword = makeItem(relicUi, "Fragile Sword"); relicSword.uses = 1;
+relicUi.inventory = [relicSword, makeItem(relicUi, "Anvil"), makeItem(relicUi, "Blade Shard")];
+const trapUi = openArena("Scout");
+trapUi.monsters = []; trapUi.traps = [{ id: "visible-after-step", x: 16, y: 7, kind: "fairy", revealed: false }];
+trapUi.player.gold = 30;
+const breakUi = openArena("Warrior");
+breakUi.traps = []; breakUi.player.weapons = [makeItem(breakUi, "Fragile Sword")];
+breakUi.player.weapons[0].uses = 1;
+breakUi.player.stats.Accuracy = 1000; breakUi.player.stats.Speed = 1000;
+breakUi.monsters[0].hp = breakUi.monsters[0].stats.Health = 1000;
+breakUi.combat = breakUi.monsters[0].id;
+const shieldUi = openArena("Warrior");
+shieldUi.monsters = []; shieldUi.traps = [];
+shieldUi.player.weapons = [makeItem(shieldUi, "Iron Shield")];
 console.log(
   JSON.stringify({
+    relicUi,
+    trapUi,
+    breakUi,
+    shieldUi,
     rareGremlin,
     rareRobot,
     rareBefriend,

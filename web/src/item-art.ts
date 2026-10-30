@@ -5,6 +5,8 @@ export function itemArtKey(item: Pick<Item, "kind" | "name" | "element">) {
   if (item.kind === "weapon") {
     const shape = name.includes("broadsword")
       ? "broadsword"
+      : name.includes("shield")
+        ? "shield"
       : name.includes("axe")
         ? "axe"
         : name.includes("spear")
@@ -17,7 +19,9 @@ export function itemArtKey(item: Pick<Item, "kind" | "name" | "element">) {
     return shape + ":" + material;
   }
   if (item.kind === "projectile")
-    return name.includes("missile")
+    return name.includes("handcuffs")
+      ? "handcuffs"
+      : name.includes("missile")
       ? "missile"
       : name.includes("bomb")
         ? "bomb"
@@ -37,6 +41,15 @@ export function itemArtKey(item: Pick<Item, "kind" | "name" | "element">) {
   if (["charm", "magic-scales", "infinite-bag", "invisibility", "stealth", "speedy-boots"].includes(item.kind)) return "armor";
   if (["stairfinder", "energy-magnet", "energy-generator", "item-magnet"].includes(item.kind)) return "boost";
   if (["mana-star", "magic-book", "cleanser", "bad-candy", "critical-star", "cursed-candy"].includes(item.kind)) return "candy-" + item.name;
+  if (item.kind === "jewel" || item.kind === "crown") return item.kind + "-" + item.name;
+  if (item.kind === "hard-candy") return "candy-Hard Candy";
+  if (item.kind === "alchemy-book") return "skill-book";
+  if (["alchemy-wand", "magic-wand"].includes(item.kind)) return "staff-Mystery";
+  if (item.kind === "mana-channel") return "mana";
+  if (item.kind === "energy-harness") return "boost";
+  if (["magic-scabbard", "greedy-amulet", "gold-chalice"].includes(item.kind)) return item.kind;
+  if (item.kind === "gentle-grip") return name.startsWith("really") ? "grip-rare" : "grip";
+  if (["sharpening-stone", "anvil", "blade-shard", "skill-book"].includes(item.kind)) return item.kind;
   return item.kind;
 }
 export function itemCanvas(
@@ -80,7 +93,54 @@ export function itemCanvas(
     r(7, 22, 3, 7, gold);
     r(5, 24, 7, 2, gold);
   };
-  if (["heal", "mana", "antidote", "stat", "boost"].includes(key)) {
+  if (key === "gold-chalice") {
+    r(5, 5, 22, 4, dark); r(8, 9, 16, 13, dark); r(10, 10, 12, 11, gold);
+    r(12, 21, 8, 5, gold); r(7, 26, 18, 3, dark); r(9, 26, 14, 2, shine);
+    r(13, 12, 6, 5, "#f2dc8e");
+  } else if (key === "greedy-amulet") {
+    r(7, 4, 18, 4, gold); r(5, 8, 5, 12, gold); r(22, 8, 5, 12, gold);
+    r(9, 17, 14, 12, dark); r(11, 19, 10, 8, "#d9af65");
+    r(14, 21, 4, 4, "#7ab4a2");
+  } else if (key === "magic-scabbard") {
+    for (let n = 0; n < 19; n++) r(7 + n, 25 - n, 5, 5, dark);
+    for (let n = 0; n < 19; n++) r(9 + n, 25 - n, 2, 3, "#896ac1");
+    r(4, 24, 10, 4, gold); r(12, 16, 4, 5, "#9bdfd3");
+  } else if (shape === "shield") {
+    r(5, 4, 22, 18, dark); r(7, 6, 18, 17, steel);
+    r(9, 8, 14, 17, gold); r(11, 8, 10, 15, steel);
+    r(10, 22, 12, 6, dark); r(13, 23, 6, 4, steel);
+    r(14, 9, 4, 13, shine); r(10, 14, 12, 3, gold);
+  } else if (key === "handcuffs") {
+    for (const x of [4, 20]) { r(x, 8, 9, 14, dark); r(x + 2, 10, 5, 10, steel); r(x + 3, 12, 3, 6, dark); }
+    r(12, 14, 9, 3, steel); r(15, 12, 3, 7, gold);
+  } else if (key.startsWith("jewel") || key.startsWith("crown")) {
+    const gem = key.includes("Magic") ? "#b794dd" : key.includes("Luck") ? "#9bd09d" : "#e9b977";
+    if (key.startsWith("crown")) { r(5, 14, 22, 13, dark); r(7, 16, 18, 9, gold); r(5, 7, 5, 10, gold); r(13, 4, 6, 13, gold); r(22, 7, 5, 10, gold); }
+    else { r(10, 4, 12, 24, dark); r(12, 6, 8, 20, gold); }
+    r(13, 15, 6, 6, gem); r(15, 16, 2, 3, shine);
+  } else if (key === "anvil") {
+    r(8, 5, 16, 5, dark); r(5, 9, 22, 7, steel); r(3, 11, 7, 4, shine);
+    r(13, 15, 7, 10, dark); r(14, 16, 5, 8, steel);
+    r(6, 24, 20, 5, dark); r(8, 25, 16, 3, gold);
+  } else if (key === "blade-shard") {
+    r(18, 3, 6, 6, shine); r(15, 9, 7, 9, steel); r(12, 17, 6, 7, steel);
+    r(7, 23, 9, 4, gold); r(10, 25, 3, 5, brown);
+    r(22, 8, 3, 3, "#86dfe8"); r(7, 13, 3, 3, "#86dfe8");
+  } else if (key === "sharpening-stone") {
+    r(5, 12, 22, 14, dark); r(7, 13, 18, 11, "#788b92");
+    r(10, 14, 12, 3, shine); r(9, 20, 14, 2, gold);
+    r(20, 5, 4, 6, steel); r(17, 10, 4, 6, shine);
+  } else if (key === "skill-book") {
+    r(6, 5, 21, 24, dark); r(8, 7, 17, 20, "#65508a");
+    r(10, 8, 2, 19, gold); r(14, 11, 8, 2, shine); r(17, 9, 2, 7, shine);
+    r(15, 20, 8, 2, gold); r(17, 23, 5, 2, gold);
+  } else if (key.startsWith("grip")) {
+    const glove = key === "grip-rare" ? "#bb92dc" : "#a7c69d";
+    r(8, 9, 17, 16, dark); r(10, 10, 13, 14, glove);
+    r(7, 3, 4, 13, glove); r(12, 2, 4, 12, glove);
+    r(17, 3, 4, 12, glove); r(22, 6, 4, 12, glove);
+    r(10, 22, 14, 7, gold); r(13, 24, 8, 3, brown);
+  } else if (["heal", "mana", "antidote", "stat", "boost"].includes(key)) {
     const liquid =
       key === "heal"
         ? "#e67578"

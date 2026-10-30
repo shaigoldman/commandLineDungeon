@@ -26,3 +26,7 @@ The v0.7.5 update adds the requested charged relics, carried charms and Infinite
 [Download Android 0.7.5-test](https://github.com/shaigoldman/commandLineDungeon/raw/refs/heads/feat/browser-rpg/web/downloads/command-line-dungeon-android-test.apk). APK SHA-256: `fb6480ac542d45b2df9c607638eec85d01b4b1fc7845580f7968b378e8add324`.
 
 Gold gains now show an animated `+N gold` beside the purse and an exact gain/total notice. Cursed gold displays both the gain and curse. The mobile inspection test caught and fixed an overly broad consecutive-use modal rule: reusable Teleporters now close their inspection after use, while charged and exchange items remain open.
+
+The v0.8 update adds weapon durability relics, priced stat jewels and crowns, item alchemy, more gold magic, shields, and seven hidden trap types. Weapon breaks receive a separate alert; shield Armor and remaining blocks appear in combat forecasts and the top panel. Traps stay marked and active after discovery, except one-shot Monster Traps. Chest keys are more common. [Full feature checklist](web/docs/RELICS-TRAPS-V0.8.md). Validation: 180 TypeScript tests, six Python tests, 80 parity fixtures, 600 simulated games with 53,452 actions and no invalid states, offline phone interactions, and signed Android 0.8.0-test (code 14).
+
+[Download Android 0.8.0-test](https://github.com/shaigoldman/commandLineDungeon/raw/refs/heads/feat/browser-rpg/web/downloads/command-line-dungeon-android-test.apk). APK SHA-256: `18471955dff062d840bc9eea8a4f9722c808a0a474f44526bda5d9cc68f9c57c`.

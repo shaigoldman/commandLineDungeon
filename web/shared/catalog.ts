@@ -95,6 +95,7 @@ export interface Spell {
   description: string;
 }
 export const spells: Spell[] = [
+  { name: "Gild", element: "Fire", cost: 4, req: 8, when: "peace", description: "Conjure 1–6 gold from a brief flame." },
   { name: "Mana Expansion", element: "Fire", cost: 10, req: 25, when: "peace", description: "Permanently increase maximum mana by 2." },
   { name: "Befriend", element: "Water", cost: 8, req: 15, when: "combat", description: "Turn a non-boss enemy into a peaceful villager." },
   { name: "Unseal", element: "Wind", cost: 8, req: 12, when: "peace", description: "Open an adjacent chest or secret door without a key." },
@@ -199,6 +200,21 @@ export const spells: Spell[] = [
   },
 ];
 export const itemDefinitions: [string, string, number, number, string?][] = [
+  ...["Power", "Luck", "Health", "Speed", "Magic", "Accuracy", "Armor"].flatMap((stat) => [
+    [stat === "Power" ? "Strength Jewel" : `${stat} Jewel`, "jewel", 1, 5, stat],
+    [stat === "Power" ? "Strength Crown" : `${stat} Crown`, "crown", 4, 10, stat],
+  ] as [string, string, number, number, string][]),
+  ["Magic Scabbard", "magic-scabbard", 7, 0],
+  ["Hard Candy", "hard-candy", 7, 5],
+  ["Handcuffs", "projectile", 1, 10],
+  ["Greedy Amulet", "greedy-amulet", 4, 5],
+  ["Really Greedy Amulet", "greedy-amulet", 4, 20],
+  ["Alchemy Book", "alchemy-book", 4, 0],
+  ["Alchemy Wand", "alchemy-wand", 7, 0],
+  ["Mana Channel", "mana-channel", 4, 0],
+  ["Gold Chalice", "gold-chalice", 4, 0],
+  ["Magic Wand", "magic-wand", 4, 0],
+  ["Energy Harness", "energy-harness", 1, 0],
   ["Mystic Charm", "charm", 1, 0],
   ["Health Pot", "health-pot", 7, 1],
   ["Health Drain", "health-drain", 7, 1],
@@ -208,6 +224,12 @@ export const itemDefinitions: [string, string, number, number, string?][] = [
   ["Cursed Candy", "cursed-candy", 4, 100],
   ["Cursed Potion", "cursed-potion", 4, 0],
   ["Cursed Gold", "cursed-gold", 4, 10],
+  ["Gentle Grip", "gentle-grip", 4, 50],
+  ["Really Gentle Grip", "gentle-grip", 7, 80],
+  ["Sharpening Stone", "sharpening-stone", 7, 2],
+  ["Anvil", "anvil", 4, 0],
+  ["Blade Shard", "blade-shard", 4, 0],
+  ["Skill Book", "skill-book", 4, 0],
   ["Infinite Bag", "infinite-bag", 10, 0],
   ["Cleanser", "cleanser", 7, 0],
   ["Reusable Key", "reusable-key", 7, 1],
@@ -294,6 +316,7 @@ export const itemDefinitions: [string, string, number, number, string?][] = [
   ["Sword", "weapon", 3, 3],
   ["Spear", "weapon", 3, 4],
   ["Axe", "weapon", 5, 6],
+  ["Shield", "weapon", 4, 0],
   ["Magic Staff", "tome", 4, 0],
 ];
 export function describe(i: Item) {

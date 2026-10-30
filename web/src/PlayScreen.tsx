@@ -20,6 +20,9 @@ import {
   capacityOf,
   manaCap,
   spellCost,
+  nextWeaponName,
+  makeItem,
+  armorOf,
 } from "../shared/engine";
 import {
   adjacentEnemies,
@@ -121,6 +124,7 @@ export function PlayScreen({
   const staffInactive =
     p.weapons.some((i) => i.kind === "tome") && p.stats.Mana < 2;
   const [criticalNotice, setCriticalNotice] = useState("");
+  const [breakNotice, setBreakNotice] = useState("");
   const ownedElements = new Set(
     [...g.inventory, ...p.weapons]
       .filter((i) => i.kind === "tome")
@@ -419,6 +423,11 @@ export function PlayScreen({
       clearTimeout(criticalTimer.current);
       criticalTimer.current = setTimeout(() => setCriticalNotice(""), 4500);
     }
+    const broken = entries.find((line) => line.startsWith("WEAPON BROKE:"));
+    if (broken) {
+      setBreakNotice(broken);
+      setTimeout(() => setBreakNotice((current) => current === broken ? "" : current), 5500);
+    }
     const moved =
       after.player.x !== before.player.x || after.player.y !== before.player.y;
     if (before.player.effects.Curse && after.turn > before.turn && after.player.hp < before.player.hp)
@@ -463,6 +472,8 @@ export function PlayScreen({
       announce(
         entries.filter((line) => line.startsWith("Collected ")).join(" "),
       );
+    else if (broken) announce(broken);
+    else if (entries.some((line) => line.startsWith("TRAP:"))) announce(entries.filter((line) => line.startsWith("TRAP:")).join(" "));
     else if (a.type === "attack")
       announce(
         (after.encounter?.result || entries.slice(-3).join(" ")) +
@@ -538,6 +549,7 @@ export function PlayScreen({
             ))}
           </tbody>
         </table>
+        <p>Armor: {n(actor.stats.Armor || 0)} base + {n(armorOf(actor) - (actor.stats.Armor || 0))} shield = <b>{n(armorOf(actor))}</b></p>
         <p>
           Crit chance: {chancePercent(criticalChance(stats.Luck))} · Basic
           attacks use{" "}
@@ -676,7 +688,9 @@ export function PlayScreen({
                       .map((i) =>
                         i.kind === "tome"
                           ? `${i.element} · 2 MP/hit`
-                          : `${i.uses}/${i.maxUses} uses`,
+                          : i.armorBonus
+                            ? `Shield +${i.armorBonus} armor · ${i.uses}/${i.maxUses} blocks`
+                            : `${i.uses}/${i.maxUses} uses`,
                       )
                       .join(" · ")
                   : "Unarmed · no weapon"}{" "}
@@ -855,6 +869,7 @@ export function PlayScreen({
             ✦ {criticalNotice}
           </div>
         )}
+        {breakNotice && <div className="break-notice" role="alert">⚠ {breakNotice}</div>}
         {toast && (
           <div
             className={"play-toast" + (error ? " toast-error" : "")}
@@ -1508,7 +1523,34 @@ export function PlayScreen({
                           actButton(`Cast ${s.name} free`, { type: "use", id: picked.id, spell: s.name }, false, "primary"))}
                         {picked.kind === "spiked-potion" && ["Health", "Power", "Luck", "Speed", "Magic", "Accuracy", "Armor"].map((stat) =>
                           actButton(`+5 ${stat} · pay half HP`, { type: "use", id: picked.id, spell: stat }, false, "primary"))}
-                        {!["mana-star", "spiked-potion"].includes(picked.kind) && actButton(
+                        {picked.kind === "anvil" && g.inventory.filter((weapon) => nextWeaponName(weapon)).map((weapon) => {
+                          const next = makeItem(structuredClone(g), nextWeaponName(weapon)!);
+                          return <button key={weapon.id} className="upgrade-choice" disabled={busy || !!itemUseProblem(g, picked)} onClick={() => void send({ type: "use", id: picked.id, target: weapon.id })}>
+                            <ItemIcon item={weapon} />
+                            <span><b>Upgrade {weapon.name} → {next.name}</b><small>Attack {weapon.attack} → {next.attack} · Weight {weapon.weight} → {next.weight} · Uses {weapon.uses}/{weapon.maxUses} → {next.maxUses}/{next.maxUses}</small></span>
+                          </button>;
+                        })}
+                        {picked.kind === "blade-shard" && g.inventory.filter((weapon) => weapon.kind === "weapon" && (weapon.uses || 0) < (weapon.maxUses || 0)).map((weapon) =>
+                          <button key={weapon.id} className="upgrade-choice" disabled={busy || !!itemUseProblem(g, picked)} onClick={() => void send({ type: "use", id: picked.id, target: weapon.id })}>
+                            <ItemIcon item={weapon} /><span><b>Restore {weapon.name}</b><small>{weapon.uses}/{weapon.maxUses} → {weapon.maxUses}/{weapon.maxUses} uses</small></span>
+                          </button>)}
+                        {picked.kind === "magic-scabbard" && [...g.inventory, ...p.weapons].filter((item) => item.id !== picked.id && (item.uses || 0) > 0).map((item) =>
+                          <button key={item.id} className="upgrade-choice" disabled={busy} onClick={() => void send({ type: "use", id: picked.id, target: item.id })}>
+                            <ItemIcon item={item} /><span><b>Double {item.name}</b><small>{item.uses} → {(item.uses || 0) * 2} uses · usual max {item.maxUses}</small></span>
+                          </button>)}
+                        {picked.kind === "alchemy-book" && g.inventory.filter((item) => item.id !== picked.id && item.rarity < 9).map((item) =>
+                          <button key={item.id} className="upgrade-choice" disabled={busy || !!itemUseProblem(g, picked)} onClick={() => void send({ type: "use", id: picked.id, target: item.id })}>
+                            <ItemIcon item={item} /><span><b>Transmute {item.name}</b><small>5 gold · usually one rarity tier higher · small misfire chance</small></span>
+                          </button>)}
+                        {picked.kind === "magic-wand" && g.inventory.filter((item) => item.id !== picked.id).flatMap((item) => ["Fire", "Wind", "Water"].map((element) =>
+                          <button key={item.id + element} className="upgrade-choice" disabled={busy || (item.kind === "infinite-bag" && g.inventory.length - 1 + Number(p.weapons.length > 0) > g.capacity)} onClick={() => void send({ type: "use", id: picked.id, target: item.id, spell: element })}>
+                            <ItemIcon item={item} /><span><b>{item.name} → {element} Staff</b><small>Consumes Magic Wand</small></span>
+                          </button>))}
+                        {picked.kind === "energy-harness" && [...g.pods].sort((a, b) => Math.abs(a.x - p.x) + Math.abs(a.y - p.y) - Math.abs(b.x - p.x) - Math.abs(b.y - p.y)).map((pod) =>
+                          <button key={`${pod.x},${pod.y}`} className="upgrade-choice" disabled={busy} onClick={() => void send({ type: "use", id: picked.id, target: `${pod.x},${pod.y}` })}>
+                            <span><b>Convert {pod.max ? "large" : "small"} energy pod</b><small>At {pod.x},{pod.y} · {Math.abs(pod.x - p.x) + Math.abs(pod.y - p.y)} steps away · item appears there</small></span>
+                          </button>)}
+                        {! ["mana-star", "spiked-potion", "anvil", "blade-shard", "magic-scabbard", "alchemy-book", "magic-wand", "energy-harness"].includes(picked.kind) && actButton(
                           picked.kind === "projectile"
                             ? "Throw at " + (enemy?.name || "enemy")
                             : picked.kind === "teleport"
