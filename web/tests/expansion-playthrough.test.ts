@@ -122,10 +122,10 @@ describe("Ashfall playthroughs", () => {
       expect(g.inventory).toHaveLength(0);
     });
   for (const [name, value, rarity] of [
-    ["1 Gold Coin", 1, 1],
-    ["5 Gold Coins", 5, 4],
-    ["10 Gold Coins", 10, 7],
-    ["20 Gold Coins", 20, 10],
+    ["1 Gold Coin", 1, 0],
+    ["5 Gold Coins", 5, 2],
+    ["10 Gold Coins", 10, 4],
+    ["20 Gold Coins", 20, 7],
   ] as const)
     it(`collects ${name} through a full bag`, () => {
       let g = arena();

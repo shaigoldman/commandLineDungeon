@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { itemCanvas } from "../src/item-art";
+import { itemArtKey } from "../src/item-art";
+import { makeItem, newGame } from "../shared/engine";
 // Rasterize the production rectangle drawing commands to catch paint-order regressions.
 function pixels(kind: string, name: string) {
   const out = Array<string>(32 * 32).fill("");
@@ -22,6 +24,13 @@ function pixels(kind: string, name: string) {
 }
 afterEach(() => vi.unstubAllGlobals());
 describe("visible item raster artwork", () => {
+  it("gives trade relics and other common lookalikes distinct art", () => {
+    const g = newGame("Art", "Scout", "Wind", 0, 6);
+    const names = ["Mana Rock", "Health Drain", "Mana Shard", "Mana Gem", "Mana Diamond", "Mana Pod", "Mana Channel", "Health Pot", "Gold Chalice", "Mystery Potion", "Poison Potion", "Super Potion", "Stairfinder", "Ultrastairfinder", "Energy Magnet", "Item Magnet", "Energy Generator", "Alchemy Book", "Magic Book", "Magic Wand", "Alchemy Wand", "Stealth Shoes", "Speedy Boots", "Invisibility Cloak", "Infinite Bag", "1 Gold Coin", "5 Gold Coins", "10 Gold Coins", "20 Gold Coins", "Cursed Gold"];
+    const icons = names.map((name) => { const item = makeItem(g, name); return { key: itemArtKey(item), pixels: pixels(item.kind, item.name).join(",") }; });
+    expect(new Set(icons.map((icon) => icon.key)).size).toBe(names.length);
+    expect(new Set(icons.map((icon) => icon.pixels)).size).toBe(names.length);
+  });
   it("renders a continuous sword blade rather than a hilt and isolated tip", () => {
     const p = pixels("weapon", "Iron Sword");
     expect(

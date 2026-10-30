@@ -1,7 +1,7 @@
 /** Ashfall market rules. All RNG is part of the persisted game seed. */
 import type { Actor, Game, Item, SecretDoor } from "./types";
 import { itemDefinitions } from "./catalog";
-import { makeItem, makeMonster, random, randomItem, log, capacityOf } from "./engine";
+import { makeItem, makeMonster, random, randomItem, pickItemDefinition, log, capacityOf } from "./engine";
 const roll = (g: Game, n: number) => Math.floor(random(g) * n);
 const pick = <T>(g: Game, a: T[]) => a[roll(g, a.length)];
 const uid = (g: Game) => "ash-" + roll(g, 2 ** 32).toString(36);
@@ -323,10 +323,7 @@ export function chestReward(g: Game, ultra = false) {
     min = ultra ? (r < 0.3 ? 9 : 6) : r < 0.15 ? 9 : r < 0.65 ? 6 : 3;
   return makeItem(
     g,
-    pick(
-      g,
-      itemDefinitions.filter((d) => d[2] >= min && d[0] !== "Pot of Gold"),
-    )[0],
+    pickItemDefinition(g, itemDefinitions.filter((d) => d[2] >= min && d[0] !== "Pot of Gold"))[0],
   );
 }
 export function addChest(

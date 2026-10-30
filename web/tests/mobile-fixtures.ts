@@ -486,6 +486,10 @@ const harnessUi = openArena("Warrior");
 harnessUi.monsters = []; harnessUi.traps = [];
 harnessUi.inventory = [makeItem(harnessUi, "Energy Harness")];
 harnessUi.pods = [{ x: 16, y: 7, max: false }, { x: 17, y: 7, max: true }];
+const outcomeUi = openArena("Warrior");
+outcomeUi.monsters = []; outcomeUi.traps = [];
+outcomeUi.player.hp = 5; outcomeUi.player.gold = 20;
+outcomeUi.inventory = [makeItem(outcomeUi, "Health Pot"), makeItem(outcomeUi, "Gold Chalice"), makeItem(outcomeUi, "Mana Rock"), makeItem(outcomeUi, "Health Drain")];
 const breakUi = openArena("Warrior");
 breakUi.traps = []; breakUi.player.weapons = [makeItem(breakUi, "Fragile Sword")];
 breakUi.player.weapons[0].uses = 1;
@@ -500,6 +504,7 @@ console.log(
     relicUi,
     trapUi,
     harnessUi,
+    outcomeUi,
     breakUi,
     shieldUi,
     rareGremlin,

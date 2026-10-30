@@ -11,7 +11,7 @@ All entries are in the shared TypeScript engine used by the browser, server and 
 | Reusable Tiny / Medium Potion | 1–5 healing uses. |
 | Stealth Shoes | 1–40 moves without enemy initiated attacks. |
 | Stairfinder / Ultrastairfinder | Teleport near stairs once / indefinitely. |
-| Mana Rock / Mana Shard | Convert 1 HP to 1 MP indefinitely / 10 HP to 10 MP once. |
+| Mana Rock / Mana Shard | Convert 1 MP to 1 HP indefinitely / 10 HP to 10 MP once. |
 | Mana Gem / Mana Diamond | Carried spell-cost discounts of 1 / 2 MP. |
 | Mana Star / Double Mana Star | Choose any currently accessible spell for a free cast; 1 / 2 uses. |
 | Magic Book | Free random spell; expensive spells weighted lower. |

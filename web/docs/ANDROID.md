@@ -4,7 +4,7 @@ The Android app packages the existing React/Pixi game with Capacitor 7. It conta
 
 ## Install on your phone
 
-Open the [direct APK download](https://github.com/shaigoldman/commandLineDungeon/raw/refs/heads/feat/browser-rpg/web/downloads/command-line-dungeon-android-test.apk) in Android Chrome or another phone browser. Open the downloaded file, allow that browser or Files app to install downloaded apps if prompted, and install it. Launch **Dungeon Test**.
+Open the [direct APK download](https://github.com/shaigoldman/commandLineDungeon/raw/refs/heads/fix/adjacent-energy-harness/web/downloads/command-line-dungeon-android-test.apk) in Android Chrome or another phone browser. Open the downloaded file, allow that browser or Files app to install downloaded apps if prompted, and install it. Launch **Dungeon Test**.
 
 Requirements: Android **8.0 / API 26 or later**, with a current Android System WebView. Target/compile SDK is 35. The APK is universal and does not require a Play Store account or a game server. Swipes, adjacent map taps, combat controls, scrolling inventory/spell cards, and both orientations are supported. Phone screens use a closer 12×8 camera and buttons at least 44 CSS pixels high in the main touch controls; wider screens use the desktop camera.
 
@@ -14,7 +14,7 @@ Android uses `LocalGameAPI` to run the shared engine locally. All successful gam
 
 Android progress is **separate from server progress**. A device journey code works only on the same installation. It does not retrieve a web save or transfer to another phone. The save panel makes this distinction explicit. Closing/reopening the app resumes the current journey; uninstalling or clearing app data removes local saves. This build does not implement cloud synchronization or cross-device save transfer.
 
-The package ID is `com.shaigoldman.commandlinedungeon.test`, version `0.8.4-test`, version code `18`, launcher name **Dungeon Test**. This is a debug-signed test package, distinct from any future store release. Native permissions are the normal Internet permission used by the WebView shell and an AndroidX internal signature permission; the game does not request contacts, location, or shared-storage access.
+The package ID is `com.shaigoldman.commandlinedungeon.test`, version `0.8.5-test`, version code `19`, launcher name **Dungeon Test**. This is a debug-signed test package, distinct from any future store release. Native permissions are the normal Internet permission used by the WebView shell and an AndroidX internal signature permission; the game does not request contacts, location, or shared-storage access.
 
 The workspace signing key is ignored under `work/android-user/`. Keep it for compatible rebuilds. A fresh checkout or CI may use a different test signing key; Android will reject an in-place update signed by that other key. Uninstalling to switch keys removes local progress. Release signing and Google Play publication need a separate owner-controlled production key and are not performed here.
 

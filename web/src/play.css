@@ -492,6 +492,28 @@ body.playing-game {
 .energy-full-notice strong, .energy-full-notice span { display: block; }
 .energy-full-notice strong { font: 900 16px Georgia, serif; letter-spacing: 0.07em; }
 .energy-full-notice span { margin-top: 4px; font-size: 12px; line-height: 1.3; }
+.item-result-notice {
+  position: fixed;
+  left: 50%;
+  top: 38%;
+  z-index: 53;
+  width: min(88vw, 360px);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transform: translate(-50%, -50%);
+  padding: 11px 13px;
+  border: 2px solid #d8bf80;
+  border-radius: 7px;
+  background: #203947f5;
+  box-shadow: 0 8px 24px #000a;
+  color: #fff0cf;
+  pointer-events: none;
+}
+.item-result-notice strong, .item-result-notice small { display: block; }
+.item-result-notice strong { font: 700 17px Georgia, serif; }
+.item-result-notice small { margin-top: 4px; color: #d8e5dc; font: 13px/1.3 Arial, sans-serif; }
 @keyframes trap-screen-flash {
   0%, 25% { opacity: 0.65; }
   100% { opacity: 0; }

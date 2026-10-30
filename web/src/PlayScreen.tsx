@@ -1,5 +1,6 @@
 import { itemIcon } from "./item-art";
 import { deathStory } from "../shared/death-story";
+import { itemOutcome, type ItemOutcome } from "../shared/item-outcome";
 import { dragonArt } from "./dragon-art";
 import { itemLore, rarityInfo } from "../shared/item-lore";
 import { MerchantPanel } from "./MerchantPanel";
@@ -83,6 +84,7 @@ export function PlayScreen({
     [trapNotice, setTrapNotice] = useState<{ message: string; revision: number } | null>(null),
     [energyFullNotice, setEnergyFullNotice] = useState(0),
     [goldFlash, setGoldFlash] = useState<{ amount: number; revision: number } | null>(null),
+    [itemResult, setItemResult] = useState<ItemOutcome | null>(null),
     [trade, setTrade] = useState("");
   const [swapPickup, setSwapPickup] = useState<Item | null>(null);
   const modal = useRef<HTMLDivElement>(null),
@@ -410,6 +412,15 @@ export function PlayScreen({
     )
       setPanel(null);
     const entries = freshGameLog(before, after);
+    if (a.type === "use" || a.type === "use-floor") {
+      const used = [...before.inventory, ...before.player.weapons, ...before.loot.map((loot) => loot.item)]
+        .find((item) => item.id === a.id);
+      if (used && !["weapon", "tome"].includes(used.kind)) {
+        const result = itemOutcome(before, after, used, entries);
+        setItemResult(result);
+        setTimeout(() => setItemResult((current) => current?.revision === result.revision ? null : current), 2800);
+      }
+    }
     const trapMessages = entries.filter((line) => line.startsWith("TRAP:"));
     if (trapMessages.length) {
       const notice = { message: trapMessages.join(" "), revision: after.revision };
@@ -945,6 +956,12 @@ export function PlayScreen({
           <div key={energyFullNotice} className="energy-full-notice" role="status" data-testid="energy-full-notice">
             <strong>ENERGY FULL</strong>
             <span>No energy restored. This pod remains here for later.</span>
+          </div>
+        )}
+        {itemResult && (
+          <div key={itemResult.revision} className="item-result-notice" role="status" data-testid="item-result-notice">
+            {itemResult.reward && <ItemIcon item={itemResult.reward} />}
+            <span><strong>{itemResult.title}</strong><small>{itemResult.detail}</small></span>
           </div>
         )}
       </section>

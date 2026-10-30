@@ -1,6 +1,6 @@
 # Android phone test build
 
-[Download the APK directly](https://github.com/shaigoldman/commandLineDungeon/raw/refs/heads/feat/browser-rpg/web/downloads/command-line-dungeon-android-test.apk)
+[Download the APK directly](https://github.com/shaigoldman/commandLineDungeon/raw/refs/heads/fix/adjacent-energy-harness/web/downloads/command-line-dungeon-android-test.apk)
 
 Open that link in your Android phone's browser, download the APK, open it from Downloads, and choose Install. If Android asks, allow the browser or Files app to install this downloaded app. Launch **Dungeon Test**.
 
@@ -11,7 +11,7 @@ Open that link in your Android phone's browser, download the APK, open it from D
 - Uninstalling or clearing app storage removes these local saves.
 - This is a debug-signed test APK, not a Google Play release. Updates signed with the same key can install in place; save compatibility across test versions is unsupported. A build signed by a different local/CI key cannot replace it without uninstalling.
 
-The current **0.8.4-test** build adds weapon relics, shields, gold-priced stat jewels and crowns, alchemy, more Fire magic, clearer weapon breaks, and seven hidden trap types. Traps now flash the screen and show a centered warning; a full death screen displays the final score and restart button; full energy pods give a compact, brief notice when they have no effect. The death screen now names the fatal enemy or effect and tells a little of the final moment. Jewel finds are less frequent while every variant remains common. Energy Harness reaches only adjacent pods. Keys are easier to find and item lore keeps the event mysterious. See the [feature checklist](../docs/RELICS-TRAPS-V0.8.md).
+The current **0.8.5-test** build makes Mana Rock spend mana to heal, gives distinctive pixel icons to many formerly shared item sprites, treats stat and size variants as one loot family, makes gold easier to find, and shows a clear outcome card for used items such as Health Pot and Gold Chalice. [Changes and checks](../docs/ITEMS-V0.8.5.md). It also includes weapon relics, shields, gold-priced stat jewels and crowns, alchemy, more Fire magic, clearer weapon breaks, and seven hidden trap types. Traps now flash the screen and show a centered warning; a full death screen displays the final score and restart button; full energy pods give a compact, brief notice when they have no effect. The death screen now names the fatal enemy or effect and tells a little of the final moment. Jewel and crown stat variants each share one family draw. Energy Harness reaches only adjacent pods. Keys are easier to find and item lore keeps the event mysterious. See the [feature checklist](../docs/RELICS-TRAPS-V0.8.md).
 
 The earlier **0.7.5-test** build adds charged relics, carried stat charms and Infinite Bag, Fire Mana Expansion, Critical Star, Speedy Boots, cursed candy/potion/gold and a purple curse damage pulse. Multiuse item details stay open for consecutive uses. See the full [item checklist](../docs/NEW-ITEMS-V0.7.5.md).
 

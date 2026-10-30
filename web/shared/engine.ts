@@ -124,7 +124,7 @@ export function makeItem(g: Game, name: string): Item {
     "Stealth Shoes": `Prevent enemy ambushes for ${i.duration} moves.`,
     "Stairfinder": "Teleport to the stairs once.",
     "Ultrastairfinder": "Teleport to the stairs as often as you like.",
-    "Mana Rock": "Pay 1 HP for 1 mana. Never breaks.",
+    "Mana Rock": "Spend 1 mana to restore 1 HP. Never breaks.",
     "Mana Shard": "Pay 10 HP to restore 10 mana.",
     "Mana Gem": "While carried, spells cost 1 less mana.",
     "Mana Diamond": "While carried, spells cost 2 less mana.",
@@ -275,21 +275,40 @@ export function randomItem(g: Game, depth = g.floor): Item {
     for (let j = 0; j < 100 - v; j++) rars.push(n);
   }
   const rarity = pick(g, rars) + 1;
+  // Currency has its own draw, below the ordinary common-item pool.
+  if (random(g) < 0.34) {
+    const coins = itemDefinitions.filter((d) => d[1] === "gold" && d[0] !== "Pot of Gold" && d[2] <= rarity);
+    const weights = coins.map((d) => ({ "1 Gold Coin": 12, "5 Gold Coins": 5, "10 Gold Coins": 2, "20 Gold Coins": 1 })[d[0]] || 1);
+    let draw = random(g) * weights.reduce((a, b) => a + b, 0);
+    for (let n = 0; n < coins.length; n++) if ((draw -= weights[n]) < 0) return makeItem(g, coins[n][0]);
+    return makeItem(g, coins.at(-1)![0]);
+  }
   const candidates = itemDefinitions.filter(
-    (d) => d[2] <= rarity && d[0] !== "Small Health Potion" && d[0] !== "Pot of Gold",
+    (d) => d[2] <= rarity && d[0] !== "Small Health Potion" && d[1] !== "gold",
   );
-  // Keys are useful only when one appears before its chest; give them a modest weight boost.
-  for (const name of ["Standard Key", "Rare Key"])
-    if (candidates.some((d) => d[0] === name)) {
-      const key = candidates.find((d) => d[0] === name)!;
-      candidates.push(key, key, key);
-    }
-  let chosen = pick(g, candidates);
-  // Seven stat variants share the common pool; keep the family common without
-  // letting it crowd out potions, keys, weapons, and other basic finds.
-  if (chosen[1] === "jewel" && random(g) < 0.6)
-    chosen = pick(g, candidates.filter((item) => item[1] !== "jewel"));
-  return makeItem(g, chosen[0]);
+  return makeItem(g, pickItemDefinition(g, candidates, true)[0]);
+}
+type ItemDefinition = (typeof itemDefinitions)[number];
+const variantFamilies = new Set(["jewel", "crown", "double", "stat", "boost", "heal", "gold", "key", "projectile", "bag", "reusable-key", "reusable-heal", "candy", "mana-star", "greedy-amulet", "stairfinder", "gentle-grip"]);
+/** First select an item family, then a variant; seven stats no longer mean seven tickets. */
+export function pickItemDefinition(g: Game, definitions: ItemDefinition[], boostKeys = false): ItemDefinition {
+  if (!definitions.length) throw Error("No item candidates.");
+  const groups = new Map<string, ItemDefinition[]>();
+  for (const definition of definitions) {
+    const family = variantFamilies.has(definition[1]) ? definition[1] : definition[0];
+    const group = groups.get(family) || [];
+    group.push(definition);
+    groups.set(family, group);
+  }
+  const families = [...groups.keys()];
+  if (boostKeys && groups.has("key")) families.push("key", "key", "key");
+  const variants = groups.get(pick(g, families))!;
+  if (variants.length === 1) return variants[0];
+  const minimum = Math.min(...variants.map((d) => d[2]));
+  const weights = variants.map((d) => 1 / (1 + d[2] - minimum));
+  let draw = random(g) * weights.reduce((a, b) => a + b, 0);
+  for (let n = 0; n < variants.length; n++) if ((draw -= weights[n]) < 0) return variants[n];
+  return variants.at(-1)!;
 }
 function rarityTier(rarity: number) {
   return rarity >= 9 ? 3 : rarity >= 6 ? 2 : rarity >= 3 ? 1 : 0;
@@ -298,8 +317,8 @@ function transmute(g: Game, original: Item) {
   if (random(g) < 0.06) return makeItem(g, "Piece of Trash");
   const tier = Math.min(3, rarityTier(original.rarity) + 1 + (random(g) < 0.12 ? 1 : 0));
   const bounds = [[1, 2], [3, 5], [6, 8], [9, 11]][tier];
-  const names = itemDefinitions.filter((d) => d[2] >= bounds[0] && d[2] <= bounds[1] && d[0] !== "Pot of Gold").map((d) => d[0]);
-  return makeItem(g, pick(g, names));
+  const candidates = itemDefinitions.filter((d) => d[2] >= bounds[0] && d[2] <= bounds[1] && d[0] !== "Pot of Gold");
+  return makeItem(g, pickItemDefinition(g, candidates)[0]);
 }
 
 function randomName(g: Game, maxlen: number) {
@@ -808,8 +827,8 @@ export function itemUseProblem(g: Game, i: Item): string | undefined {
     return "A guardian resists conversion.";
   if (i.kind === "mana-star" && !availableSpells(g, { free: true }).length)
     return "No accessible spell for this encounter.";
-  if (i.kind === "mana-rock" && (g.player.hp <= 1 || g.player.stats.Mana >= manaCap(g.player)))
-    return "Need more than 1 HP and room for mana.";
+  if (i.kind === "mana-rock" && (g.player.stats.Mana < 1 || g.player.hp >= g.player.stats.Health))
+    return "Need at least 1 mana and room to heal.";
   if (i.kind === "mana-shard" && (g.player.hp <= 10 || g.player.stats.Mana >= manaCap(g.player)))
     return "Need more than 10 HP and room for mana.";
   if (i.kind === "health-pot" && (!(g.player.gold || 0) || g.player.hp >= g.player.stats.Health))
@@ -1302,8 +1321,8 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
     case "gold-chalice": {
       if ((p.gold || 0) < 10) throw Error("Need 10 gold.");
       p.gold! -= 10;
-      const candidates = itemDefinitions.filter((d) => d[2] >= 6 && d[2] < 9 && d[0] !== "Pot of Gold");
-      const reward = makeItem(g, pick(g, candidates)[0]);
+      const candidates = itemDefinitions.filter((d) => d[2] >= 6 && d[2] < 9 && d[1] !== "gold");
+      const reward = makeItem(g, pickItemDefinition(g, candidates)[0]);
       if (g.inventory.length + Number(p.weapons.length > 0) + (g.inventory.some((item) => item.id === i.id) ? 0 : 1) > capacityOf(g))
         g.loot.push({ x: p.x, y: p.y, item: reward });
       else g.inventory.push(reward);
@@ -1425,9 +1444,9 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       break;
     }
     case "mana-rock":
-      if (p.hp <= 1 || p.stats.Mana >= manaCap(p)) throw Error("Need HP and room for mana.");
-      p.hp--; p.stats.Mana++;
-      log(g, "Mana Rock: 1 HP became 1 mana.");
+      if (p.stats.Mana < 1 || p.hp >= p.stats.Health) throw Error("Need mana and room to heal.");
+      p.stats.Mana--; heal(p, 1);
+      log(g, "Mana Rock: 1 mana became 1 HP.");
       return;
     case "mana-shard":
       if (p.hp <= 10 || p.stats.Mana >= manaCap(p)) throw Error("Need more than 10 HP and room for mana.");

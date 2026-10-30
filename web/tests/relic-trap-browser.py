@@ -72,6 +72,24 @@ try:
         assert len(saved(page)["pods"]) == 1
         assert saved(page)["pods"][0]["x"] == 17
 
+        load(page, "outcomeUi")
+        page.get_by_role("button", name="Item: Health Pot").tap()
+        page.get_by_role("button", name="Use item").tap()
+        expect(page.get_by_test_id("item-result-notice")).to_contain_text("HP +1")
+        expect(page.get_by_test_id("item-result-notice")).to_contain_text("Gold −1")
+        page.get_by_role("button", name="Close details").tap()
+        page.get_by_role("button", name="Item: Gold Chalice").tap()
+        page.get_by_role("button", name="Use item").tap()
+        expect(page.get_by_test_id("item-result-notice")).to_contain_text("Gold Chalice revealed")
+        expect(page.get_by_test_id("item-result-notice").locator("img")).to_be_visible()
+        load(page, "outcomeUi")
+        page.get_by_role("button", name="Item: Mana Rock").tap()
+        page.get_by_role("button", name="Use item").tap()
+        expect(page.get_by_test_id("item-result-notice")).to_contain_text("HP +1")
+        expect(page.get_by_test_id("item-result-notice")).to_contain_text("MP −1")
+        assert saved(page)["player"]["hp"] == 6
+        assert saved(page)["player"]["stats"]["Mana"] == fixtures["outcomeUi"]["player"]["stats"]["Mana"] - 1
+
         load(page, "fullEnergyPod")
         page.keyboard.press("ArrowRight")
         expect(page.get_by_test_id("energy-full-notice")).to_contain_text("ENERGY FULL")

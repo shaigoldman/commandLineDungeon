@@ -1,4 +1,5 @@
 import type { Item } from "../shared/types";
+import { drawSpecialItem } from "./special-item-art";
 /** Original pixel icons, shared verbatim by the dungeon and all item menus. */
 export function itemArtKey(item: Pick<Item, "kind" | "name" | "element">) {
   const name = item.name.toLowerCase();
@@ -33,21 +34,21 @@ export function itemArtKey(item: Pick<Item, "kind" | "name" | "element">) {
   if (item.kind === "tome") return "staff-" + (item.element || "Mystery");
   if (item.kind === "candy") return "candy-" + item.name;
   if (item.kind === "double") return "double-" + item.name.split(" ")[0];
-  if (item.kind === "gold" || item.kind === "key" || item.kind === "cursed-gold")
-    return (item.kind === "cursed-gold" ? "gold" : item.kind) + "-" + item.name;
-  if (item.kind === "reusable-key") return name.includes("door") ? "key-Rare Key" : "key-Standard Key";
-  if (["mystery-potion", "reusable-heal", "super-potion", "poison-potion", "health-pot", "spiked-potion", "cursed-potion"].includes(item.kind)) return "heal";
-  if (["mana-rock", "mana-shard", "mana-gem", "mana-diamond", "mana-pod", "health-drain"].includes(item.kind)) return "mana";
-  if (["charm", "magic-scales", "infinite-bag", "invisibility", "stealth", "speedy-boots"].includes(item.kind)) return "armor";
-  if (["stairfinder", "energy-magnet", "energy-generator", "item-magnet"].includes(item.kind)) return "boost";
-  if (["mana-star", "magic-book", "cleanser", "bad-candy", "critical-star", "cursed-candy"].includes(item.kind)) return "candy-" + item.name;
+  if (item.kind === "cursed-gold") return "cursed-gold";
+  if (item.kind === "gold" || item.kind === "key") return item.kind + "-" + item.name;
+  if (item.kind === "reusable-key") return name.includes("door") ? "reusable-door-key" : "reusable-key";
+  if (item.kind === "heal") return "heal-" + item.name;
+  if (item.kind === "stat" || item.kind === "boost") return item.kind + "-" + item.name;
+  if (item.kind === "bag") return name.includes("huge") ? "bag-huge" : "bag-bigger";
+  if (item.kind === "mana") return "mana-potion";
+  if (item.kind === "reusable-heal") return name.includes("medium") ? "reusable-medium-potion" : "reusable-tiny-potion";
+  if (item.kind === "charm") return "charm-" + name.split(" ")[0];
+  if (item.kind === "stairfinder") return item.name.startsWith("Ultra") ? "ultrastairfinder" : "stairfinder";
+  if (item.kind === "mana-star") return item.name.startsWith("Double") ? "double-mana-star" : "mana-star";
+  if (item.kind === "greedy-amulet") return name.startsWith("really") ? "really-greedy-amulet" : "greedy-amulet";
+  if (["mystery-potion", "super-potion", "poison-potion", "health-pot", "spiked-potion", "cursed-potion", "mana-rock", "mana-shard", "mana-gem", "mana-diamond", "mana-pod", "health-drain", "mana-channel", "magic-scales", "infinite-bag", "invisibility", "stealth", "speedy-boots", "energy-magnet", "energy-generator", "item-magnet", "magic-book", "cleanser", "bad-candy", "critical-star", "cursed-candy", "hard-candy", "alchemy-book", "alchemy-wand", "magic-wand", "energy-harness"].includes(item.kind)) return item.kind;
   if (item.kind === "jewel" || item.kind === "crown") return item.kind + "-" + item.name;
-  if (item.kind === "hard-candy") return "candy-Hard Candy";
-  if (item.kind === "alchemy-book") return "skill-book";
-  if (["alchemy-wand", "magic-wand"].includes(item.kind)) return "staff-Mystery";
-  if (item.kind === "mana-channel") return "mana";
-  if (item.kind === "energy-harness") return "boost";
-  if (["magic-scabbard", "greedy-amulet", "gold-chalice"].includes(item.kind)) return item.kind;
+  if (["magic-scabbard", "gold-chalice"].includes(item.kind)) return item.kind;
   if (item.kind === "gentle-grip") return name.startsWith("really") ? "grip-rare" : "grip";
   if (["sharpening-stone", "anvil", "blade-shard", "skill-book"].includes(item.kind)) return item.kind;
   return item.kind;
@@ -93,7 +94,9 @@ export function itemCanvas(
     r(7, 22, 3, 7, gold);
     r(5, 24, 7, 2, gold);
   };
-  if (key === "gold-chalice") {
+  if (drawSpecialItem(key, r)) {
+    // Named relics have their own silhouettes in menus and on the floor.
+  } else if (key === "gold-chalice") {
     r(5, 5, 22, 4, dark); r(8, 9, 16, 13, dark); r(10, 10, 12, 11, gold);
     r(12, 21, 8, 5, gold); r(7, 26, 18, 3, dark); r(9, 26, 14, 2, shine);
     r(13, 12, 6, 5, "#f2dc8e");
@@ -114,10 +117,14 @@ export function itemCanvas(
     for (const x of [4, 20]) { r(x, 8, 9, 14, dark); r(x + 2, 10, 5, 10, steel); r(x + 3, 12, 3, 6, dark); }
     r(12, 14, 9, 3, steel); r(15, 12, 3, 7, gold);
   } else if (key.startsWith("jewel") || key.startsWith("crown")) {
-    const gem = key.includes("Magic") ? "#b794dd" : key.includes("Luck") ? "#9bd09d" : "#e9b977";
+    const stat = ["Strength", "Luck", "Health", "Speed", "Magic", "Accuracy", "Armor"].find((s) => key.includes(s)) || "Strength";
+    const gem = ({ Strength: "#db7778", Luck: "#9bd09d", Health: "#ef9eac", Speed: "#76d6c2", Magic: "#b794dd", Accuracy: "#8dc6e9", Armor: "#b8c4d1" } as Record<string, string>)[stat];
     if (key.startsWith("crown")) { r(5, 14, 22, 13, dark); r(7, 16, 18, 9, gold); r(5, 7, 5, 10, gold); r(13, 4, 6, 13, gold); r(22, 7, 5, 10, gold); }
     else { r(10, 4, 12, 24, dark); r(12, 6, 8, 20, gold); }
     r(13, 15, 6, 6, gem); r(15, 16, 2, 3, shine);
+    if (stat === "Speed") { r(9, 13, 4, 2, gem); r(19, 21, 4, 2, gem); }
+    if (stat === "Armor") { r(14, 12, 4, 2, gem); r(12, 22, 8, 2, gem); }
+    if (stat === "Accuracy") { r(14, 17, 4, 2, dark); r(15, 17, 2, 2, shine); }
   } else if (key === "anvil") {
     r(8, 5, 16, 5, dark); r(5, 9, 22, 7, steel); r(3, 11, 7, 4, shine);
     r(13, 15, 7, 10, dark); r(14, 16, 5, 8, steel);
