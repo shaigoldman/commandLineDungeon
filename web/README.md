@@ -1,6 +1,6 @@
 # Command Line Dungeon — browser edition
 
-A complete browser-playable port of Shai Goldman's Python dungeon RPG. React 19 + TypeScript provides the interface; PixiJS 8 renders original pixel art; a Node/Express TypeScript server owns the rules, random state, progression, and saves. The Python files in the repository root are unchanged.
+A complete browser-playable port of Shai Goldman's Python dungeon RPG. React 19 + TypeScript provides the interface; PixiJS 8 renders original pixel art; a Node/Express TypeScript server owns the rules, random state, progression, and saves. The original Python files are preserved unchanged in `../python/`.
 
 ## Ashfall expansion · v0.7
 

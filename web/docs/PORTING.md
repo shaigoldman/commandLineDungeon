@@ -1,6 +1,6 @@
 # Original source review and port contract
 
-Reviewed the complete repository before porting. `source-manifest.json` fingerprints every original Python file; tests verify those files remain unchanged. Root Python files are retained, including unused legacy code.
+Reviewed the complete repository before porting. `source-manifest.json` fingerprints every original Python file; tests verify those files remain unchanged. The original game is retained in `python/`, including unused legacy code.
 
 | Original file    | Role and port location                                                                                    |
 | ---------------- | --------------------------------------------------------------------------------------------------------- |

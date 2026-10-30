@@ -1,6 +1,6 @@
 """Execute original source methods with a silent terminal adapter; never edit Python."""
 import sys, pathlib, unittest, json
-sys.path.insert(0,str(pathlib.Path(__file__).resolve().parents[2]))
+sys.path.insert(0,str(pathlib.Path(__file__).resolve().parents[2] / 'python'))
 import Classes
 from Mob import Mob
 from Monster import Monster

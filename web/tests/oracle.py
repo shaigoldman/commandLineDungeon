@@ -1,6 +1,6 @@
 import pathlib,sys,json
 from types import SimpleNamespace
-sys.path.insert(0,str(pathlib.Path(__file__).resolve().parents[2]))
+sys.path.insert(0,str(pathlib.Path(__file__).resolve().parents[2] / 'python'))
 import Classes
 from Mob import Mob
 result=[]

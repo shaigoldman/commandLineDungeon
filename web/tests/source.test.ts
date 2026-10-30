@@ -6,7 +6,7 @@ it("preserves every original Python source byte", () => {
   for (const [name, sha] of Object.entries(manifest)) {
     expect(
       createHash("sha256")
-        .update(readFileSync("../" + name))
+        .update(readFileSync("../python/" + name))
         .digest("hex"),
       name,
     ).toBe(sha);
