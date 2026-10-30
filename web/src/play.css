@@ -38,9 +38,12 @@ body.playing-game {
 .death-screen {
   min-height: 100vh;
   min-height: 100dvh;
+  height: 100dvh;
+  overflow-y: auto;
   box-sizing: border-box;
   display: grid;
   place-items: center;
+  align-items: safe center;
   padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
   color: #f6e8cf;
   background: radial-gradient(circle at 50% 42%, #49303b 0%, #192530 58%, #0b1520 100%);
@@ -52,7 +55,11 @@ body.playing-game {
 .death-eyebrow { margin: 8px 0; color: #d8b9a4; font: 700 13px Arial, sans-serif; letter-spacing: 0.2em; text-transform: uppercase; }
 .death-screen h1 { margin: 12px 0; color: #ffdfb0; font-size: clamp(52px, 16vw, 76px); line-height: 1; text-shadow: 3px 4px #3c1925; }
 .death-hero { color: #e5d4c1; font-size: 17px; }
-.death-score { display: grid; gap: 4px; margin: 32px auto; padding: 18px; border: 2px solid #b99668; border-radius: 6px; background: #172733d9; }
+.death-cause { margin: 22px auto 0; padding: 12px 16px; border-left: 3px solid #d8a86e; background: #182734ba; text-align: left; }
+.death-cause strong { display: block; color: #ffdfb0; font: 700 19px Georgia, serif; }
+.death-cause p { margin: 7px 0; color: #eadccb; font: 14px/1.4 Arial, sans-serif; }
+.death-cause em { display: block; color: #cbb9ac; font: italic 14px/1.4 Georgia, serif; }
+.death-score { display: grid; gap: 4px; margin: 22px auto; padding: 14px; border: 2px solid #b99668; border-radius: 6px; background: #172733d9; }
 .death-score span { font: 700 13px Arial, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; }
 .death-score strong { color: #ffe4a7; font-size: 42px; }
 .death-restart { width: 100%; min-height: 58px; border: 2px solid #ffe0a1; border-radius: 6px; background: #c8a366; color: #18212a; font: 800 19px Georgia, serif; cursor: pointer; }

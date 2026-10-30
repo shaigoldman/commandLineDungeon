@@ -61,6 +61,7 @@ level = act(level, { type: "use", id: pill.id });
 const dead = structuredClone(explore);
 dead.status = "dead";
 dead.player.hp = 0;
+dead.death = { source: "Attack", attacker: "Zombie", damage: 6, floor: 1, turn: 12 };
 dead.log.push("Your journey has ended.");
 const fullEnergyPod = structuredClone(explore);
 fullEnergyPod.player.hp = fullEnergyPod.player.stats.Health;

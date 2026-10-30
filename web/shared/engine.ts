@@ -284,10 +284,12 @@ export function randomItem(g: Game, depth = g.floor): Item {
       const key = candidates.find((d) => d[0] === name)!;
       candidates.push(key, key, key);
     }
-  return makeItem(
-    g,
-    pick(g, candidates)[0],
-  );
+  let chosen = pick(g, candidates);
+  // Seven stat variants share the common pool; keep the family common without
+  // letting it crowd out potions, keys, weapons, and other basic finds.
+  if (chosen[1] === "jewel" && random(g) < 0.6)
+    chosen = pick(g, candidates.filter((item) => item[1] !== "jewel"));
+  return makeItem(g, chosen[0]);
 }
 function rarityTier(rarity: number) {
   return rarity >= 9 ? 3 : rarity >= 6 ? 2 : rarity >= 3 ? 1 : 0;
@@ -858,13 +860,15 @@ export function experience(monsterLevel: number, playerLevel: number) {
     ? 20 * (monsterLevel - playerLevel + 1)
     : Math.ceil(10 / (playerLevel - monsterLevel));
 }
-function hurt(g: Game, a: Actor, n: number, source = "Attack", reward = true) {
+function hurt(g: Game, a: Actor, n: number, source = "Attack", reward = true, attacker?: Actor) {
   if (source === "Attack") n = Math.max(0, n - armorOf(a));
   n = Math.trunc(n);
   a.hp = Math.max(0, a.hp - n);
   log(g, `${a.name} takes ${n} ${["Poison", "Fire"].includes(source) ? source.toLowerCase() + " " : ""}damage.`);
   if (a.hp <= 0) {
     if (a.id === "player") {
+      if (!g.death)
+        g.death = { source, attacker: attacker?.name || (source === "Poison" ? a.poisonSource : source === "Curse" ? a.curseSource : undefined), damage: n, floor: g.floor + 1, turn: g.turn };
       g.status = "dead";
       g.combat = undefined;
       log(g, "Your journey ends here. Your score: " + g.score);
@@ -914,7 +918,7 @@ function kill(g: Game, m: Actor, reward = true, drops = reward) {
     log(g, "The robot explodes!");
     for (const a of [...g.monsters, g.player])
       if (Math.abs(a.x - m.x) + Math.abs(a.y - m.y) <= 2)
-        hurt(g, a, 8 + Math.floor(m.level / 2), "Explosion", reward);
+        hurt(g, a, 8 + Math.floor(m.level / 2), "Explosion", reward, m);
   }
   if (reward && g.status === "playing") checkLevel(g);
 }
@@ -978,7 +982,7 @@ function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
     log(g, "Critical hit!");
   }
   const hpBeforeHit = b.hp;
-  hurt(g, b, damage, "Attack", a.id === "player");
+  hurt(g, b, damage, "Attack", a.id === "player", a);
   for (const shield of [...b.weapons].filter((weapon) => weapon.armorBonus))
     if (--shield.uses! <= 0) {
       b.weapons = b.weapons.filter((weapon) => weapon.id !== shield.id);
@@ -992,13 +996,14 @@ function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
     b.hp < hpBeforeHit &&
     random(g) < a.curseChance
   )
-    applyCurse(g);
+    applyCurse(g, 12, 3, a.name);
   if (a.poison && b.hp > 0 && !b.poisonImmune) {
     const old = b.effects.Poison || [0, 0];
     b.effects.Poison = [
       Math.max(old[0], a.poison[0]),
       Math.max(old[1], a.poison[1]),
     ];
+    b.poisonSource = a.name;
     log(g, b.name + " is poisoned.");
   }
   if (a.id === "player" && g.inventory.some((i) => i.kind === "mana-pod"))
@@ -1019,9 +1024,9 @@ function monsterTurn(g: Game) {
     hurt(g, g.player, curse[1], "Curse");
     if (--curse[0] <= 0) delete g.player.effects.Curse;
   }
+  if (g.status === "dead") return;
   spawnGhosts(g);
   if (g.player.hp <= 0) {
-    hurt(g, g.player, 0, "Exhaustion");
     return;
   }
   for (let pass = 0; pass < (g.player.stats.Speed <= 5 ? 2 : 1); pass++)
@@ -1341,11 +1346,11 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       break;
     }
     case "cursed-candy":
-      addXP(g, 100); checkLevel(g); applyCurse(g); break;
+      addXP(g, 100); checkLevel(g); applyCurse(g, 12, 3, i.name); break;
     case "cursed-potion":
-      p.hp = p.stats.Health; applyCurse(g); break;
+      p.hp = p.stats.Health; applyCurse(g, 12, 3, i.name); break;
     case "cursed-gold":
-      p.gold = (p.gold || 0) + 10; applyCurse(g); break;
+      p.gold = (p.gold || 0) + 10; applyCurse(g, 12, 3, i.name); break;
     case "critical-star":
       p.effects["Critical Star"] = [1, 1]; break;
     case "speedy-boots":
@@ -1645,7 +1650,7 @@ function collectFloorGold(g: Game) {
   const ids = new Set(coins.map((l) => l.item.id));
   const amount = coins.reduce((sum, l) => sum + l.item.value, 0);
   g.player.gold = (g.player.gold || 0) + amount;
-  for (const coin of coins) if (coin.item.kind === "cursed-gold") applyCurse(g);
+  for (const coin of coins) if (coin.item.kind === "cursed-gold") applyCurse(g, 12, 3, coin.item.name);
   g.loot = g.loot.filter((l) => !ids.has(l.item.id));
   if (g.pendingLoot && ids.has(g.pendingLoot.id)) {
     g.pendingLoot = g.loot.find(
@@ -1664,11 +1669,12 @@ function triggerTrap(g: Game) {
     case "poison": {
       const prior = p.effects.Poison || [0, 0];
       p.effects.Poison = [Math.max(prior[0], 2 + strength), Math.max(prior[1], strength)];
+      p.poisonSource = "Poison trap";
       log(g, `TRAP: Poison! ${p.effects.Poison[1]} damage for ${p.effects.Poison[0]} steps.`);
       break;
     }
     case "curse":
-      applyCurse(g, 5 + strength * 2, strength + 1);
+      applyCurse(g, 5 + strength * 2, strength + 1, "Curse trap");
       log(g, "TRAP: A curse clings to you.");
       break;
     case "rust": {

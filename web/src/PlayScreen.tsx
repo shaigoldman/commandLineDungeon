@@ -1,4 +1,5 @@
 import { itemIcon } from "./item-art";
+import { deathStory } from "../shared/death-story";
 import { dragonArt } from "./dragon-art";
 import { itemLore, rarityInfo } from "../shared/item-lore";
 import { MerchantPanel } from "./MerchantPanel";
@@ -621,18 +622,26 @@ export function PlayScreen({
     .filter((l) => l.x === p.x && l.y === p.y)
     .map((l) => l.item);
   const ground = g.pendingLoot || groundPile[0];
-  if (g.status === "dead") return (
+  if (g.status === "dead") {
+    const story = deathStory(g);
+    return (
     <main className="death-screen" data-testid="death-screen">
       <div className="death-screen-content">
         <span className="death-symbol" aria-hidden="true">✦</span>
         <p className="death-eyebrow">Your journey has ended</p>
         <h1>You Died</h1>
         <p className="death-hero">{p.name} · Level {p.level} · Floor {g.floor + 1}</p>
+        <section className="death-cause" aria-label="How you died">
+          <strong>{story.cause}</strong>
+          <p>{story.context}</p>
+          <em>“{story.flavor}”</em>
+        </section>
         <div className="death-score"><span>Final score</span><strong>{n(g.score)}</strong></div>
         <button className="death-restart" onClick={onNew}>Begin a new journey</button>
       </div>
     </main>
-  );
+    );
+  }
   return (
     <main
       className={
