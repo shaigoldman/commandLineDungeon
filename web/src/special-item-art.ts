@@ -44,6 +44,48 @@ export function drawSpecialItem(key: string, r: Rect): boolean {
     r(7, 20, 5, 4, cargo); r(22, 20, 5, 4, cargo);
     r(13, 2, 5, 3, glint);
   };
+  if (key === "thief-gloves") {
+    // A pair of fingerless leather gloves, with exposed fingertips and stitched cuffs.
+    const glove = (origin: number, mirror: boolean) => {
+      const paint: Rect = (x, y, w, h, color) => r(origin + (mirror ? 14 - x - w : x), y, w, h, color);
+      paint(1, 10, 11, 14, ink);
+      for (const [x, y] of [[2, 5], [5, 2], [8, 4]]) {
+        paint(x - 1, y, 4, 13, ink);
+        paint(x, y + 1, 2, 3, "#d9a17b");
+        paint(x, y + 4, 2, 9, "#8e674b");
+      }
+      paint(2, 12, 9, 10, "#70503d");
+      paint(3, 13, 3, 8, "#ad825a");
+      paint(7, 15, 3, 7, "#503a31");
+      paint(10, 13, 4, 8, ink);
+      paint(11, 14, 2, 2, "#d9a17b");
+      paint(11, 16, 2, 4, "#8e674b");
+      paint(1, 23, 11, 6, ink);
+      paint(2, 24, 9, 4, "#9f7954");
+      paint(3, 25, 7, 1, brass);
+      paint(6, 24, 2, 3, "#ead095");
+    };
+    glove(1, false); glove(17, true);
+    return true;
+  }
+  if (key === "golden-gauntlet" || key === "silver-gauntlet") {
+    const golden = key === "golden-gauntlet";
+    const plate = golden ? "#d3a847" : "#9bb4c8";
+    const highlight = golden ? "#ffeb9e" : "#eef6fa";
+    const shade = golden ? "#795221" : "#50677f";
+    r(6, 11, 18, 15, ink);
+    for (const [x, y] of [[7, 5], [11, 2], [15, 3], [19, 6]]) {
+      r(x - 1, y, 5, 13, ink); r(x, y + 1, 3, 11, plate);
+      r(x, y + 2, 1, 7, highlight); r(x, y + 8, 3, 1, shade);
+    }
+    r(7, 13, 16, 11, plate); r(8, 14, 3, 8, highlight);
+    r(19, 15, 4, 9, shade);
+    r(23, 12, 5, 11, ink); r(24, 13, 3, 9, plate); r(24, 14, 1, 5, highlight);
+    r(11, 15, 9, 6, shade); r(13, 16, 5, 4, golden ? "#7ec4ac" : "#c986a4");
+    r(7, 24, 18, 7, ink); r(8, 25, 16, 5, plate);
+    r(9, 25, 14, 1, highlight); r(10, 28, 12, 1, shade);
+    return true;
+  }
   if (key.startsWith("heal-") || key === "mana-potion" || key.endsWith("potion") || key === "health-pot") {
     if (key.startsWith("heal-")) {
       const size = key.includes("Tiny") ? -1 : key.includes("Huge") || key.includes("Giant") ? 1 : 0;
