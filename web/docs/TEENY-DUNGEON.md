@@ -37,3 +37,7 @@ Energy Potion restores health or mana according to the larger missing amount. Th
 The [sprite contact sheet](screenshots/item-sprites.png) shows 192 catalog and equipment entries rendered by the same code used for floor loot, inventory, and inspections. Expansion items have distinct silhouettes, including Sand Bag, resource relics, boots, advanced staves, and Bloodthirsty Dagger. Decoys intentionally retain the real item’s artwork.
 
 `tests/item-catalog-art.test.ts` checks the entire catalog for blank images, generic document fallbacks, and duplicate artwork between distinct items. It also checks advanced variants and decoy disguises.
+
+## Floor-trap artwork
+
+Revealed traps appear as recessed dungeon pits or broken trapdoors, with shaded inner walls and stone rims that follow the floor palette. Poison seepage, curse runes, corroded bars, wooden hatch fragments, distant motes, a drain spiral, and claw marks distinguish the seven types. The [floor-trap preview](screenshots/floor-traps.png) shows every design in all four dungeon palettes. Trap behavior is unchanged.

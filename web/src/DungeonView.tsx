@@ -13,6 +13,7 @@ import { heroCanvas } from "./hero-art";
 import { itemArtKey, itemCanvas } from "./item-art";
 import { dragonArt } from "./dragon-art";
 import { worldArt } from "./world-art";
+import { drawFloorTrap } from "./floor-trap-art";
 import {
   swipeDirection,
   floorTheme,
@@ -588,19 +589,7 @@ export function DungeonView({
           for (const trap of g.traps || [])
             if (trap.revealed && visible(trap.x, trap.y)) {
               const x = trap.x * TILE, y = trap.y * TILE;
-              const colors: Record<string, number> = { poison: 0x83bf70, curse: 0xb57acf, rust: 0xc08a61, trip: 0xd4b776, fairy: 0xf2abda, sap: 0x76bba5, monster: 0xe28b8b };
-              const c = colors[trap.kind];
-              // Steel jaws, trigger plate, and a distinct mechanism for every trap.
-              rect(x+6,y+31,36,5,0x17202c); rect(x+8,y+29,32,4,0x7d8990);
-              rect(x+13,y+17,22,13,0x263342); rect(x+17,y+21,14,7,c);
-              for (let tooth=0;tooth<5;tooth++) { rect(x+9+tooth*6,y+14,3,10,0xc3cbd0); rect(x+11+tooth*6,y+29,3,6,0xc3cbd0); }
-              if (trap.kind==="poison") { rect(x+19,y+10,10,11,0x364536); rect(x+21,y+12,6,7,c); rect(x+22,y+7,4,5,0xb9cc9f); }
-              else if (trap.kind==="trip") { rect(x+5,y+23,38,2,0xe4d1a4); rect(x+7,y+10,3,22,0x776956); rect(x+38,y+10,3,22,0x776956); }
-              else if (trap.kind==="rust") { for(let n=0;n<4;n++) rect(x+14+n*6,y+9+(n%2)*3,4,15,c); }
-              else if (trap.kind==="sap") { rect(x+22,y+6,5,18,0x78dcca); rect(x+17,y+12,14,4,0x78dcca); }
-              else if (trap.kind==="fairy") { rect(x+10,y+8,9,8,c); rect(x+29,y+8,9,8,c); rect(x+22,y+8,5,14,0xffe6ad); }
-              else if (trap.kind==="curse") { rect(x+17,y+7,14,12,c); rect(x+20,y+11,3,3,0x171925); rect(x+26,y+11,3,3,0x171925); rect(x+22,y+16,5,6,c); }
-              else { rect(x+12,y+8,24,11,0x451f31); for(let n=0;n<4;n++) rect(x+14+n*6,y+9,3,5,0xffe2b3); }
+              drawFloorTrap(trap.kind, (dx, dy, w, h, color) => rect(x + dx, y + dy, w, h, color), theme);
             }
           for (const l of g.loot)
             if (visible(l.x, l.y)) {
