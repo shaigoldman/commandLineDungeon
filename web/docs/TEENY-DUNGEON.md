@@ -31,3 +31,9 @@ Energy Potion restores health or mana according to the larger missing amount. Th
 ## Verification
 
 `npm test` covers engine rules, saves, APIs, source mechanics, art, and seeded simulations. `npm run test:python` verifies the preserved original game. Production browser checks exercise persistent saves and recovery. `npm run test:android:browser` exercises the current phone interaction contract at five viewport sizes and captures README screenshots. The Android web bundle and production web/server bundle both typecheck and build.
+
+## Item artwork audit
+
+The [sprite contact sheet](screenshots/item-sprites.png) shows 192 catalog and equipment entries rendered by the same code used for floor loot, inventory, and inspections. Expansion items have distinct silhouettes, including Sand Bag, resource relics, boots, advanced staves, and Bloodthirsty Dagger. Decoys intentionally retain the real item’s artwork.
+
+`tests/item-catalog-art.test.ts` checks the entire catalog for blank images, generic document fallbacks, and duplicate artwork between distinct items. It also checks advanced variants and decoy disguises.
