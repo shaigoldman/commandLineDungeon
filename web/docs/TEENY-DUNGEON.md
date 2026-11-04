@@ -8,7 +8,7 @@ Spells open inspections, including spells whose mana or Magic requirements are n
 
 The HUD includes a yellow animated EXP bar below mana. Level-up reviews show the reached level and each stat before and after growth. Bag menus show free capacity or FULL, allow using an item to free space, and separate repeated use from discarding. Floor auto-use presents one use action. Selling offers a visual list, fixed offers, and a review step.
 
-Death fades from transparent over the dungeon, retains a translucent background, identifies fatal critical hits, and shows a skull, score, high score, and run achievements. Victory offers an explicit continuation into deeper floors. Mage map art follows the portrait; named villagers have deterministic outfit colors and hats.
+Death fades from transparent over the dungeon, retains a translucent background, identifies fatal critical hits, and shows a skull, score, high score, and run achievements. Victory offers an explicit continuation into deeper floors. Mage map art follows the portrait; the twelve named villagers have individually authored bodies, faces, clothes, and belongings.
 
 ## Creatures and exploration
 
@@ -41,3 +41,9 @@ The [sprite contact sheet](screenshots/item-sprites.png) shows 192 catalog and e
 ## Floor-trap artwork
 
 Revealed traps appear as recessed dungeon pits or broken trapdoors, with shaded inner walls and stone rims that follow the floor palette. Poison seepage, curse runes, corroded bars, wooden hatch fragments, distant motes, a drain spiral, and claw marks distinguish the seven types. The [floor-trap preview](screenshots/floor-traps.png) shows every design in all four dungeon palettes. Trap behavior is unchanged.
+
+## Named villager identities
+
+All twelve named villagers have individually authored sprites with distinct silhouettes, builds, clothing, hair, and personal belongings. Mabel carries a pie tray, Tansy a spanner, Dora a kettle, Orla a mirror, and Bix a turnip. The same character artwork is used in the dungeon, encounter portrait, speech bubble, and market. See the [villager contact sheet](screenshots/named-villagers.png).
+
+`tests/villager-art.test.ts` covers every villager name and compares monochrome body silhouettes below the head, preventing a return to hat-only or color-only variants.
