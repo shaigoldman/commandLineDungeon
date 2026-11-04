@@ -42,7 +42,7 @@ describe("weapon relic playthroughs", () => {
     const sword = makeItem(g, "Steel Sword"); g.player.weapons = [sword];
     const normal = combatAttackStats(g.player), initiative = attackInitiative(g.player);
     const stone = makeItem(g, "Sharpening Stone"), book = makeItem(g, "Skill Book");
-    g.inventory.push(stone, book); g = act(g, { type: "wait" });
+    g.inventory.push(stone, book); g = act(g, { type: "move", dx: 0, dy: -1 });
     const enhanced = combatAttackStats(g.player);
     expect(enhanced.Attack - normal.Attack).toBe(sword.attack);
     expect(enhanced.Speed).toBe(g.player.stats.Speed);

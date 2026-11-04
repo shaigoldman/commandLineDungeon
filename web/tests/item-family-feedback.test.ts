@@ -38,7 +38,7 @@ it("reports exact changes for reusable trades and shows a chalice reward", () =>
   const pot = makeItem(g, "Health Pot"); g.inventory = [pot];
   let before = g; g = act(g, { type: "use", id: pot.id });
   const healed = itemOutcome(before, g, pot, []);
-  expect(healed.detail).toContain("HP +1");
+  expect(healed.detail).toContain("HP +2");
   expect(healed.detail).toContain("Gold −1");
   const chalice = makeItem(g, "Gold Chalice"); g.inventory.push(chalice);
   before = g; g = act(g, { type: "use", id: chalice.id });

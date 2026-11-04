@@ -20,7 +20,7 @@ describe("simulation regressions", () => {
   it("preserves fractional player HP when waiting without damage", () => {
     const g = base("Scout");
     g.player.hp = 0.5;
-    const next = act(g, { type: "wait" });
+    const next = act(g, { type: "move", dx: 0, dy: -1 });
     expect(next.player.hp).toBe(0.5);
     expect(next.status).toBe("playing");
     expect(next.combat).toBeUndefined();
@@ -29,7 +29,7 @@ describe("simulation regressions", () => {
     const g = base();
     g.monsters = [g.monsters[0]];
     g.monsters[0].hp = 0.3;
-    const next = act(g, { type: "wait" });
+    const next = act(g, { type: "move", dx: 0, dy: -1 });
     expect(next.monsters[0].hp).toBe(0.3);
     expect(next.xp).toBe(0);
   });

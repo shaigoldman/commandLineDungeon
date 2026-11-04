@@ -109,7 +109,12 @@ export function heroCanvas(type: string, pose: HeroPose = "idle", scale = 2) {
   r(12, 12, 3, 1, skinShade);
   if (type === "Mage") {
     r(7, 8, 2, 8, hair);
-    r(17, 7, 2, 10, hair);
+    r(17, 7, 3, 13, hair);
+    r(6, 10, 2, 10, hair);
+    r(8, 10, 1, 2, "#e5bc62");
+    r(17, 10, 1, 3, "#e5bc62");
+    r(11, 11, 1, 1, "#d69b95");
+    r(14, 11, 1, 1, "#d69b95");
     r(8, 11, 1, 5, "#64618a");
     r(17, 10, 1, 6, "#64618a");
     r(3, 6, 18, 3, o);

@@ -34,7 +34,7 @@ describe("saved games API", () => {
       const moved = await request(app)
         .post("/api/action")
         .set(headers)
-        .send({ revision: 0, action: { type: "wait" } });
+        .send({ revision: 0, action: { type: "move", dx: 0, dy: -1 } });
       expect(moved.status).toBe(200);
       expect(moved.body.game.revision).toBe(1);
       expect(
@@ -42,7 +42,7 @@ describe("saved games API", () => {
           await request(app)
             .post("/api/action")
             .set(headers)
-            .send({ revision: 0, action: { type: "wait" } })
+            .send({ revision: 0, action: { type: "move", dx: 0, dy: -1 } })
         ).status,
       ).toBe(409);
       const reopened = new Store("", dir);

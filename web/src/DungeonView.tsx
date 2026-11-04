@@ -136,6 +136,8 @@ export function DungeonView({
         }
         textures.Dragon = Texture.from(dragonArt());
         textures.Dragon.source.scaleMode = "nearest";
+        textures.GreenDragon = Texture.from(dragonArt(2,true));
+        textures.GreenDragon.source.scaleMode = "nearest";
         const itemTextures = new Map<string, Texture>();
         let lastOverview = overviewRef.current;
         let lastEnabled = enabledRef.current;
@@ -588,15 +590,17 @@ export function DungeonView({
               const x = trap.x * TILE, y = trap.y * TILE;
               const colors: Record<string, number> = { poison: 0x83bf70, curse: 0xb57acf, rust: 0xc08a61, trip: 0xd4b776, fairy: 0xf2abda, sap: 0x76bba5, monster: 0xe28b8b };
               const c = colors[trap.kind];
-              rect(x + 9, y + 29, 30, 4, 0x283442);
-              rect(x + 11, y + 15, 26, 16, 0x263342);
-              rect(x + 13, y + 17, 22, 12, c);
-              rect(x + 17, y + 20, 14, 2, 0x273442);
-              rect(x + 20, y + 18, 8, 8, 0x273442);
-              rect(x + 22, y + 19, 4, 6, c);
-              const sigil = new Text({ text: ({ poison: "P", curse: "C", rust: "R", trip: "T", fairy: "F", sap: "S", monster: "M" } as Record<string, string>)[trap.kind], style: { fontSize: 11, fill: 0xf9efd2, fontWeight: "bold" } });
-              sigil.x = x + 21; sigil.y = y + 17;
-              world.addChild(sigil);
+              // Steel jaws, trigger plate, and a distinct mechanism for every trap.
+              rect(x+6,y+31,36,5,0x17202c); rect(x+8,y+29,32,4,0x7d8990);
+              rect(x+13,y+17,22,13,0x263342); rect(x+17,y+21,14,7,c);
+              for (let tooth=0;tooth<5;tooth++) { rect(x+9+tooth*6,y+14,3,10,0xc3cbd0); rect(x+11+tooth*6,y+29,3,6,0xc3cbd0); }
+              if (trap.kind==="poison") { rect(x+19,y+10,10,11,0x364536); rect(x+21,y+12,6,7,c); rect(x+22,y+7,4,5,0xb9cc9f); }
+              else if (trap.kind==="trip") { rect(x+5,y+23,38,2,0xe4d1a4); rect(x+7,y+10,3,22,0x776956); rect(x+38,y+10,3,22,0x776956); }
+              else if (trap.kind==="rust") { for(let n=0;n<4;n++) rect(x+14+n*6,y+9+(n%2)*3,4,15,c); }
+              else if (trap.kind==="sap") { rect(x+22,y+6,5,18,0x78dcca); rect(x+17,y+12,14,4,0x78dcca); }
+              else if (trap.kind==="fairy") { rect(x+10,y+8,9,8,c); rect(x+29,y+8,9,8,c); rect(x+22,y+8,5,14,0xffe6ad); }
+              else if (trap.kind==="curse") { rect(x+17,y+7,14,12,c); rect(x+20,y+11,3,3,0x171925); rect(x+26,y+11,3,3,0x171925); rect(x+22,y+16,5,6,c); }
+              else { rect(x+12,y+8,24,11,0x451f31); for(let n=0;n<4;n++) rect(x+14+n*6,y+9,3,5,0xffe2b3); }
             }
           for (const l of g.loot)
             if (visible(l.x, l.y)) {
@@ -618,11 +622,12 @@ export function DungeonView({
           for (const object of [
             ...(g.chests || [])
               .filter((c) => !c.opened)
-              .map((c) => ({ ...c, kind: c.ultra ? "UltraChest" : "Chest" })),
+              .map((c) => ({ ...c, chestKind:c.kind, kind: c.ultra ? "UltraChest" : "Chest" })),
             ...(g.secretDoors || []).map((d) => ({ ...d, kind: "SecretDoor" })),
           ]) {
             if (!visible(object.x, object.y)) continue;
             const marker = new Sprite(textures[object.kind]);
+            if ("chestKind" in object) marker.tint=({Steel:0xbacbd5,Sapphire:0x70aaff,Ruby:0xff8294,Gold:0xffda65,Obsidian:0x9c8ab5,Amethyst:0xcc8aff} as Record<string,number>)[object.chestKind || ""] || 0xffffff;
             marker.width = marker.height = 44;
             marker.x = object.x * TILE + 2;
             marker.y = object.y * TILE + 2;
@@ -651,7 +656,9 @@ export function DungeonView({
                 .fill({ color: 0x172b35, alpha: 0.45 });
               world.addChild(shadow);
               const design =
-                a.className === "D"
+                a.className === "Dark Hero"
+                  ? "hero-"+(a.heroClass || "Warrior")+"-idle"
+                  : a.className === "D"
                   ? "Scout"
                   : a.className === "Over9000"
                     ? "Warrior"
@@ -666,15 +673,27 @@ export function DungeonView({
                       ? textures.Emperor
                       : a.npc
                         ? textures["chief-" + a.npc.tribe] || textures.Chieftan
-                        : textures[design] || textures.Warrior,
+                        : a.className === "Dragon" && !a.boss ? textures.GreenDragon : textures[design] || textures.Warrior,
               );
               s.x = a.className === "Dragon" ? x - 24 : x;
               if (a.className === "Dragon" && g.player.x < a.x) {
                 s.scale.x = -1;
                 s.x = x + 72;
               }
+              if (a.className === "Dark Hero") s.tint=0x685478;
+              if (a.name.startsWith("Ergathon")) s.tint=0xa47fe6;
+              if (a.merchant && !a.merchant.king) { let hash=0; for (const ch of a.name) hash=(hash*31+ch.charCodeAt(0))>>>0; s.tint=[0xffd9a6,0xb3e1bf,0xd5b9ef,0xbad8f2,0xedb9b6][hash%5]; }
               s.y = y - 19;
               world.addChild(s);
+              if (a.merchant && !a.merchant.king) {
+                let hash=0;for(const ch of a.name) hash=(hash*31+ch.charCodeAt(0))>>>0;
+                const hat=new Graphics(); const color=[0xa96d62,0x7e9a62,0x8470af,0x6599aa][hash%4];
+                if(hash%3===0) hat.rect(x+12,y-13,24,5).rect(x+17,y-19,14,7);
+                else if(hash%3===1) hat.rect(x+15,y-15,18,4).rect(x+18,y-21,12,7);
+                else hat.rect(x+13,y-11,22,3).rect(x+17,y-16,15,5);
+                hat.fill(color);world.addChild(hat);
+              }
+              if (a.burn) { const fire = new Text({text:`🔥 ${Math.round(a.burn[1])} × ${a.burn[0]}`,style:{fontSize:12,fill:0xffba5c,fontWeight:"bold"}}); fire.x=x;fire.y=y-32;world.addChild(fire); }
               const gear: { s: Sprite; dx: number; dy: number }[] = [];
               if (a.id === "player")
                 for (const [i, item] of a.weapons.slice(-2).entries()) {

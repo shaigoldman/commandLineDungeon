@@ -40,10 +40,11 @@ describe("explicit encounter choices", () => {
     const g = fixture();
     g.player.stats.Speed = 10;
     g.monsters[0].stats.Speed = 10;
+    g.monsters[0].y = 6;
     let challenged;
     for (let seed = 0; seed < 1000; seed++) {
       g.seed = seed;
-      const result = act(g, { type: "wait" });
+      const result = act(g, { type: "move", dx: 0, dy: -1 });
       if (result.combat) {
         challenged = result;
         break;
@@ -99,7 +100,7 @@ describe("explicit encounter choices", () => {
     const g = fixture(),
       knife = makeItem(g, "Throwing Knife"),
       nuke = makeItem(g, "Nuke");
-    expect(itemUseProblem(g, knife)).toBe("Requires an enemy encounter.");
+    expect(itemUseProblem(g, knife)).toBeUndefined();
     g.combat = g.monsters[0].id;
     expect(itemUseProblem(g, knife)).toBeUndefined();
     expect(itemUseProblem(g, nuke)).toBe("Use outside combat.");

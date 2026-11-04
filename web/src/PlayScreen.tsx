@@ -22,6 +22,7 @@ import {
   capacityOf,
   manaCap,
   spellCost,
+  experience,
   nextWeaponName,
   makeItem,
   armorOf,
@@ -52,6 +53,7 @@ type Props = {
   busy: boolean;
   error: string;
   recovery: string;
+  highScore?: number;
   lastAction?: { type: string; revision: number };
   onAction: (a: Action) => Promise<Game | undefined>;
   onNew: () => void;
@@ -63,6 +65,7 @@ export function PlayScreen({
   busy,
   error,
   recovery,
+  highScore = 0,
   lastAction,
   onAction,
   onNew,
@@ -72,7 +75,8 @@ export function PlayScreen({
     enemy = g.monsters.find((m) => m.id === g.combat),
     danger = enemy ? incomingDamage(enemy, p) : undefined,
     spells =
-      g.status === "playing" && !g.pendingLevels ? availableSpells(g) : [];
+      g.status === "playing" && !g.pendingLevels ? availableSpells(g, { free: true, ignoreReq: true }) : [];
+  const [inspectedSpell, setInspectedSpell] = useState<(typeof spellDefinitions)[number] | null>(null);
   const [panel, setPanel] = useState<
       "stats" | "enemy" | "save" | "help" | "npc" | "level" | null
     >(null),
@@ -110,10 +114,9 @@ export function PlayScreen({
     !busy &&
     !panel &&
     !selection &&
+    !inspectedSpell &&
     !swapPickup;
-  const canSwipeEncounter =
-    !!enemy && !busy && !panel && !selection && !swapPickup &&
-    !g.pendingLevels && g.status === "playing";
+  const canSwipeEncounter = false;
   const encounterExit: Action =
     g.encounter?.engaged || g.encounter?.origin === "enemy"
       ? { type: "flee" }
@@ -136,7 +139,7 @@ export function PlayScreen({
       .map((i) => i.element),
   );
   const knownSpells = spellDefinitions.filter((s) =>
-    ownedElements.has(s.element),
+    ownedElements.has(s.element) || (ownedElements.has("Elemental") && ["Wind","Water","Fire","Mystery"].includes(s.element)),
   );
   const equipped = p.weapons.map((i) => i.name).join(" + ") || "Unarmed";
   const gear = g.inventory.map((item) => ({ item, equipped: false }));
@@ -177,6 +180,8 @@ export function PlayScreen({
   function levelChoices() {
     return (
       <div className="level-choices">
+        <h3>You reached Level {p.level}!</h3>
+        {g.levelBefore && <div className="level-gains">{Object.entries(g.levelBefore).filter(([stat])=>stat!=="Mana" && stat!=="ManaCapacity").map(([stat,before])=><p key={stat}>{stat}: {n(before)} → {n(p.stats[stat])} <b>+{n(p.stats[stat]-before)}</b></p>)}</div>}
         {[
           "Health",
           "Power",
@@ -208,6 +213,7 @@ export function PlayScreen({
     );
   }
   function closeDetails() {
+    setInspectedSpell(null);
     setPanel(null);
     setSwapPickup(null);
     if ((selection?.ground && g.pendingLoot) || (swapPickup && g.pendingLoot))
@@ -251,7 +257,7 @@ export function PlayScreen({
   function swipeAwayFromEncounter() {
     setSelection(null);
     setPanel(null);
-    void send(encounterExit);
+    announce("Use the Flee or Leave encounter button.");
   }
   const origin = g.encounter?.enemyId === enemy?.id ? g.encounter : undefined;
   function announce(message: string) {
@@ -296,7 +302,7 @@ export function PlayScreen({
         moveFromLoot(d[0], d[1]);
         return;
       }
-      if (panel || selection || swapPickup) return;
+      if (panel || selection || swapPickup || inspectedSpell) return;
       const dirs: Record<string, [number, number]> = {
         ArrowUp: [0, -1],
         ArrowDown: [0, 1],
@@ -337,27 +343,27 @@ export function PlayScreen({
         !(e.target as HTMLElement).closest("button")
       ) {
         e.preventDefault();
-        void send({ type: "wait" });
+        announce("Choose a direction to move.");
       } else if (e.key.toLowerCase() === "v") setPanel("save");
       else if (e.key.toLowerCase() === "s") setPanel("stats");
       else if (e.key.toLowerCase() === "h") setPanel("help");
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
-  }, [g, canMove, canSwipeEncounter, panel, selection, busy, lootMovementHint, swapPickup]);
+  }, [g, canMove, canSwipeEncounter, panel, selection, busy, lootMovementHint, swapPickup, inspectedSpell]);
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     const h = NativeApp.addListener("backButton", () => {
-      if (selection || swapPickup) closeDetails();
+      if (selection || swapPickup || inspectedSpell) closeDetails();
       else if (panel) setPanel(null);
       else setPanel("save");
     });
     return () => {
       void h.then((v) => v.remove());
     };
-  }, [panel, selection, swapPickup]);
+  }, [panel, selection, swapPickup, inspectedSpell]);
   useEffect(() => {
-    if (!panel && !selection && !swapPickup) return;
+    if (!panel && !selection && !swapPickup && !inspectedSpell) return;
     const old = document.activeElement as HTMLElement;
     const box = modal.current;
     box?.querySelector<HTMLElement>(".modal-close")?.focus();
@@ -383,7 +389,7 @@ export function PlayScreen({
       document.removeEventListener("keydown", trap);
       if (old?.isConnected) old.focus();
     };
-  }, [panel, !!selection, swapPickup]);
+  }, [panel, !!selection, swapPickup, inspectedSpell]);
   async function send(a: Action) {
     if (busy) return;
     clearError();
@@ -400,7 +406,7 @@ export function PlayScreen({
     const remaining = usedItem && (a.type === "use"
       ? after.inventory.find((item) => item.id === a.id)
       : after.loot.find((entry) => entry.item.id === a.id)?.item);
-    const consecutiveUse = remaining && (remaining.uses !== undefined || ["health-pot", "health-drain", "mana-rock", "energy-magnet"].includes(remaining.kind) || (remaining.kind === "stairfinder" && remaining.value < 0));
+    const consecutiveUse = remaining && (remaining.uses !== undefined || ["health-pot", "health-drain", "mana-rock", "energy-magnet", "mana-pot", "mana-stream"].includes(remaining.kind) || (remaining.kind === "stairfinder" && remaining.value < 0));
     setSelection(opensLoot ? { item: after.pendingLoot!, ground: true } : consecutiveUse && after.status === "playing" && !after.pendingLevels
       ? { item: remaining, ground: a.type === "use-floor" } : null);
     setSwapPickup(null);
@@ -427,7 +433,7 @@ export function PlayScreen({
       setTrapNotice(notice);
       setTimeout(() => setTrapNotice((current) => current?.revision === notice.revision ? null : current), 3600);
     }
-    if (entries.some((line) => line.startsWith("ENERGY FULL:"))) {
+    if (entries.some((line) => /^(HEALTH|MANA) FULL:/.test(line))) {
       setEnergyFullNotice(after.revision);
       setTimeout(() => setEnergyFullNotice((current) => current === after.revision ? 0 : current), 1800);
     }
@@ -441,8 +447,8 @@ export function PlayScreen({
       return;
     }
 
-    if (entries.some((line) => line.includes("Critical hit!"))) {
-      const index = entries.findIndex((line) => line.includes("Critical hit!"));
+    if (entries.some((line) => line.includes("CRITICAL HIT!"))) {
+      const index = entries.findIndex((line) => line.includes("CRITICAL HIT!"));
       setCriticalNotice("CRITICAL HIT! " + (entries[index + 1] || ""));
       clearTimeout(criticalTimer.current);
       criticalTimer.current = setTimeout(() => setCriticalNotice(""), 4500);
@@ -459,12 +465,15 @@ export function PlayScreen({
     if (a.type === "move" && moved && before.player.effects.Poison)
       requestAnimationFrame(() => requestAnimationFrame(() => setPoisonFlash(after.revision)));
     const curseNotice = entries.find((s) => s.startsWith("CURSED:"));
-    if (curseNotice)
+    if (curseNotice) {
+      setCurseFlash(after.revision);
       announce(
         [gainedGold > 0 ? `+${gainedGold} gold.` : undefined, entries.find((line) => line.includes(": “")), curseNotice]
           .filter(Boolean)
           .join(" "),
       );
+    }
+    else if (entries.some(line=>line.startsWith("FLEE FAILED"))) announce("FLEE FAILED! The enemy blocks your escape and attacks.");
     else if (gainedGold > 0) announce(`✦ +${gainedGold} gold · ${after.player.gold} total`);
     else if (a.type === "move" && moved && before.player.effects.Poison) {
       announce(
@@ -498,16 +507,16 @@ export function PlayScreen({
       );
     else if (broken) announce(broken);
     else if (trapMessages.length) announce(trapMessages.join(" "));
-    else if (entries.some((line) => line.startsWith("ENERGY FULL:")))
-      announce("Energy pod had no effect. It remains here for later.");
+    else if (entries.some((line) => /^(HEALTH|MANA) FULL:/.test(line)))
+      announce(entries.find(line=>/^(HEALTH|MANA) FULL:/.test(line))!);
     else if (a.type === "attack")
       announce(
-        (after.encounter?.result || entries.slice(-3).join(" ")) +
+        (after.encounter?.result || entries.slice(-3).join(" ")) + (before.player.hp>after.player.hp ? ` ENEMY ATTACK: −${n(before.player.hp-after.player.hp)} HP!` : "") +
           " " +
           entries
             .filter(
               (line) =>
-                line.includes("broke!") || line.includes("is poisoned."),
+                line.includes("broke!") || line.includes("is poisoned.") || line.startsWith("MISS!") || line.includes("BURNING") || line.includes("CRITICAL HIT!"),
             )
             .join(" "),
       );
@@ -636,21 +645,23 @@ export function PlayScreen({
   if (g.status === "dead") {
     const story = deathStory(g);
     return (
-    <main className="death-screen" data-testid="death-screen">
+    <main className="death-scene"><DungeonView game={g} overview={overview} movementEnabled={false} onMove={()=>{}} onHint={()=>{}} />
+    <section className="death-screen" data-testid="death-screen">
       <div className="death-screen-content">
-        <span className="death-symbol" aria-hidden="true">✦</span>
+        <span className="death-symbol" aria-hidden="true">☠</span>
         <p className="death-eyebrow">Your journey has ended</p>
         <h1>You Died</h1>
         <p className="death-hero">{p.name} · Level {p.level} · Floor {g.floor + 1}</p>
         <section className="death-cause" aria-label="How you died">
-          <strong>{story.cause}</strong>
+          <strong>{g.death?.critical ? "CRITICAL HIT — " : ""}{story.cause}</strong>
           <p>{story.context}</p>
           <em>“{story.flavor}”</em>
         </section>
-        <div className="death-score"><span>Final score</span><strong>{n(g.score)}</strong></div>
+        <div className="death-score"><span>Final score</span><strong>{n(g.score)}</strong></div><p>High score · {n(Math.max(highScore,g.score))}</p>
+        <p>Run achievements</p>{(g.achievements || []).map(a=><p key={a.name}>🏆 {a.name} · +{a.points} points</p>)}
         <button className="death-restart" onClick={onNew}>Begin a new journey</button>
       </div>
-    </main>
+    </section></main>
     );
   }
   return (
@@ -662,7 +673,7 @@ export function PlayScreen({
       }
     >
       <header className="play-header">
-        <b>◈ DUNGEON</b>
+        <b>◈ TEENY DUNGEON</b>
         <span className="floor-name">
           {g.inSecret
             ? "Secret chamber"
@@ -690,7 +701,7 @@ export function PlayScreen({
               <strong>
                 {p.name}{" "}
                 <small>
-                  Lv {p.level} {p.className}
+                  <b className="level-badge">LEVEL {p.level}</b> {p.className}
                 </small>
               </strong>
               <span className="gold-purse" aria-label={`${p.gold || 0} gold`}>
@@ -781,6 +792,7 @@ export function PlayScreen({
               MP <b>{n(p.stats.Mana)}/{manaCap(p)}</b>
             </label>
             <meter min={0} max={manaCap(p)} value={p.stats.Mana} />
+            <label className="xp-label">EXP <b>{n(g.xp)}/100</b></label><progress className="xp-meter" max={100} value={g.xp} />
           </div>
         </section>
         {enemy && (
@@ -816,13 +828,13 @@ export function PlayScreen({
                 }
               />
             ) : (
-              <Portrait type={enemy.className} />
+              <Portrait type={enemy.className === "Dark Hero" ? enemy.heroClass || "Warrior" : enemy.className} className={enemy.className === "Dark Hero" ? "dark-hero-portrait" : enemy.name.startsWith("Ergathon") ? "ergathon-portrait" : enemy.className === "Dragon" && !enemy.boss ? "green-dragon-portrait" : ""} />
             )}
             <span>
               <strong>
                 {enemy.name}{" "}
                 <small>
-                  Lv {enemy.level} ·{" "}
+                  <b className="level-badge">LEVEL {enemy.level}</b> ·{" "}
                   {origin?.engaged
                     ? "COMBAT"
                     : origin?.origin === "enemy"
@@ -837,6 +849,7 @@ export function PlayScreen({
                 {enemy.burn ? ` · BURN ${enemy.burn[1]} × ${enemy.burn[0]}` : ""}
               </span>
               <meter min={0} max={enemy.stats.Health} value={enemy.hp} />
+              <small className="enemy-reward">Expected EXP +{experience(enemy.level,p.level)*((g.expDoubles || 0)>0 ? 2 : 1)} · Damage {danger?.normal} · Crit {danger?.critical}</small>
             </span>
           </button>
         )}
@@ -869,12 +882,7 @@ export function PlayScreen({
           >
             {overview ? "Follow hero" : "Overview"}
           </button>
-          <button
-            disabled={!canMove}
-            onClick={() => void send({ type: "wait" })}
-          >
-            Wait
-          </button>
+
         </div>
         {!context && !toast && g.turn < 3 && (
           <p className="swipe-hint">
@@ -954,7 +962,7 @@ export function PlayScreen({
         )}
         {!!energyFullNotice && (
           <div key={energyFullNotice} className="energy-full-notice" role="status" data-testid="energy-full-notice">
-            <strong>ENERGY FULL</strong>
+            <strong>{[...g.log].reverse().find(line=>/^(HEALTH|MANA) FULL:/.test(line))?.split(":")[0] || "HEALTH FULL"}</strong>
             <span>No energy restored. This pod remains here for later.</span>
           </div>
         )}
@@ -973,7 +981,7 @@ export function PlayScreen({
           {g.status === "won" ? (
             <>
               <strong>Ruthagor defeated · Score {n(g.score)}</strong>
-              {actButton("Continue exploring", { type: "continue" })}
+              <span>The deeper dungeon awaits.</span>
             </>
           ) : g.pendingLevels ? (
             <>
@@ -1046,7 +1054,10 @@ export function PlayScreen({
                       encounterExit.type === "flee" ? `Flee · ${Math.round(fleeChance(p, enemy) * 100)}% chance` : "Leave encounter",
                       encounterExit,
                     )}
-                    <small className="encounter-swipe-hint">Swipe the dungeon or press an arrow key to {encounterExit.type === "flee" ? "attempt to flee" : "leave"}.</small>
+                    {enemy && hitRate(p,enemy)<60 && <p className="kill-warning">{hitRate(p,enemy)<40 ? "⚠ Very low" : "⚠ Low"} hit chance: {n(hitRate(p,enemy))}%</p>}
+                    {enemy?.burn && <p className="kill-warning">🔥 BURNING · {n(enemy.burn[1])} damage per action · {enemy.burn[0]} turns</p>}
+                    {enemy?.className==="Dark Hero" && <p className="speech-bubble">...</p>}
+                    <small className="encounter-swipe-hint">Use the {encounterExit.type === "flee" ? "Flee" : "Leave encounter"} button to exit this encounter.</small>
                     {ground && (
                       <button
                         onClick={() =>
@@ -1104,7 +1115,7 @@ export function PlayScreen({
               {activeChest && (
                 <div className="object-prompt">
                   <strong>
-                    {activeChest.ultra ? "Ultrarare" : "Regular"} chest
+                    {activeChest.kind || (activeChest.ultra ? "Amethyst" : "Standard")} chest
                   </strong>
                   <small>
                     {activeChest.locked
@@ -1165,7 +1176,7 @@ export function PlayScreen({
       )}
       <section className="inventory-ribbon" aria-label="Inventory items">
         <span className="ribbon-label">
-          BAG {g.inventory.length + Number(p.weapons.length > 0)}/{capacityOf(g) === Infinity ? "∞" : capacityOf(g)}
+          BAG {g.inventory.length + Number(p.weapons.length > 0)}/{capacityOf(g) === Infinity ? "∞" : capacityOf(g)} · {capacityOf(g) === Infinity ? "Unlimited slots" : g.inventory.length + Number(p.weapons.length > 0) >= capacityOf(g) ? "FULL — use or drop an item" : `${capacityOf(g)-g.inventory.length-Number(p.weapons.length>0)} slots free`}
         </span>
         <div className="item-carousel">
           {groundPile.map((item, index) => (
@@ -1251,23 +1262,31 @@ export function PlayScreen({
           <div className="spell-carousel">
             {spells.map((s) => (
               <button
-                className="spell-card"
+                className={"spell-card" + (!availableSpells(g).some(v=>v.name===s.name) ? " unavailable" : "")}
                 key={s.name}
                 disabled={busy || g.status !== "playing" || !!g.pendingLevels}
                 aria-label={`Cast ${s.name} · ${spellCost(g, s)} MP`}
-                onClick={() => void send({ type: "cast", spell: s.name })}
+                onClick={() => setInspectedSpell(s)}
               >
                 <img
                   src={spellIcon(s.name, s.element)}
                   alt={s.name + " spell sprite"}
                 />
                 <strong>{s.name}</strong>
-                <small>{spellCost(g, s)} MP · Cast</small>
+                <small>{spellCost(g, s)} MP · Inspect</small>
               </button>
             ))}
           </div>
         </section>
       )}
+      {g.status === "won" && <div className="play-backdrop victory-backdrop"><section className="play-modal victory-screen" role="dialog" aria-label="Victory"><span className="death-symbol">♛</span><h1>Ruthagor defeated!</h1><p>You conquered floor {g.floor+1}.</p><p>Score <strong>{n(g.score)}</strong></p><p>Your story can continue. New enemies and treasures wait below.</p>{actButton(`Continue to floor ${g.floor+2} →`,{type:"continue"},false,"primary")}<button onClick={onNew}>Begin a new adventure</button></section></div>}
+      {inspectedSpell && <div className="play-backdrop" onClick={()=>setInspectedSpell(null)}><section ref={modal} className="play-modal spell-inspection" role="dialog" aria-modal="true" aria-label={inspectedSpell.name} onClick={e=>e.stopPropagation()}>
+        <button className="modal-close" aria-label="Close spell" onClick={()=>setInspectedSpell(null)}>×</button>
+        <img width="64" src={spellIcon(inspectedSpell.name,inspectedSpell.element)} alt="" />
+        <h2>{inspectedSpell.name}</h2><p>{inspectedSpell.description}</p>
+        <p>{spellCost(g,inspectedSpell)} mana · Requires {inspectedSpell.req} Magic · You have {n(p.stats.Mana)} mana and {n(p.stats.Magic)} Magic</p>
+        <button className="primary" disabled={busy || !availableSpells(g).some(s=>s.name===inspectedSpell.name)} onClick={()=>{void send({type:"cast",spell:inspectedSpell.name});setInspectedSpell(null);}}>Cast {inspectedSpell.name}</button>
+      </section></div>}
       {(panel || selection || swapPickup) && (
         <div
           className="play-backdrop"
@@ -1358,9 +1377,10 @@ export function PlayScreen({
               <>
                 <h2>Bag is full</h2>
                 <p>
-                  Choose an item to drop to keep {swapPickup.name}. You can
+                  Use an item to free a slot, or choose one to drop to keep {swapPickup.name}. You can
                   leave the newly found item instead.
                 </p>
+                <div className="swap-use-items">{g.inventory.filter(item=>!itemUseProblem(g,item) && !["weapon","tome","anvil","spiked-potion","mixing-potion"].includes(item.kind)).map(item=><button key={item.id} onClick={()=>void send({type:"use",id:item.id})}>Use {item.name}</button>)}</div>
                 <div className="swap-items">
                   {[
                     swapPickup,
@@ -1559,9 +1579,10 @@ export function PlayScreen({
                         )}
                         {picked.kind === "mana-star" && availableSpells(g, { free: true }).map((s) =>
                           actButton(`Cast ${s.name} free`, { type: "use-floor", id: picked.id, spell: s.name }, false, "primary"))}
+                        {picked.kind === "mixing-potion" && ["Health","Power","Speed","Luck","Magic","Accuracy","Armor"].flatMap(lose=>["Health","Power","Speed","Luck","Magic","Accuracy","Armor"].filter(gain=>gain!==lose && (p.stats[lose] || 0)>=3).map(gain=>actButton(`${lose} −3 → ${gain} +3`,{type:"use",id:picked.id,spell:`${lose}:${gain}`})))}
                         {picked.kind === "spiked-potion" && ["Health", "Power", "Luck", "Speed", "Magic", "Accuracy", "Armor"].map((stat) =>
                           actButton(`+5 ${stat} · pay half HP`, { type: "use-floor", id: picked.id, spell: stat }, false, "primary"))}
-                        {!["mana-star", "spiked-potion"].includes(picked.kind) && canUseFromFloor(picked) &&
+                        {!picked.auto && !["mana-star", "spiked-potion", "mixing-potion"].includes(picked.kind) && canUseFromFloor(picked) &&
                           actButton(
                             picked.kind === "teleport"
                               ? "Use once & teleport"
@@ -1583,9 +1604,10 @@ export function PlayScreen({
                         )}
                         {picked.kind === "mana-star" && availableSpells(g, { free: true }).map((s) =>
                           actButton(`Cast ${s.name} free`, { type: "use", id: picked.id, spell: s.name }, false, "primary"))}
+                        {picked.kind === "mixing-potion" && ["Health","Power","Speed","Luck","Magic","Accuracy","Armor"].flatMap(lose=>["Health","Power","Speed","Luck","Magic","Accuracy","Armor"].filter(gain=>gain!==lose && (p.stats[lose] || 0)>=3).map(gain=>actButton(`${lose} −3 → ${gain} +3`,{type:"use",id:picked.id,spell:`${lose}:${gain}`})))}
                         {picked.kind === "spiked-potion" && ["Health", "Power", "Luck", "Speed", "Magic", "Accuracy", "Armor"].map((stat) =>
                           actButton(`+5 ${stat} · pay half HP`, { type: "use", id: picked.id, spell: stat }, false, "primary"))}
-                        {picked.kind === "anvil" && g.inventory.filter((weapon) => nextWeaponName(weapon)).map((weapon) => {
+                        {picked.kind === "anvil" && [...g.inventory, ...p.weapons].filter((weapon) => nextWeaponName(weapon)).map((weapon) => {
                           const next = makeItem(structuredClone(g), nextWeaponName(weapon)!);
                           return <button key={weapon.id} className="upgrade-choice" disabled={busy || !!itemUseProblem(g, picked)} onClick={() => void send({ type: "use", id: picked.id, target: weapon.id })}>
                             <ItemIcon item={weapon} />
@@ -1624,7 +1646,7 @@ export function PlayScreen({
                           !!itemUseProblem(g, picked),
                           "primary",
                         )}
-                        {actButton("Drop", { type: "drop", id: picked.id })}
+                        <button className="primary" onClick={closeDetails}>Done using</button><details><summary>Discard item…</summary>{actButton("Drop item on floor", { type: "drop", id: picked.id })}</details>
                       </>
                     )}
                   </>
@@ -1662,7 +1684,7 @@ export function PlayScreen({
               <>
                 <h2>{p.name} · Full stats</h2>
                 <p>
-                  Lv {p.level} {p.className} · XP {n(g.xp)}/100 · Score{" "}
+                  <b className="level-badge">LEVEL {p.level}</b> {p.className} · XP {n(g.xp)}/100 · Score{" "}
                   {n(g.score)} · Stair Keys {g.keys}
                 </p>
                 <p>
@@ -1910,7 +1932,7 @@ export function PlayScreen({
                 <h2>How to play</h2>
                 <p>
                   Swipe the map once per tile, tap an adjacent tile, or use
-                  arrow keys. Wait is in the map corner; Space also waits.
+                  arrow keys. Choose an action or a direction each turn.
                 </p>
                 <p>
                   Tap your player panel to expand stats. Items scroll sideways
@@ -1919,7 +1941,7 @@ export function PlayScreen({
                   durability before confirming.
                 </p>
                 <p>
-                  Magic appears only when spells are ready to cast. Tap a spell
+                  Magic includes spells you are still growing into. Tap a spell
                   card to cast. Attack exchanges blows; using items does not
                   spend a normal combat round. End encounter leaves safely.
                 </p>

@@ -95,6 +95,13 @@ export interface Spell {
   description: string;
 }
 export const spells: Spell[] = [
+  { name: "Blow", element: "Wind", cost: 4, req: 8, when: "combat", description: "Push a target up to 10 tiles; a collision deals 5 damage." },
+  { name: "Study", element: "Water", cost: 6, req: 10, when: "any", description: "Gain 10 EXP." },
+  { name: "Mana Drain", element: "Dark", cost: 1, req: 1, when: "any", description: "Lose 1 life and gain 2 mana." },
+  { name: "Nightmare", element: "Dark", cost: 5, req: 5, when: "combat", description: "Curse a target for 5 turns." },
+  { name: "Life Drain", element: "Dark", cost: 10, req: 10, when: "combat", description: "Deal 20 damage and restore 20 life." },
+  { name: "Dark Summon", element: "Dark", cost: 15, req: 15, when: "peace", description: "Summon an enemy nearby, with a greater chance of rare creatures." },
+  { name: "Pick", element: "Dark", cost: 15, req: 15, when: "peace", description: "Unlock an adjacent chest; with 60 Magic, secret doors too." },
   { name: "Gild", element: "Fire", cost: 4, req: 8, when: "peace", description: "Conjure 1–6 gold from a brief flame." },
   { name: "Mana Expansion", element: "Fire", cost: 10, req: 25, when: "peace", description: "Permanently increase maximum mana by 2." },
   { name: "Befriend", element: "Water", cost: 8, req: 15, when: "combat", description: "Turn a non-boss enemy into a peaceful villager." },
@@ -179,7 +186,7 @@ export const spells: Spell[] = [
     element: "Water",
     cost: 7,
     req: 15,
-    when: "peace",
+    when: "any",
     description: "Restore HP equal to Magic.",
   },
   {
@@ -200,6 +207,26 @@ export const spells: Spell[] = [
   },
 ];
 export const itemDefinitions: [string, string, number, number, string?][] = [
+  ["Sand", "sand", 1, 50], ["Tiny Mana Potion", "mana", 1, 5],
+  ["Energy Potion", "energy-potion", 4, 5],
+  ["Sandstorm Wand", "sandstorm", 4, 50], ["Sand Bag", "sand-bag", 1, 80],
+  ["Quicksand Wand", "quicksand", 4, 80], ["Mana Link", "mana-link", 7, 3],
+  ["Alchemy Nuke", "alchemy-nuke", 10, 0], ["Decoy", "decoy", 7, 0],
+  ["Escape Pod", "escape-pod", 7, 0], ["Critical Diamond", "critical-diamond", 7, 5],
+  ["Mana Stream", "mana-stream", 4, 1], ["Mana Pool", "mana-pool", 7, 1],
+  ["Mana Spring", "mana-pool", 10, 5], ["Mana Pot", "mana-pot", 4, 1],
+  ["Golden Apple", "golden-apple", 7, 5], ["Diamond Apple", "diamond-apple", 10, 0],
+  ["Thief's Gloves", "thief-gloves", 4, 0], ["Mana Leech", "mana-leech", 7, 1],
+  ["Energy Belt", "energy-belt", 4, 0], ["Energy Armor", "energy-armor", 4, 0],
+  ["Quickfoot Boots", "quickfoot", 1, 0], ["Ghost Boots", "ghost-boots", 10, 0],
+  ["Lucky Amulet", "lucky-amulet", 4, 10], ["Lucky Necklace", "lucky-necklace", 4, 5],
+  ["Golden Gauntlet", "golden-gauntlet", 4, 10], ["Silver Gauntlet", "silver-gauntlet", 4, 10],
+  ["Mana Battery", "mana-battery", 4, 2], ["Mixing Potion", "mixing-potion", 4, 3],
+  ["Bloodthirsty Dagger", "weapon", 7, 3],
+  ["Elemental Staff", "tome", 10, 10], ["Dark Staff", "tome", 7, 5],
+  ["Emerald Staff", "tome", 7, 5], ["Sapphire Staff", "tome", 7, 5],
+  ["Ruby Staff", "tome", 7, 5], ["Onyx Staff", "tome", 10, 10],
+  ["Stair Key", "stair-key", 7, 0],
   ...["Power", "Luck", "Health", "Speed", "Magic", "Accuracy", "Armor"].flatMap((stat) => [
     [stat === "Power" ? "Strength Jewel" : `${stat} Jewel`, "jewel", 1, 5, stat],
     [stat === "Power" ? "Strength Crown" : `${stat} Crown`, "crown", 4, 10, stat],

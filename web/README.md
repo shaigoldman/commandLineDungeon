@@ -1,14 +1,18 @@
-# Command Line Dungeon — browser edition
+# Teeny Dungeon — web and Android
 
-A complete browser-playable port of Shai Goldman's Python dungeon RPG. React 19 + TypeScript provides the interface; PixiJS 8 renders original pixel art; a Node/Express TypeScript server owns the rules, random state, progression, and saves. The original Python files are preserved unchanged in `../python/`.
+**Explore. Improvise. Survive one more floor.**
 
-## Ashfall expansion · v0.7
+A turn-based pocket dungeon with original pixel art, four adventurer classes, collectible spells, strange relics, named villagers, hidden chambers, and endless floors beyond Ruthagor.
 
-Gold, named villagers and the half-remembered apocalypse bring trading to the dungeon. Shops keep their stock, prices, refusals and wanted-item premiums across saves. Villagers are fragile and fast; killing one brings a curse and a delayed ghost instead of rewards.
+<p><img src="docs/screenshots/explore.png" alt="Explore Teeny Dungeon" width="260" /> <img src="docs/screenshots/encounter.png" alt="A readable tactical encounter" width="260" /> <img src="docs/screenshots/spell-inspection.png" alt="Inspect spells before casting" width="260" /></p>
 
-New loot includes Seismic Shockers, permanent poison immunity, stat doublers, candies and charged Summoner Stones. Wind can Summon strangers; Fire can Alchemize gold. Keys open biased-loot chests and rare border doors into offscreen chambers with treasure, chiefs, an emperor or King Niblet's enormous shop.
+Build around your bag: carry a Mana Link, gamble on a mysterious item, wield an elemental staff, or hold a life-saving apple for the moment everything goes wrong. Gremlins can steal your gear; wild villagers and dark heroes can use their own. Dragons burn, ghosts cross walls, and shadows teleport.
 
-Loot opens inspection automatically with a colored rarity badge and authored lore. Closing leaves it safely; full bags offer an atomic drop/swap chooser. Weapons and staves share the same hand limit. Level-up overlays show current stats and the proposed change; measured combat captions stack apart. Base/effects/gear stats, actual critical percentages, hits-to-defeat estimates and first-strike retaliation warnings clarify combat. Pile selection and swipe-away work on ground loot, including stairs. Ruthagor uses an original two-tile red winged serpent sprite. See the [full feature and verification checklist](docs/EXPANSION-V0.7.md).
+Discover themed treasure chests, rescue villagers, upgrade equipped weapons and staves, and collect achievements that add to your score during each run. Combat shows damage forecasts, hit warnings, and expected EXP. Spell inspections explain both ready and unavailable magic.
+
+<p><img src="docs/screenshots/level-up.png" alt="Review every level-up gain" width="260" /> <img src="docs/screenshots/death.png" alt="Your final story and achievements" width="260" /></p>
+
+The browser uses server-backed saves. The Android edition runs the shared TypeScript rules locally and works offline. The original Python game is preserved in `../python/`.
 
 ## Run
 
@@ -75,3 +79,18 @@ All sprites, portraits, tiles, and effects are original designs authored for thi
 - `src/main.tsx`: desktop/mobile UI; `src/DungeonView.tsx`: Pixi renderer.
 
 The full state, including RNG seed, floor, fog lights, entities, equipment uses, effects, XP, score, outstanding level choice, and current encounter, survives a restart. Legacy Python `.sav` files are not imported; the new save format is versioned JSON and does not deserialize executable Python objects. PostgreSQL mode supports multiple service processes without lost updates; JSON mode is for a single process with a persistent disk. Logs retain the last 100 messages. Save keys are never included in server logs.
+
+## Teeny Dungeon expansion checks
+
+```sh
+npm test
+npm run build
+npm run build:android:web
+python3 tests/teeny-browser.py
+```
+
+The final command checks phone interactions and regenerates the screenshots shown above. It requires Python Playwright and Chromium (`/usr/bin/chromium`).
+
+Gameplay notes: Energy Potion restores the resource with the larger missing amount; the new Water EXP spell is called **Study**; the purple gemstone chest is **Amethyst**. New spell and item behavior is covered in `tests/teeny-expansion.test.ts`.
+
+The current Android browser smoke suite is `tests/teeny-browser.py`: it covers the new interaction contract and five viewport sizes. Earlier version-specific browser scripts remain available for reference; they assume older spell, waiting, selling, and encounter gestures. Engine, API, persistence, art, and simulation regressions continue to run through `npm test`.

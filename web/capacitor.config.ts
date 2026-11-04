@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 const config: CapacitorConfig = {
   appId: "com.shaigoldman.commandlinedungeon.test",
-  appName: "Dungeon Test",
+  appName: "Teeny Dungeon",
   webDir: "dist/android",
   android: {
     backgroundColor: "#101923",

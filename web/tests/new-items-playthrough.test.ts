@@ -32,7 +32,7 @@ describe("new item playthroughs", () => {
     const before = g.player.stats[charm.stat!] || 0;
     g.inventory.push(charm, makeItem(g, "Infinite Bag"), makeItem(g, "Mana Gem"), makeItem(g, "Mana Diamond"));
     g.capacity = 1;
-    g = act(g, { type: "wait" });
+    g = act(g, { type: "move", dx: 0, dy: -1 });
     expect(g.player.stats[charm.stat!]).toBe(before + charm.value);
     expect(capacityOf(g)).toBe(Infinity);
     expect(spellCost(g, spells.find((s) => s.name === "Light")!)).toBe(0);
@@ -99,11 +99,11 @@ describe("new item playthroughs", () => {
     const pot = makeItem(g, "Health Pot"), drain = makeItem(g, "Health Drain"), spike = makeItem(g, "Spiked Potion");
     g.inventory.push(pot, drain, spike);
     g = act(g, { type: "use", id: pot.id });
-    expect([g.player.gold, g.player.hp]).toEqual([2, 41]);
+    expect([g.player.gold, g.player.hp]).toEqual([2, 42]);
     g = act(g, { type: "use", id: drain.id });
-    expect([g.player.hp, g.player.stats.Mana]).toEqual([40, 6]);
+    expect([g.player.hp, g.player.stats.Mana]).toEqual([41, 6]);
     g = act(g, { type: "use", id: spike.id, spell: "Armor" });
-    expect(g.player.hp).toBe(20);
+    expect(g.player.hp).toBe(21);
     expect(g.player.stats.Armor).toBe(5);
     expect(g.inventory.some((i) => i.id === spike.id)).toBe(false);
     expect(g.inventory.some((i) => i.id === pot.id || i.id === drain.id)).toBe(true);
@@ -122,7 +122,7 @@ describe("new item playthroughs", () => {
     g.player.stats.Accuracy = 1000; g.player.stats.Speed = 1000;
     g = act(g, { type: "attack" });
     expect(g.player.effects["Critical Star"]).toBeUndefined();
-    expect(g.log.some((line) => line.includes("Critical hit"))).toBe(true);
+    expect(g.log.some((line) => line.includes("CRITICAL HIT"))).toBe(true);
     expect(g.player.effects["Speedy Boots"]).toBeUndefined();
   });
 

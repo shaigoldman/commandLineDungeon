@@ -1628,3 +1628,32 @@ body.playing-game {
   color: #c8dfda;
   font-size: 10px;
 }
+
+/* Teeny Dungeon: readable progress and combat feedback. */
+.level-badge { display:inline-block; padding:3px 7px; border:1px solid #e5bc63; border-radius:5px; color:#ffe4a0; font-size:13px; }
+.spell-card.unavailable { filter:grayscale(1); opacity:.48; }
+.xp-label { color:#f9d34a; }
+.xp-meter { width:100%; height:7px; accent-color:#f5ce32; border:0; }
+.xp-meter::-webkit-progress-bar { background:#302e25; }
+.xp-meter::-webkit-progress-value { background:#f5ce32; transition:width 900ms ease; }
+.xp-meter::-moz-progress-bar { background:#f5ce32; }
+.death-scene { position:fixed; inset:0; background:#0b1520; }
+.death-scene > canvas { width:100%; height:100%; }
+.death-screen { position:absolute; inset:0; background:rgba(12,18,29,.84); animation:death-reveal 3.5s ease both; z-index:20; }
+.death-screen-content { padding:24px; border-radius:18px; background:rgba(17,21,30,.55); text-shadow:0 2px 3px #000; }
+@keyframes death-reveal { from {opacity:0;} to {opacity:1;} }
+.level-gains { grid-column:1/-1; display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+.level-gains p { margin:2px; }.level-gains b {color:#9fe2a5;}
+.spell-inspection { padding:24px; }
+
+.death-scene > .map { width:100%; height:100%; min-height:100%; position:absolute; inset:0; }
+.enemy-reward { margin:0; padding:4px 8px; font-size:11px; color:#f6d777; background:#24313d; border-radius:4px; }
+.hero-vitals .xp-label, .hero-vitals .xp-label b { color:#f5d366; }
+.inventory-ribbon > .ribbon-label { font-size:10px; font-weight:bold; color:#f6d777; }
+
+.dark-hero-portrait { filter:brightness(.55) sepia(.35) hue-rotate(220deg); }
+.ergathon-portrait { filter:sepia(.4) hue-rotate(220deg); }
+.green-dragon-portrait { filter:hue-rotate(90deg); }
+.victory-screen { padding:28px; text-align:center; border:2px solid #d1b56d; }
+.victory-screen h1 { color:#f6d784; font-family:Georgia,serif; }
+.victory-screen button { display:block; width:100%; margin-top:14px; min-height:46px; }

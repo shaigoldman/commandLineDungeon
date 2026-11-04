@@ -105,7 +105,7 @@ function App() {
           <div className="sigil">✦</div>
           <p className="eyebrow">A TURN-BASED DUNGEON RPG</p>
           <h1>
-            COMMAND LINE
+            TEENY
             <br />
             <em>DUNGEON</em>
           </h1>
@@ -229,6 +229,7 @@ function App() {
       busy={busy}
       error={error}
       recovery={recovery}
+      highScore={highScore}
       lastAction={lastAction}
       onAction={act}
       clearError={() => setError("")}

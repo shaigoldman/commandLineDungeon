@@ -12,6 +12,7 @@ import {
   openChest,
   unlockDoor,
   enterSecret,
+  prepareSecretRoom,
   chestReward,
 } from "./expansion";
 import npcDialogue from "./npc-dialogue.json";
@@ -36,7 +37,7 @@ const pick = <T>(g: Game, a: T[]) => a[roll(g, a.length)];
 const id = (g: Game) => Math.floor(random(g) * 2 ** 32).toString(36);
 export function log(g: Game, s: string) {
   g.logSerial = (g.logSerial ?? g.log.length) + 1;
-  g.log.push(s);
+  g.log.push(s.replace(/\b\d+\.\d+\b/g, v => String(Math.round(Number(v)))));
   g.log = g.log.slice(-100);
 }
 export function makeItem(g: Game, name: string): Item {
@@ -64,7 +65,7 @@ export function makeItem(g: Game, name: string): Item {
     i.uses = i.maxUses = 1 + roll(g, 5);
     i.description = `Summon a random mob next to you. ${i.uses} uses before breaking.`;
   }
-  if (i.kind === "mana") i.description = "Fully restore 10 mana.";
+  if (i.kind === "mana") i.description = `Restore ${i.value} mana.`;
   if (name === "Pot of Gold") {
     i.value = Math.min(50, 1 + Math.floor(-Math.log(Math.max(random(g), 1e-9)) * 9));
     i.description = `A gremlin's hoard: ${i.value} gold coins.`;
@@ -91,7 +92,7 @@ export function makeItem(g: Game, name: string): Item {
   if (i.kind === "energy-generator") i.value = 1 + roll(g, 10);
   const descriptions: Record<string, string> = {
     "Cleanser": "Turn an enemy into a villager, or rarely a chieftain.",
-    "Health Pot": "Trade one gold for one health. Never runs dry.",
+    "Health Pot": "Trade one gold for two health. Never runs dry.",
     "Health Drain": "Trade one life for one mana. Never runs dry.",
     "Spiked Potion": "Sacrifice half your current health for +5 to a chosen stat.",
     "Critical Star": "Your next landed attack is a critical hit.",
@@ -102,7 +103,7 @@ export function makeItem(g: Game, name: string): Item {
     "Gentle Grip": "While carried, 50% chance a weapon attack spends no durability.",
     "Really Gentle Grip": "While carried, 80% chance a weapon attack spends no durability.",
     "Sharpening Stone": "While carried, equipped weapons deal twice their normal attack bonus.",
-    "Anvil": "Upgrade one unequipped bag weapon to its next material.",
+    "Anvil": "Upgrade a carried or equipped weapon, shield, or staff.",
     "Blade Shard": "Restore all uses to one unequipped bag weapon.",
     "Skill Book": "While carried, ignore equipped weapon weight penalties to Speed and Accuracy.",
     "Magic Scabbard": "Double a chosen item's remaining uses, even beyond its usual limit.",
@@ -155,7 +156,7 @@ export function makeItem(g: Game, name: string): Item {
     i.value = 10 + roll(g, 50);
     i.duration = Math.floor(random(g) ** 2 * 10) + 1;
     i.name = `${i.duration} turn ${i.value}% ${i.stat} Boost`;
-    i.description = `Boost ${i.stat} by ${i.value}%. First application lasts one calculation, as in Python.`;
+    i.description = `Boost ${i.stat} by ${i.value}%. Its effect lasts for a limited number of actions.`;
   }
   if (i.kind === "armor") {
     i.value =
@@ -219,6 +220,10 @@ export function makeItem(g: Game, name: string): Item {
     i.element = element || pick(g, ["Wind", "Fire", "Water"]);
     staff(i, i.element);
   }
+  const advanced: Record<string, string> = { "Elemental Staff": "Elemental", "Dark Staff": "Dark", "Onyx Staff": "Dark", "Emerald Staff": "Wind", "Sapphire Staff": "Water", "Ruby Staff": "Fire" };
+  if (advanced[name]) { staff(i, advanced[name]); i.name = name; i.description = `${i.element} spells; +${i.value} Magic while carried or equipped.`; }
+  if (name === "Bloodthirsty Dagger") Object.assign(i, { name, attack: 6, weight: 1, luck: 5, uses: 30, maxUses: 30, description: "A swift blade. Below 10 HP, gain 100 Luck while equipped." });
+  if (i.kind === "decoy") { const disguise = makeItem(g, pick(g, itemDefinitions.filter(d => d[2] === 10 && d[1] !== "decoy"))[0]); i = { ...disguise, id: i.id, kind: "decoy" }; }
   if (name === "Awathons Broadsword")
     Object.assign(i, {
       kind: "weapon",
@@ -253,7 +258,11 @@ export function makeItem(g: Game, name: string): Item {
     bag: `Increase inventory capacity to ${i.value}.`,
     trash: "It is just trash. Please do not litter.",
   };
-  i.description = i.description || desc[i.kind] || "";
+  const newDescriptions: Record<string,string> = {
+    sand:"Throw at an adjacent target: −50% Accuracy for 5 turns.", sandstorm:"Permanently reduce an adjacent target’s Accuracy by 50%.", "sand-bag":"Throw at an adjacent target: −80% Speed for 5 turns.", quicksand:"Permanently reduce an adjacent target’s Speed by 80%.", "energy-potion":"Restore 5 to health or mana, whichever is farther below maximum.", "mana-link":"While carried, each health gain also restores 3 mana.", "alchemy-nuke":"Transmute every floor item using the usual alchemy rules.", "escape-pod":"Rescue an adjacent villager for EXP and a valuable gift.", "critical-diamond":"Your next 5 landed attacks are critical hits.", "mana-stream":"Trade 10 gold for +1 maximum mana. Reusable.", "mana-pool":`Permanently gain +${i.value} maximum mana.`, "mana-pot":"Trade 1 gold for 1 mana. Reusable.", "golden-apple":"While carried, a fatal blow instead leaves you with 5 HP and consumes this apple.", "diamond-apple":"While carried, revive at full HP and mana on death; all your items are destroyed.", "thief-gloves":"While carried, kills have a 25% chance to grant 1–5 gold.", "mana-leech":"While carried, gain 1 mana per enemy kill.", "energy-belt":"While carried, pods restore both health and mana.", "energy-armor":"While carried, pods are twice as effective.", quickfoot:"Act first in your next combat.", "ghost-boots":"While carried, walk through walls. Dropping them inside a wall kills you.", "lucky-amulet":"While carried, critical hits heal you for 10 HP.", "lucky-necklace":"While carried, dodging heals you for 5 HP.", "golden-gauntlet":"While carried, +10 Strength at 0 mana.", "silver-gauntlet":"While carried, +10 Strength and Speed at 5 HP or less.", "mana-battery":"While carried, +2 maximum mana.", immunity:"Immune to poison while carried.", "mixing-potion":"Choose one stat to lose 3 and a different stat to gain 3.", "stair-key":"Unlocks locked dungeon stairs. Automatically added to your key ring."
+  };
+  i.description = newDescriptions[i.kind] || i.description || desc[i.kind] || "";
+  if (i.kind === "stair-key") i.auto=true;
   return i;
 }
 function staff(i: Item, e: string) {
@@ -370,7 +379,8 @@ function randomName(g: Game, maxlen: number) {
 
 export function makeMonster(g: Game, type: string, level: number): Actor {
   level = Math.max(1, level);
-  const stats = { ...monsterBase[type] };
+  const heroClass = type === "Dark Hero" ? pick(g, ["Warrior", "Knight", "Scout", "Mage"]) : undefined;
+  const stats = { ...(heroClass ? classes[heroClass] : monsterBase[type]) };
   for (const [s, v] of Object.entries(growth[type] || {}))
     stats[s] += v * level;
   if (type === "Chieftan") {
@@ -382,7 +392,7 @@ export function makeMonster(g: Game, type: string, level: number): Actor {
   }
   if (type === "Dragon")
     for (const s of ["Health", "Power", "Accuracy", "Speed"])
-      stats[s] *= Math.floor(level / 10) - 1;
+      stats[s] *= level >= 20 ? Math.floor(level / 10) - 1 : 0.2 + level * 0.015;
   else {
     let mult = random(g) < 0.5 ? -2 : 2;
     const r = random(g);
@@ -424,6 +434,8 @@ export function makeMonster(g: Game, type: string, level: number): Actor {
     y: 0,
     level,
   };
+  if (["Wild Villager", "Dark Hero", "Gremlin"].includes(type)) a.inventory = Array.from({ length: type === "Gremlin" ? 0 : roll(g, type === "Dark Hero" ? 6 : 3) }, () => randomItem(g));
+  if (heroClass) { a.heroClass = heroClass; a.name = "Dark Hero"; }
   if (type === "Snake")
     a.poison = [
       level,
@@ -437,12 +449,19 @@ export function makeMonster(g: Game, type: string, level: number): Actor {
     for (let d = 0; d < g.difficulty; d++) a.poison[1] += a.poison[1] / 2 + 1;
   return a;
 }
+export function actorOccupies(a: Actor, x: number, y: number) { return a.y===y && (a.x===x || (a.className==="Dragon" && !a.boss && a.x+1===x)); }
+function actorDistance(a: Actor, b: Actor) { return Math.min(Math.abs(a.x-b.x)+Math.abs(a.y-b.y),a.className==="Dragon" && !a.boss ? Math.abs(a.x+1-b.x)+Math.abs(a.y-b.y) : Infinity); }
+function monsterPosition(g: Game, m: Actor) {
+  if(m.className!=="Dragon") return position(g);
+  const spots=g.tiles.flatMap((row,y)=>row.map((v,x)=>({v,x,y}))).filter(t=>t.v===0 && empty(g,t.x,t.y) && empty(g,t.x+1,t.y));
+  return pick(g,spots) || position(g);
+}
 function empty(g: Game, x: number, y: number) {
   return (
     g.tiles[y]?.[x] === 0 &&
     (g.inSecret ? x >= 33 : x < 29) &&
     !(g.inSecret && x === 33 && y === 7) &&
-    !g.monsters.some((m) => m.hp > 0 && m.x === x && m.y === y) &&
+    !g.monsters.some((m) => m.hp > 0 && actorOccupies(m,x,y)) &&
     !(g.player.x === x && g.player.y === y) &&
     !g.loot.some((i) => i.x === x && i.y === y) &&
     !g.pods.some((i) => i.x === x && i.y === y) &&
@@ -450,6 +469,11 @@ function empty(g: Game, x: number, y: number) {
     !g.traps?.some((trap) => trap.x === x && trap.y === y) &&
     !(g.stairs.x === x && g.stairs.y === y)
   );
+}
+function teleportPosition(g: Game) {
+  if (g.secretDoors?.length && random(g)<0.15) { const door=pick(g,g.secretDoors); prepareSecretRoom(g,door); const spots=[]; for(let y=4;y<=10;y++) for(let x=33;x<=39;x++) if (!g.monsters.some(m=>m.x===x && m.y===y) && !g.chests?.some(c=>!c.opened && c.x===x && c.y===y) && !(g.player.x===x && g.player.y===y)) spots.push({x,y}); if(spots.length) return pick(g,spots); }
+  const spots=g.tiles.flatMap((row,y)=>row.map((v,x)=>({v,x,y}))).filter(t=>t.v===0 && !(t.x===g.player.x && t.y===g.player.y) && !g.monsters.some(m=>m.x===t.x && m.y===t.y) && !g.chests?.some(c=>!c.opened && c.x===t.x && c.y===t.y));
+  return pick(g,spots) || {x:g.player.x,y:g.player.y};
 }
 function position(g: Game) {
   const a: { x: number; y: number }[] = [];
@@ -504,15 +528,18 @@ export function generateFloor(g: Game) {
     "Snake",
     ...(g.floor >= 2 ? ["Parasite"] : []),
     ...(g.floor >= 3 ? ["Golem"] : []),
+    ...(g.floor >= 6 ? ["Dragon"] : []),
   ];
   for (let n = 0; n < 18; n++) {
     const rare = random(g) < 0.035;
     const m = makeMonster(
       g,
-      rare ? pick(g, ["Gremlin", "Shadow", "Robot", "Dark Fairy", "Wild Villager"]) : pick(g, types),
+      rare ? pick(g, ["Gremlin", "Shadow", "Robot", "Dark Fairy", "Wild Villager", "Dark Hero"]) : pick(g, types),
       roll(g, 2) + (g.floor + 2) * g.floor,
     );
-    Object.assign(m, position(g));
+    // Roaming dragons use a lighter profile than Ruthagor's boss scaling.
+    if (m.className === "Dragon") { for (const stat of ["Health", "Power", "Accuracy", "Speed"]) m.stats[stat] *= 0.25; m.hp = m.stats.Health; }
+    Object.assign(m, monsterPosition(g,m));
     g.monsters.push(m);
   }
   for (let n = 0; n < 10; n++)
@@ -525,12 +552,12 @@ export function generateFloor(g: Game) {
       g.floor + 3 + (g.floor + 2) * g.floor,
     );
     m.key = true;
-    Object.assign(m, position(g));
+    Object.assign(m, monsterPosition(g,m));
     g.monsters.push(m);
   }
   const boss = makeMonster(
     g,
-    (g.floor + 1) % 3 === 0 ? "Dragon" : pick(g, types),
+    (g.floor + 1) % 3 === 0 ? "Dragon" : g.stairs.locked ? "Golem" : pick(g, types),
     (g.floor + 1) % 3 === 0
       ? 10 * g.floor
       : 1 + g.floor + 3 + (g.floor + 2) * g.floor,
@@ -567,7 +594,7 @@ export function generateFloor(g: Game) {
       done: false,
       line: pick(g, npcDialogue[0]),
     };
-    Object.assign(m, position(g));
+    Object.assign(m, monsterPosition(g,m));
     g.monsters.push(m);
   }
   Object.assign(g.player, position(g));
@@ -661,6 +688,8 @@ export function attackStats(
     Speed: a.stats.Speed,
   };
   for (const stat of Object.keys(s)) {
+    const penalty = a.effects[stat + " Penalty"];
+    if (penalty) { s[stat] *= 1 - penalty[1] / 100;  }
     const e = a.effects[stat + " Booster"];
     if (e) {
       s[stat] += Math.ceil((s[stat] * e[1]) / 100);
@@ -681,7 +710,7 @@ export function combatAttackStats(a: Actor, consume = false, unarmed = false) {
     !unarmed && a.weapons.some((w) => w.kind === "tome") && a.stats.Mana >= 2;
   return attackStats(a, consume, physical, magical);
 }
-export const manaCap = (a: Actor) => a.maxMana || 10;
+export const manaCap = (a: Actor) => (a.maxMana || 10) + (a.passiveStats?.ManaCapacity || 0);
 export const armorOf = (a: Actor) => Math.max(0, (a.stats.Armor || 0) + a.weapons.reduce((sum, w) => sum + (w.armorBonus || 0), 0));
 const magicOf = (a: Actor) => a.magicScale ? Math.max(a.stats.Magic, a.stats.Power) : a.stats.Magic;
 const powerOf = (a: Actor) => a.magicScale ? Math.max(a.stats.Magic, a.stats.Power) : a.stats.Power;
@@ -692,17 +721,27 @@ export function spellCost(g: Game, spell: { cost: number }) {
 export const capacityOf = (g: Game) => g.inventory.some((i) => i.kind === "infinite-bag") ? Infinity : g.capacity;
 function syncPassiveStats(g: Game) {
   const p = g.player;
-  for (const [stat, bonus] of Object.entries(p.passiveStats || {})) p.stats[stat] = (p.stats[stat] || 0) - bonus;
+  for (const [stat, bonus] of Object.entries(p.passiveStats || {})) if (stat !== "ManaCapacity") p.stats[stat] = (p.stats[stat] || 0) - bonus;
   const bonus: Stats = {};
   for (const item of g.inventory)
     if (item.kind === "charm" && item.stat)
       bonus[item.stat] = (bonus[item.stat] || 0) + item.value;
+  for (const item of [...g.inventory, ...p.weapons]) {
+    if (item.kind === "tome" && item.value) bonus.Magic = (bonus.Magic || 0) + item.value;
+    if (item.kind === "mana-battery") bonus.ManaCapacity = (bonus.ManaCapacity || 0) + 2;
+    if (item.kind === "golden-gauntlet" && p.stats.Mana === 0) bonus.Power = (bonus.Power || 0) + 10;
+    if (item.kind === "silver-gauntlet" && p.hp <= 5) { bonus.Power = (bonus.Power || 0) + 10; bonus.Speed = (bonus.Speed || 0) + 10; }
+    if (item.name === "Bloodthirsty Dagger" && p.hp < 10 && p.weapons.includes(item)) bonus.Luck = (bonus.Luck || 0) + 100;
+  }
+  p.poisonImmune = g.inventory.some(i => i.kind === "immunity");
+  if (p.poisonImmune) delete p.effects.Poison;
+  if (g.inventory.some(i => i.kind === "mana-link")) p.effects["Mana Link"]=[1000000,3]; else delete p.effects["Mana Link"];
   if (g.inventory.some((i) => i.kind === "magic-scales")) {
     const high = Math.max(p.stats.Power + (bonus.Power || 0), p.stats.Magic + (bonus.Magic || 0));
     bonus.Power = high - p.stats.Power;
     bonus.Magic = high - p.stats.Magic;
   }
-  for (const [stat, value] of Object.entries(bonus)) p.stats[stat] = (p.stats[stat] || 0) + value;
+  for (const [stat, value] of Object.entries(bonus)) if (stat !== "ManaCapacity") p.stats[stat] = (p.stats[stat] || 0) + value;
   p.passiveStats = bonus;
   p.sharpening = g.inventory.some((i) => i.kind === "sharpening-stone");
   p.skillBook = g.inventory.some((i) => i.kind === "skill-book");
@@ -732,6 +771,7 @@ export function incomingDamage(enemy: Actor, player: Actor) {
 /** Floor use consumes an item in place without using an inventory slot. */
 export function canUseFromFloor(item: Item) {
   return [
+    "energy-potion", "mana-pool", "critical-diamond", "quickfoot", "alchemy-nuke", "decoy", "mana-stream", "mana-pot",
     "candy",
     "seismic",
     "immunity",
@@ -761,8 +801,10 @@ export function canUseFromFloor(item: Item) {
 }
 const weaponMaterials = ["Fragile", "Iron", "Steel", "Lucky", "Magic", "Obsidian"];
 export function nextWeaponName(item: Item) {
+  const staffUpgrades: Record<string, string> = { "Wind Staff": "Emerald Staff", "Water Staff": "Sapphire Staff", "Fire Staff": "Ruby Staff", "Dark Staff": "Onyx Staff" };
+  if (staffUpgrades[item.name]) return staffUpgrades[item.name];
   if (item.kind !== "weapon") return undefined;
-  const match = /^(Fragile|Iron|Steel|Lucky|Magic|Obsidian) (Sword|Spear|Axe)$/.exec(item.name);
+  const match = /^(Fragile|Iron|Steel|Lucky|Magic|Obsidian) (Sword|Spear|Axe|Shield)$/.exec(item.name);
   if (!match) return undefined;
   const next = weaponMaterials.indexOf(match[1]) + 1;
   return next < weaponMaterials.length ? `${weaponMaterials[next]} ${match[2]}` : undefined;
@@ -784,6 +826,7 @@ export function floorEquipPlan(g: Game, item: Item) {
 }
 /** Read-only availability shared by item menus; use() remains authoritative. */
 export function itemUseProblem(g: Game, i: Item): string | undefined {
+  if (["mana-link", "golden-apple", "diamond-apple", "thief-gloves", "mana-leech", "energy-belt", "energy-armor", "ghost-boots", "lucky-amulet", "lucky-necklace", "golden-gauntlet", "silver-gauntlet", "mana-battery", "immunity"].includes(i.kind)) return "Active while carried; no use action needed.";
   if (g.status === "dead") return "This journey has ended.";
   if (g.status === "won") return "Continue your journey first.";
   if (g.pendingLevels) return "Choose your level bonus first.";
@@ -796,7 +839,7 @@ export function itemUseProblem(g: Game, i: Item): string | undefined {
     )
   )
     return "Use outside combat.";
-  if (!g.combat && ["rope", "projectile"].includes(i.kind))
+  if (!g.combat && (i.kind === "rope" || (i.kind === "projectile" && !g.monsters.some(m => !m.npc && !m.merchant && actorDistance(m,g.player) === 1))))
     return "Requires an enemy encounter.";
   if (["mana-gem", "mana-diamond", "mana-pod", "magic-scales", "invisibility", "charm", "infinite-bag", "gentle-grip", "sharpening-stone", "skill-book"].includes(i.kind))
     return "Active while carried; no use action needed.";
@@ -817,8 +860,8 @@ export function itemUseProblem(g: Game, i: Item): string | undefined {
   if (i.kind === "magic-wand" && !g.inventory.some((item) => item.id !== i.id)) return "Keep an item to turn into a staff.";
   if (i.kind === "energy-harness" && !g.pods.some((pod) => Math.abs(pod.x - g.player.x) + Math.abs(pod.y - g.player.y) === 1))
     return "Stand beside an energy pod to use this.";
-  if (i.kind === "anvil" && !g.inventory.some((weapon) => nextWeaponName(weapon)))
-    return "Keep an upgradeable, unequipped weapon in your bag first.";
+  if (i.kind === "anvil" && ![...g.inventory, ...g.player.weapons].some((weapon) => nextWeaponName(weapon)))
+    return "Keep an upgradeable weapon, shield, or staff first.";
   if (i.kind === "blade-shard" && !g.inventory.some((weapon) => weapon.kind === "weapon" && (weapon.uses || 0) < (weapon.maxUses || 0)))
     return "Keep a worn, unequipped weapon in your bag first.";
   if (["cleanser", "bad-candy"].includes(i.kind) && !g.combat)
@@ -861,7 +904,7 @@ export function itemUseProblem(g: Game, i: Item): string | undefined {
 export function hitRate(a: Actor, b: Actor) {
   const s = attackStats(a),
     e = attackStats(b);
-  return Math.max(40, s.Accuracy + s.Speed - e.Speed * 1.2);
+  return Math.max(5, s.Accuracy + s.Speed - e.Speed * 1.2);
 }
 export function fleeChance(a: Actor, b: Actor) {
   if (b.className === "Shadow") return 0.12;
@@ -884,6 +927,14 @@ function hurt(g: Game, a: Actor, n: number, source = "Attack", reward = true, at
   n = Math.trunc(n);
   a.hp = Math.max(0, a.hp - n);
   log(g, `${a.name} takes ${n} ${["Poison", "Fire"].includes(source) ? source.toLowerCase() + " " : ""}damage.`);
+  if (a.hp <= 0 && a.id === "player") {
+    const apple = g.inventory.find(i => i.kind === "diamond-apple") || g.inventory.find(i => i.kind === "golden-apple");
+    if (apple) {
+      if (apple.kind === "diamond-apple") { a.hp = a.stats.Health; a.stats.Mana = manaCap(a); g.inventory = []; a.weapons = []; }
+      else { heal(a, 5); g.inventory = g.inventory.filter(i => i.id !== apple.id); }
+      log(g, `${apple.name} saved your life!`); achievement(g, "Another Bite at Life", 100); return;
+    }
+  }
   if (a.hp <= 0) {
     if (a.id === "player") {
       if (!g.death)
@@ -895,7 +946,9 @@ function hurt(g: Game, a: Actor, n: number, source = "Attack", reward = true, at
   }
 }
 function heal(a: Actor, n: number) {
-  a.hp = Math.min(a.stats.Health, a.hp + n);
+  const before = a.hp;
+  a.hp = Math.min(a.stats.Health, a.hp + Math.round(n));
+  if (a.hp > before && a.effects["Mana Link"]) a.stats.Mana = Math.min(manaCap(a), a.stats.Mana+3);
 }
 function addXP(g: Game, amount: number) {
   const gained = amount * ((g.expDoubles || 0) > 0 ? 2 : 1);
@@ -903,12 +956,26 @@ function addXP(g: Game, amount: number) {
   g.xp += gained;
   return gained;
 }
+function achievement(g: Game, name: string, points: number) {
+  g.achievements ??= [];
+  if (!g.achievements.some(a => a.name===name)) { g.achievements.push({name,points}); g.score+=points; log(g, `Achievement: ${name} (+${points} score)`); }
+}
 function kill(g: Game, m: Actor, reward = true, drops = reward) {
   if (!g.monsters.some((a) => a.id === m.id)) return;
   g.monsters = g.monsters.filter((a) => a.id !== m.id);
   if (g.combat === m.id) g.combat = undefined;
   log(g, m.name + " falls.");
+  for (const item of [...new Map([...(m.inventory || []), ...m.weapons].map(i=>[i.id,i])).values()]) g.loot.push({x:m.x,y:m.y,item});
+  if (reward && !m.merchant) {
+    g.kills = (g.kills || 0)+1;
+    if (g.kills===1) achievement(g, "First Blood", 25);
+    if (g.kills===10) achievement(g, "Dungeon Veteran", 100);
+    if (m.boss) achievement(g, "Guardian Slayer", 150);
+    if (g.inventory.some(i => i.kind==="mana-leech")) g.player.stats.Mana=Math.min(manaCap(g.player),g.player.stats.Mana+1);
+    if (g.inventory.some(i => i.kind==="thief-gloves") && random(g)<0.25) { const gold=1+roll(g,5); g.player.gold=(g.player.gold || 0)+gold; log(g, `Thief's Gloves found ${gold} gold.`); }
+  }
   if (m.merchant) {
+    if (m.key) { g.keys++; log(g,"Acquired a Stair Key!"); }
     villagerDeath(g, m, reward);
     return;
   }
@@ -944,6 +1011,7 @@ function kill(g: Game, m: Actor, reward = true, drops = reward) {
 function checkLevel(g: Game) {
   if (g.xp >= 100 && !g.pendingLevels) {
     g.xp -= 100;
+    g.levelBefore = { ...g.player.stats };
     g.player.level++;
     g.score += 100;
     for (const s of Object.keys(g.player.stats)) {
@@ -963,7 +1031,11 @@ function checkLevel(g: Game) {
     log(g, "Level up! Health and mana restored. Choose an extra stat.");
   }
 }
+function tickPenalties(a: Actor) { for (const key of ["Accuracy Penalty","Speed Penalty"]) if (a.effects[key] && --a.effects[key][0]<=0) delete a.effects[key]; }
 function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
+  syncPassiveStats(g);
+  if (a.id!=="player") syncMonsterItems(a);
+  if (b.id!=="player") syncMonsterItems(b);
   if (a.burn) {
     const [turns, damage] = a.burn;
     hurt(g, a, damage, "Fire");
@@ -976,7 +1048,8 @@ function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
   const s = combatAttackStats(a, true, unarmed);
   const h = attackStats(a, true, physical, false),
     e = attackStats(b, true, b.weapons.length > 0, false);
-  const rate = Math.max(40, h.Accuracy + h.Speed - e.Speed * 1.2);
+  const rate = Math.max(5, h.Accuracy + h.Speed - e.Speed * 1.2);
+  tickPenalties(a);
   if (!unarmed && a.weapons.some((w) => w.kind === "tome") && a.stats.Mana >= 2)
     a.stats.Mana -= 2;
   const grip = a.id === "player" ? Math.max(0, ...g.inventory.filter((i) => i.kind === "gentle-grip").map((i) => i.value)) / 100 : 0;
@@ -985,28 +1058,37 @@ function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
       a.weapons = a.weapons.filter((i) => i.id !== w.id);
       log(g, a.id === "player" ? `WEAPON BROKE: ${w.name} broke! Equip another weapon from your bag.` : `${a.name}'s ${w.name} broke!`);
     }
-  const speedy = a.id !== "player" && b.id === "player" && !!b.effects["Speedy Boots"];
+  const speedy = !!b.effects["Speedy Boots"];
   if (speedy) delete b.effects["Speedy Boots"];
   if ((speedy && random(g) < 0.99) || random(g) * 100 >= rate) {
-    log(g, a.name + " missed.");
+    log(g, `MISS! ${a.name} missed ${b.name}.`);
+    if (b.id === "player" && g.inventory.some(i => i.kind === "lucky-necklace")) heal(b, 5);
     if (a.id === "player" && g.inventory.some((i) => i.kind === "mana-pod"))
       a.stats.Mana = Math.min(manaCap(a), a.stats.Mana + 1);
     return false;
   }
   let damage = s.Attack;
-  const guaranteedCritical = a.id === "player" && !!a.effects["Critical Star"];
-  if (guaranteedCritical) delete a.effects["Critical Star"];
+  const guaranteedCritical = !!a.effects["Critical Star"];
+  if (guaranteedCritical && --a.effects["Critical Star"][0] <= 0) delete a.effects["Critical Star"];
   if (guaranteedCritical || random(g) * random(g) > 1 - Math.min(0.7, s.Luck * 0.01)) {
     damage *= 3;
-    log(g, "Critical hit!");
+    log(g, "CRITICAL HIT! Triple damage!");
+    if (a.id === "player" && g.inventory.some(i => i.kind === "lucky-amulet")) heal(a, 10);
   }
+  const criticalHit = damage === s.Attack * 3;
   const hpBeforeHit = b.hp;
   hurt(g, b, damage, "Attack", a.id === "player", a);
+  if (g.death?.source === "Attack" && b.id === "player") g.death.critical = criticalHit;
   for (const shield of [...b.weapons].filter((weapon) => weapon.armorBonus))
     if (--shield.uses! <= 0) {
       b.weapons = b.weapons.filter((weapon) => weapon.id !== shield.id);
       log(g, b.id === "player" ? `WEAPON BROKE: ${shield.name} broke! Its protection is gone.` : `${b.name}'s ${shield.name} broke!`);
     }
+  if (a.className === "Dragon" && b.hp > 0 && b.hp < hpBeforeHit) { b.burn = [4, 3]; log(g, `${b.name} is BURNING: 3 damage per action for 4 turns!`); }
+  if (a.className === "Gremlin" && b.id === "player" && b.hp < hpBeforeHit && g.inventory.length && random(g) < 0.25) {
+    const stolen = pick(g, g.inventory); g.inventory = g.inventory.filter(i => i.id !== stolen.id); (a.inventory ??= []).push(stolen); log(g, `STOLEN! ${a.name} stole ${stolen.name}.`);
+    if (stolen.kind === "infinite-bag") { g.inventory = []; b.weapons = []; log(g, "Losing the Infinite Bag destroyed all your items!"); }
+  }
   if (a.drain) heal(a, damage);
   if (
     a.curseChance &&
@@ -1036,8 +1118,63 @@ function poison(g: Game) {
     if (--e[0] <= 0) delete g.player.effects.Poison;
   }
 }
+/** Item users spend a movement turn on the attempt, even when the selected item cannot be used. */
+function syncMonsterItems(m: Actor) {
+  for(const [stat,bonus] of Object.entries(m.passiveStats || {})) if(stat!=="ManaCapacity") m.stats[stat]=(m.stats[stat] || 0)-bonus;
+  const items=[...new Map([...(m.inventory || []),...m.weapons].map(i=>[i.id,i])).values()], bonus: Stats={};
+  for(const i of items) {
+    if(i.kind==="tome" && i.value) bonus.Magic=(bonus.Magic || 0)+i.value;
+    if(i.kind==="charm" && i.stat) bonus[i.stat]=(bonus[i.stat] || 0)+i.value;
+    if(i.kind==="mana-battery") bonus.ManaCapacity=(bonus.ManaCapacity || 0)+2;
+    if(i.kind==="golden-gauntlet" && m.stats.Mana===0) bonus.Power=(bonus.Power || 0)+10;
+    if(i.kind==="silver-gauntlet" && m.hp<=5) {bonus.Power=(bonus.Power || 0)+10;bonus.Speed=(bonus.Speed || 0)+10;}
+  }
+  for(const [stat,n] of Object.entries(bonus)) if(stat!=="ManaCapacity") m.stats[stat]=(m.stats[stat] || 0)+n;
+  m.passiveStats=bonus;m.poisonImmune=items.some(i=>i.kind==="immunity");m.sharpening=items.some(i=>i.kind==="sharpening-stone");m.skillBook=items.some(i=>i.kind==="skill-book");
+  if(items.some(i=>i.kind==="mana-link")) m.effects["Mana Link"]=[1000000,3];else delete m.effects["Mana Link"];
+}
+function monsterItemTurn(g: Game, m: Actor) {
+  syncMonsterItems(m);
+  if (!m.inventory?.length || random(g)>=0.25) return false;
+  const item=pick(g,m.inventory), adjacent=Math.abs(m.x-g.player.x)+Math.abs(m.y-g.player.y)===1;
+  let used=true;
+  if (item.kind==="heal" && m.hp<m.stats.Health) heal(m,item.value);
+  else if (item.kind==="mana" && m.stats.Mana<manaCap(m)) m.stats.Mana=Math.min(manaCap(m),m.stats.Mana+item.value);
+  else if (item.kind==="weapon" && (item.weight || 0)*2<=m.stats.Power) { m.inventory=m.inventory.filter(i=>i.id!==item.id); m.inventory.push(...m.weapons.filter(w=>!m.inventory!.some(i=>i.id===w.id))); m.weapons=[item]; log(g, `${m.name} equipped ${item.name}.`); return true; }
+  else if (item.kind==="tome") {
+    if (!m.weapons.some(i=>i.id===item.id)) { m.weapons.push(item); log(g, `${m.name} equipped ${item.name}.`); return true; }
+    const choices=spells.filter(s=>(s.element===item.element || (item.element==="Elemental" && ["Wind","Fire","Water","Mystery"].includes(s.element))) && m.stats.Mana>=s.cost && m.stats.Magic>=s.req && ["Kindle","Burn","Gust","Heal","Healing Winds","Mana Drain","Life Drain","Nightmare","Blow"].includes(s.name) && (s.when!=="combat" || adjacent));
+    if (!choices.length) return true;
+    const spell=pick(g,choices); m.stats.Mana-=spell.cost;
+    if (["Heal","Healing Winds"].includes(spell.name)) heal(m,m.stats.Magic);
+    else if (spell.name==="Mana Drain") { hurt(g,m,1,"Mana Drain",false); m.stats.Mana=Math.min(manaCap(m),m.stats.Mana+2); }
+    else if (spell.name==="Kindle") g.player.burn=[4,3];
+    else if (spell.name==="Nightmare") applyCurse(g,5,3,m.name);
+    else { hurt(g,g.player,spell.name==="Life Drain" ? 20 : spell.name==="Burn" ? Math.min(40,m.stats.Magic) : 10,"Magic",false,m); if (spell.name==="Life Drain") heal(m,20); }
+    log(g, `${m.name} casts ${spell.name} from ${item.name}!`); return true;
+  }
+  else if (item.kind==="projectile" && adjacent) { if (item.name==="Handcuffs") g.player.stats.Power=Math.max(0,g.player.stats.Power-10); else hurt(g,g.player,item.value,"Attack",false,m); }
+  else if (["sand","sandstorm","sand-bag","quicksand"].includes(item.kind) && adjacent) g.player.effects[["sand","sandstorm"].includes(item.kind) ? "Accuracy Penalty" : "Speed Penalty"]=[["sandstorm","quicksand"].includes(item.kind)?1000000:5,item.value];
+  else if (item.kind==="antidote" && (m.effects.Poison || m.effects.Curse)) { delete m.effects.Poison; delete m.effects.Curse; }
+  else if (item.kind==="boost") m.effects[(item.stat || "Attack")+" Booster"]=[item.duration || 5,item.value || 50];
+  else if (item.kind==="armor") m.stats.Armor=(m.stats.Armor || 0)+item.value;
+  else if (item.kind==="stat" && item.stat) {m.stats[item.stat]=(m.stats[item.stat] || 0)+item.value;}
+  else if (item.kind==="double" && item.stat) m.stats[item.stat]=(m.stats[item.stat] || 0)*2;
+  else if (item.kind==="mana-pool") m.maxMana=(m.maxMana || 10)+item.value;
+  else if (["critical-star","critical-diamond"].includes(item.kind)) m.effects["Critical Star"]=[item.kind==="critical-diamond" ? 5 : 1,1];
+  else if (item.kind==="speedy-boots") m.effects["Speedy Boots"]=[1,99];
+  else if (item.kind==="quickfoot") m.effects.Quickfoot=[1,1];
+  else if (item.kind==="super-potion" && (m.hp<m.stats.Health || m.stats.Mana<manaCap(m))) {heal(m,m.stats.Health);m.stats.Mana=manaCap(m);}
+  else if (item.kind==="energy-potion") {if(m.stats.Health-m.hp>=manaCap(m)-m.stats.Mana) heal(m,5);else m.stats.Mana=Math.min(manaCap(m),m.stats.Mana+5);}
+  else if (item.kind==="reusable-heal" && m.hp<m.stats.Health) {heal(m,item.value);if (--item.uses!>0) {log(g,`${m.name} used ${item.name}!`);return true;}}
+  else if (item.kind==="teleport") {Object.assign(m,teleportPosition(g));log(g,`${m.name} used ${item.name}!`);return true;}
+  else used=false;
+  if (used) { m.inventory=m.inventory.filter(i=>i.id!==item.id); log(g, `${m.name} used ${item.name}!`); }
+  return true;
+}
 function monsterTurn(g: Game) {
   g.turn++;
+  if (g.player.burn) { hurt(g,g.player,g.player.burn[1],"Fire"); if (--g.player.burn[0]<=0) delete g.player.burn; }
   const curse = g.player.effects.Curse;
   if (curse) {
     hurt(g, g.player, curse[1], "Curse");
@@ -1050,8 +1187,9 @@ function monsterTurn(g: Game) {
   }
   for (let pass = 0; pass < (g.player.stats.Speed <= 5 ? 2 : 1); pass++)
     for (const m of [...g.monsters]) {
-      if (!!g.inSecret !== m.x >= 29 || m.spawnTurn === g.turn) continue;
+      if ((!!g.inSecret !== m.x >= 29 && m.className !== "Ghost" && m.className !== "Shadow") || m.spawnTurn === g.turn) continue;
       if (pass === 1 && (m.stats.Speed <= 5 || m.className === "Shadow")) continue;
+      if (m.effects.Curse) { hurt(g,m,m.effects.Curse[1],"Curse"); if (--m.effects.Curse[0]<=0) delete m.effects.Curse; }
       if (m.hp <= 0) {
         kill(g, m);
         continue;
@@ -1059,6 +1197,9 @@ function monsterTurn(g: Game) {
       if (g.status !== "playing" || g.combat) break;
       if (g.player.stats.Speed > 5 && g.turn % 2 === 0 && m.stats.Speed <= 5 && m.className !== "Shadow")
         continue;
+      // Keep equipped staves selectable for item use without duplicating their death drops.
+      if (m.inventory && monsterItemTurn(g,m)) continue;
+      if (m.className==="Shadow" && random(g)<0.25) { Object.assign(m,teleportPosition(g)); log(g, `${m.name} teleports through the shadows.`); continue; }
       for (let step = 0; step < (m.className === "Shadow" ? 2 : 1); step++) {
       const [dx, dy] = pick(g, [
         [0, 1],
@@ -1069,14 +1210,23 @@ function monsterTurn(g: Game) {
       ]);
       const x = m.x + dx,
         y = m.y + dy;
-      const other = g.monsters.find((a) => a.id !== m.id && a.x === x && a.y === y);
+      const other = g.monsters.find((a) => a.id !== m.id && actorOccupies(a,x,y));
       if (m.className === "Shadow" && other && (other.merchant || other.npc)) {
         strike(g, m, other);
         continue;
       }
-      if (!m.boss && empty(g, x, y)) {
+      const ghostSpace = m.className === "Ghost" && y>=0 && y<g.tiles.length && x>=0 && x<g.tiles[y].length && !(x===g.player.x && y===g.player.y) && !other;
+      const wideClear = m.className!=="Dragon" || (g.tiles[y]?.[x+1]===0 && !g.monsters.some(a=>a.id!==m.id && actorOccupies(a,x+1,y)) && !(g.player.x===x+1 && g.player.y===y) && !g.chests?.some(c=>!c.opened && c.x===x+1 && c.y===y));
+      const walkable = wideClear && g.tiles[y]?.[x]===0 && !other && !(x===g.player.x && y===g.player.y) && !g.chests?.some(c=>!c.opened && c.x===x && c.y===y);
+      if (!m.boss && (ghostSpace || walkable)) {
         m.x = x;
         m.y = y;
+        tickPenalties(m);
+        if (["Wild Villager","Dark Hero"].includes(m.className)) {
+          const loot=g.loot.find(l=>l.x===x && l.y===y);
+          if (loot && random(g)<0.1) { (m.inventory ??= []).push(loot.item); g.loot=g.loot.filter(l=>l!==loot); log(g, `${m.name} picked up ${loot.item.name}.`); }
+          else if (!loot && m.inventory?.length && random(g)<0.02) { const dropped=pick(g,m.inventory); m.inventory=m.inventory.filter(i=>i.id!==dropped.id); g.loot.push({x,y,item:dropped}); }
+        }
         if (m.burn) {
           const [turns, damage] = m.burn;
           hurt(g, m, damage, "Fire");
@@ -1085,7 +1235,7 @@ function monsterTurn(g: Game) {
           else m.burn[0]--;
         }
       } else if (
-        x === g.player.x &&
+        (x === g.player.x || (m.className === "Dragon" && x+1 === g.player.x)) &&
         y === g.player.y &&
         !m.npc &&
         !m.merchant &&
@@ -1114,7 +1264,7 @@ export function availableSpells(g: Game, options: { free?: boolean; anyElement?:
     .map((i) => i.element);
   return spells.filter(
     (s) =>
-      (options.anyElement || elements.includes(s.element)) &&
+      (options.anyElement || elements.includes(s.element) || (elements.includes("Elemental") && ["Wind", "Water", "Fire", "Mystery"].includes(s.element))) &&
       (options.ignoreReq || magicOf(g.player) >= s.req) &&
       (options.free || g.player.stats.Mana >= spellCost(g, s)) &&
       (s.name !== "Befriend" || !!g.monsters.find((m) => m.id === g.combat && !m.boss && !m.merchant && !m.npc)) &&
@@ -1135,6 +1285,28 @@ function performSpell(g: Game, s: (typeof spells)[number], m: Actor | undefined,
     g.encounter = { enemyId: m.id, origin: "resumed", exchanges: 0, ...g.encounter, engaged: true, result: `You cast ${s.name}.` };
   log(g, `${p.name} cast ${s.name}${free ? " for free" : ""}.`);
   switch (s.name) {
+    case "Blow": {
+      const dx=Math.sign(m!.x-p.x), dy=dx===0 ? Math.sign(m!.y-p.y) : 0;
+      for (let n=0;n<10;n++) { const x=m!.x+dx,y=m!.y+dy; if (g.tiles[y]?.[x]!==0 || g.monsters.some(a=>a.id!==m!.id && a.x===x && a.y===y) || g.chests?.some(c=>!c.opened && c.x===x && c.y===y)) { hurt(g,m!,5,"Collision"); break; } m!.x=x; m!.y=y; }
+      g.combat=undefined; g.encounter=undefined; break;
+    }
+    case "Study": addXP(g,10); checkLevel(g); break;
+    case "Mana Drain": hurt(g,p,1,"Mana Drain"); if (p.hp>0) p.stats.Mana=Math.min(manaCap(p),p.stats.Mana+2); break;
+    case "Nightmare": m!.effects.Curse=[5,3]; break;
+    case "Life Drain": hurt(g,m!,20,"Magic"); heal(p,20); break;
+    case "Dark Summon": {
+      summon(g,true);
+      if (random(g)<0.35) { const summoned=g.monsters.at(-1)!; const rare=makeMonster(g,pick(g,["Dark Hero","Shadow","Gremlin","Robot"]),Math.max(1,g.floor+1)); Object.assign(rare,{x:summoned.x,y:summoned.y}); g.monsters[g.monsters.length-1]=rare; }
+      break;
+    }
+    case "Pick": {
+      const chest=g.chests?.find(c=>!c.opened && Math.abs(c.x-p.x)+Math.abs(c.y-p.y)<=1);
+      const door=g.secretDoors?.find(d=>!d.unlocked && Math.abs(d.x-p.x)+Math.abs(d.y-p.y)<=1);
+      if (chest) { chest.locked=false; openChest(g,chest.id); }
+      else if (door && p.stats.Magic>=60) { door.unlocked=true; enterSecret(g,door); }
+      else throw Error("Stand beside a chest, or have 60 Magic for a secret door.");
+      break;
+    }
     case "Gild": {
       const gold = 1 + roll(g, 6);
       p.gold = (p.gold || 0) + gold;
@@ -1142,7 +1314,7 @@ function performSpell(g: Game, s: (typeof spells)[number], m: Actor | undefined,
       break;
     }
     case "Mana Expansion":
-      p.maxMana = manaCap(p) + 2;
+      p.maxMana = (p.maxMana || 10) + 2;
       p.stats.Mana = Math.min(manaCap(p), p.stats.Mana + 2);
       log(g, `Maximum mana is now ${p.maxMana}.`);
       break;
@@ -1184,7 +1356,8 @@ function performSpell(g: Game, s: (typeof spells)[number], m: Actor | undefined,
           break;
         }
         case "Teleport":
-          Object.assign(p, position(g));
+          Object.assign(p, teleportPosition(g));
+          g.inSecret = p.x >= 33 ? g.secretDoors?.find(d=>d.roomMade)?.id : undefined;
           g.pendingLoot = undefined;
           g.pendingChest = undefined;
           g.pendingDoor = undefined;
@@ -1240,7 +1413,7 @@ function performSpell(g: Game, s: (typeof spells)[number], m: Actor | undefined,
 
 function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
   const p = g.player,
-    m = g.monsters.find((m) => m.id === g.combat);
+    m = g.monsters.find((m) => m.id === (targetId || g.combat)) || (i.kind === "projectile" ? g.monsters.find(m => !m.npc && !m.merchant && actorDistance(m,p) === 1) : undefined);
   if (
     g.combat &&
     ["stat", "nuke", "shield", "vision", "sight", "hand", "bag", "anvil", "blade-shard"].includes(
@@ -1265,7 +1438,46 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
     log(g, "Equipped " + i.name);
     return;
   }
+  const passive = ["mana-link", "golden-apple", "diamond-apple", "thief-gloves", "mana-leech", "energy-belt", "energy-armor", "ghost-boots", "lucky-amulet", "lucky-necklace", "golden-gauntlet", "silver-gauntlet", "mana-battery", "immunity"];
+  if (passive.includes(i.kind)) throw Error("Active while carried; no use action needed.");
   switch (i.kind) {
+    case "stair-key": g.keys++; break;
+    case "sand": case "sandstorm": case "sand-bag": case "quicksand": {
+      const target = m || g.monsters.find(a => !a.npc && !a.merchant && Math.abs(a.x-p.x)+Math.abs(a.y-p.y) === 1);
+      if (!target) throw Error("Choose an adjacent enemy.");
+      const stat = ["sand", "sandstorm"].includes(i.kind) ? "Accuracy" : "Speed";
+      target.effects[stat + " Penalty"] = [["sandstorm", "quicksand"].includes(i.kind) ? 1000000 : 5, i.value];
+      log(g, `${target.name}: ${stat} reduced by ${i.value}%${["sandstorm", "quicksand"].includes(i.kind) ? " permanently" : " for 5 turns"}.`);
+      break;
+    }
+    case "energy-potion": {
+      const healthGap = p.stats.Health-p.hp, manaGap = manaCap(p)-p.stats.Mana;
+      if (healthGap >= manaGap) heal(p, 5); else p.stats.Mana = Math.min(manaCap(p), p.stats.Mana+5);
+      break;
+    }
+    case "alchemy-nuke": g.loot = g.loot.map(l => ({ ...l, item: transmute(g, l.item) })); log(g, "Every item on this floor was transmuted!"); break;
+    case "decoy": Object.assign(i, makeItem(g, "Piece of Trash"), { id: i.id }); log(g, "It was a decoy! It crumbles into trash."); return;
+    case "escape-pod": {
+      const villager = g.monsters.find(a => a.merchant && Math.abs(a.x-p.x)+Math.abs(a.y-p.y) === 1);
+      if (!villager) throw Error("Stand beside a villager to rescue them.");
+      log(g, `${villager.name}: “Thank you! I am finally going home. Take this!”`);
+      if (random(g)<0.3) p.gold = (p.gold || 0)+25+roll(g, 51);
+      else g.loot.push({ x:p.x, y:p.y, item: chestReward(g, true) });
+      if (villager.key) { g.keys++; log(g, "The rescued villager gave you the Stair Key."); }
+      g.monsters = g.monsters.filter(a => a.id !== villager.id); if (g.combat === villager.id) g.combat = undefined;
+      addXP(g, 30); checkLevel(g); achievement(g, "Dungeon Liberator", 150); break;
+    }
+    case "critical-diamond": p.effects["Critical Star"] = [5, 1]; break;
+    case "quickfoot": p.effects.Quickfoot = [1, 1]; break;
+    case "mana-stream": if ((p.gold || 0)<10) throw Error("Need 10 gold."); p.gold! -= 10; p.maxMana = (p.maxMana || 10)+1; return;
+    case "mana-pool": p.maxMana = (p.maxMana || 10)+i.value; break;
+    case "mana-pot": if (!(p.gold || 0) || p.stats.Mana>=manaCap(p)) throw Error("Need 1 gold and room for mana."); p.gold!--; p.stats.Mana++; return;
+    case "mixing-potion": {
+      const [lose, gain] = (chosenSpell || "").split(":");
+      const valid = ["Health", "Power", "Speed", "Luck", "Magic", "Accuracy", "Armor"];
+      if (!valid.includes(lose) || !valid.includes(gain) || lose===gain || (p.stats[lose] || 0)<3 || (lose==="Health" && p.stats.Health<=3)) throw Error("Choose different stats: lose 3 and gain 3.");
+      p.stats[lose]-=3; p.stats[gain]=(p.stats[gain] || 0)+3; p.hp=Math.min(p.hp,p.stats.Health); break;
+    }
     case "jewel": case "crown": {
       const cost = i.kind === "jewel" ? 5 : 10;
       if ((p.gold || 0) < cost) throw Error(`Need ${cost} gold.`);
@@ -1349,7 +1561,7 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       break;
     }
     case "anvil": {
-      const target = g.inventory.find((weapon) => weapon.id === targetId);
+      const target = [...g.inventory, ...p.weapons].find((weapon) => weapon.id === targetId);
       const nextName = target && nextWeaponName(target);
       if (!target || !nextName) throw Error("Choose an upgradeable weapon in your bag.");
       const upgraded = makeItem(g, nextName);
@@ -1367,7 +1579,7 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
     case "cursed-candy":
       addXP(g, 100); checkLevel(g); applyCurse(g, 12, 3, i.name); break;
     case "cursed-potion":
-      p.hp = p.stats.Health; applyCurse(g, 12, 3, i.name); break;
+      heal(p, p.stats.Health); applyCurse(g, 12, 3, i.name); break;
     case "cursed-gold":
       p.gold = (p.gold || 0) + 10; applyCurse(g, 12, 3, i.name); break;
     case "critical-star":
@@ -1376,7 +1588,7 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       p.effects["Speedy Boots"] = [1, 99]; break;
     case "health-pot":
       if (!(p.gold || 0) || p.hp >= p.stats.Health) throw Error("Need one gold and room to heal.");
-      p.gold!--; heal(p, 1); return;
+      p.gold!--; heal(p, 2); return;
     case "health-drain":
       if (p.hp <= 1 || p.stats.Mana >= manaCap(p)) throw Error("Need health and room for mana.");
       p.hp--; p.stats.Mana++; return;
@@ -1393,6 +1605,10 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       if (!m || m.boss) throw Error("Choose an ordinary enemy to cleanse.");
       const changed = random(g) < 0.05 ? makeChief(g) : makeVillager(g);
       Object.assign(changed, { x: m.x, y: m.y });
+      if (m.key) {
+        if (changed.npc) { g.keys++; log(g, "Transformation granted you the Stair Key!"); }
+        else { changed.key = true; changed.merchant!.stock.push({item:makeItem(g,"Stair Key"),price:5}); log(g,"The transformed villager offers the Stair Key for 5 gold."); }
+      }
       g.monsters = g.monsters.map((actor) => actor.id === m.id ? changed : actor);
       g.combat = undefined;
       g.encounter = undefined;
@@ -1477,6 +1693,7 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
     case "bad-candy": {
       if (!m) throw Error("Choose an enemy target.");
       const lost = Math.min(m.level - 1, 1 + roll(g, 5));
+      if (!lost) { for (const stat of ["Health", "Power", "Speed", "Accuracy", "Magic"]) m.stats[stat] *= 0.7; log(g, `${m.name} is weakened by Bad Candy.`); }
       m.level -= lost;
       const scale = Math.max(0.3, (m.level + 1) / (m.level + lost + 1));
       for (const stat of ["Health", "Power", "Speed", "Accuracy", "Magic"])
@@ -1486,7 +1703,7 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       break;
     }
     case "super-potion":
-      p.hp = p.stats.Health; p.stats.Mana = manaCap(p);
+      heal(p, p.stats.Health); p.stats.Mana = manaCap(p);
       break;
     case "item-magnet": {
       const spots = g.tiles.flatMap((row, y) => row.map((tile, x) => ({ tile, x, y })))
@@ -1497,10 +1714,12 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       break;
     }
     case "energy-magnet": {
+      const multiplier = g.inventory.some(i=>i.kind==="energy-armor") ? 2 : 1;
       const pod = g.pods.shift();
       if (!pod) throw Error("No energy pod remains on this floor.");
-      if (p.hp < p.stats.Health) heal(p, pod.max ? p.stats.Health : p.stats.Health / 4 + 1);
-      else p.stats.Mana = Math.min(manaCap(p), p.stats.Mana + (pod.max ? 10 : 3));
+      if (g.inventory.some(i=>i.kind==="energy-belt")) { heal(p,(pod.max ? p.stats.Health : p.stats.Health/4+1)*multiplier); p.stats.Mana=Math.min(manaCap(p),p.stats.Mana+(pod.max ? 10 : 3)*multiplier); }
+      else if (p.hp < p.stats.Health) heal(p, (pod.max ? p.stats.Health : p.stats.Health / 4 + 1)*multiplier);
+      else p.stats.Mana = Math.min(manaCap(p), p.stats.Mana + (pod.max ? 10 : 3)*multiplier);
       log(g, "An energy pod rushed to you.");
       return;
     }
@@ -1514,7 +1733,7 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       }
       break;
     case "poison-potion":
-      if (random(g) < 0.6) p.hp = p.stats.Health;
+      if (random(g) < 0.6) heal(p, p.stats.Health);
       else hurt(g, p, 5, "Potion");
       break;
     case "mana-gem": case "mana-diamond": case "mana-pod": case "magic-scales": case "invisibility": case "charm": case "infinite-bag": case "gentle-grip": case "sharpening-stone": case "skill-book":
@@ -1556,7 +1775,7 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       heal(p, i.value);
       break;
     case "mana":
-      p.stats.Mana = manaCap(p);
+      p.stats.Mana = Math.min(manaCap(p), p.stats.Mana+i.value);
       break;
     case "antidote":
       delete p.effects.Poison;
@@ -1628,7 +1847,8 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       else hurt(g, p, p.hp, "Nuke");
       break;
     case "teleport":
-      Object.assign(p, position(g));
+      Object.assign(p, teleportPosition(g));
+          g.inSecret = p.x >= 33 ? g.secretDoors?.find(d=>d.roomMade)?.id : undefined;
       g.pendingLoot = undefined;
       g.pendingChest = undefined;
       g.pendingDoor = undefined;
@@ -1678,7 +1898,7 @@ function collectFloorGold(g: Game) {
   }
   log(g, `Collected ${amount} gold.`);
 }
-function triggerTrap(g: Game) {
+export function triggerTrap(g: Game) {
   const p = g.player;
   const trap = g.traps?.find((trap) => trap.x === p.x && trap.y === p.y);
   if (!trap) return;
@@ -1774,6 +1994,7 @@ export function act(input: Game, a: Action): Game {
         g.combat = encounter;
       }
       else g.inventory.push(item);
+      if (item.kind === "stair-key") m.key = false;
       g.marketNotice = `Bought ${item.name}.`;
       log(g, g.marketNotice);
       break;
@@ -1862,10 +2083,10 @@ export function act(input: Game, a: Action): Game {
         break;
       }
       const chest = g.chests?.find((c) => !c.opened && c.x === x && c.y === y);
-      if (g.tiles[y]?.[x] !== 0) break;
+      if (g.tiles[y]?.[x] !== 0 && !(g.inventory.some(i => i.kind === "ghost-boots") && y>=0 && y<g.tiles.length && x>=0 && x<g.tiles[y].length)) break;
       g.pendingChest = undefined;
       g.pendingDoor = undefined;
-      const enemy = g.monsters.find((m) => m.x === x && m.y === y);
+      const enemy = g.monsters.find((m) => actorOccupies(m,x,y));
       if (enemy) {
         g.combat = enemy.id;
         g.encounter = {
@@ -1876,10 +2097,12 @@ export function act(input: Game, a: Action): Game {
         };
         rememberVillager(g, enemy);
         log(g, `Encountered ${enemy.name}.`);
+        if (enemy.className === "Dark Hero") log(g, `${enemy.name}: “...”`);
         break;
       }
       p.x = x;
       p.y = y;
+      tickPenalties(p);
       if (chest) {
         g.pendingChest = chest.id;
         log(g, "A chest. Open it or leave it and continue walking.");
@@ -1890,20 +2113,24 @@ export function act(input: Game, a: Action): Game {
       if (p.hp <= 0) break;
       const pod = g.pods.find((i) => i.x === x && i.y === y);
       if (pod) {
+        const multiplier=g.inventory.some(i=>i.kind==="energy-armor") ? 2 : 1;
+        const both=g.inventory.some(i=>i.kind==="energy-belt");
         const magic =
           [...g.inventory, ...p.weapons].some((i) => i.kind === "tome") &&
           ((random(g) > 0.5 && p.stats.Mana !== p.stats.Magic) ||
             p.hp === p.stats.Health);
-        if (magic && p.stats.Mana < manaCap(p)) {
-          p.stats.Mana = Math.min(manaCap(p), p.stats.Mana + (pod.max ? 10 : 3));
+        if (both && (p.hp<p.stats.Health || p.stats.Mana<manaCap(p))) {
+          heal(p,(pod.max ? p.stats.Health : p.stats.Health/4+1)*multiplier); p.stats.Mana=Math.min(manaCap(p),p.stats.Mana+(pod.max ? 10 : 3)*multiplier); g.pods=g.pods.filter(a=>a!==pod); log(g,"Energy Belt restored health and mana.");
+        } else if (magic && p.stats.Mana < manaCap(p)) {
+          p.stats.Mana = Math.min(manaCap(p), p.stats.Mana + (pod.max ? 10 : 3)*multiplier);
           g.pods = g.pods.filter((i) => i !== pod);
           log(g, "Mana pod restored your mana.");
         } else if (!magic && p.hp < p.stats.Health) {
-          heal(p, pod.max ? p.stats.Health : p.stats.Health / 4 + 1);
+          heal(p, (pod.max ? p.stats.Health : p.stats.Health / 4 + 1)*multiplier);
           g.pods = g.pods.filter((i) => i !== pod);
           log(g, "Health pod restored your health.");
         } else {
-          log(g, "ENERGY FULL: No energy restored. This pod remains here for later.");
+          log(g, `${magic ? "MANA" : "HEALTH"} FULL: No energy restored. This pod remains here for later.`);
         }
       }
       collectFloorGold(g);
@@ -2050,9 +2277,7 @@ export function act(input: Game, a: Action): Game {
       g.pendingLoot = undefined;
       break;
     case "wait":
-      if (m) throw Error("Finish combat first.");
-      monsterTurn(g);
-      break;
+      throw Error("Waiting is unavailable. Move or choose an action.");
     case "attack": {
       if (!m) throw Error("No enemy");
       const beforeHP = p.hp,
@@ -2067,7 +2292,8 @@ export function act(input: Game, a: Action): Game {
       g.encounter.exchanges++;
       if (m.npc || m.merchant)
         log(g, m.name + ": It did not have to end this way…");
-      const first = attackInitiative(p) >= m.stats.Speed;
+      const first = !!p.effects.Quickfoot || (!m.effects.Quickfoot && attackInitiative(p) >= m.stats.Speed);
+      delete p.effects.Quickfoot; delete m.effects.Quickfoot;
       if (first) strike(g, p, m, a.unarmed);
       if (m.hp > 0 && p.hp > 0) strike(g, m, p);
       if (!first && p.hp > 0 && m.hp > 0) strike(g, p, m, a.unarmed);
@@ -2087,7 +2313,8 @@ export function act(input: Game, a: Action): Game {
           ...g.encounter,
           engaged: true,
         };
-        log(g, "Could not get away!");
+        g.encounter.result = "FLEE FAILED — the enemy attacks!";
+        log(g, "FLEE FAILED: Could not get away! The enemy attacks!");
         strike(g, m, p);
       }
       break;
@@ -2107,10 +2334,10 @@ export function act(input: Game, a: Action): Game {
     case "drop": {
       const i = g.inventory.find((i) => i.id === a.id);
       if (!i) throw Error("Item not found");
-      if (i.kind === "infinite-bag" && g.inventory.length - 1 + Number(p.weapons.length > 0) > g.capacity)
-        throw Error("Bag too full to drop the Infinite Bag.");
+      if (i.kind === "infinite-bag") { g.inventory = []; p.weapons = []; log(g, "Losing the Infinite Bag destroyed all your items!"); }
       g.inventory = g.inventory.filter((i) => i.id !== a.id);
       g.loot.push({ x: p.x, y: p.y, item: i });
+      if (i.kind === "ghost-boots" && g.tiles[p.y]?.[p.x] !== 0) hurt(g, p, p.hp, "Entombed");
       break;
     }
     case "unequip": {
@@ -2297,6 +2524,8 @@ export function act(input: Game, a: Action): Game {
       throw Error("Unknown action");
   }
   collectFloorGold(g);
+  if (input.inventory.some(i=>i.kind==="infinite-bag") && !g.inventory.some(i=>i.kind==="infinite-bag")) { g.inventory=[]; p.weapons=[]; log(g,"Losing the Infinite Bag destroyed all your items!"); }
+  if (input.inventory.some(i=>i.kind==="ghost-boots") && !g.inventory.some(i=>i.kind==="ghost-boots") && g.tiles[p.y]?.[p.x]!==0 && p.hp>0) hurt(g,p,p.hp,"Entombed");
   syncPassiveStats(g);
   return g;
 }

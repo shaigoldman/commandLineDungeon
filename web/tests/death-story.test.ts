@@ -33,7 +33,7 @@ describe("final journey context", () => {
     expect(deathStory(poisoned).cause).toContain("Snake");
     expect(deathStory(poisoned).flavor).toContain("green stain");
     let cursed = arena(); cursed.player.effects.Curse = [2, 3]; cursed.player.curseSource = "Ghost";
-    cursed = act(cursed, { type: "wait" });
+    cursed = act(cursed, { type: "move", dx: 0, dy: -1 });
     expect(cursed.death?.source).toBe("Curse");
     expect(deathStory(cursed).cause).toContain("Ghost");
   });

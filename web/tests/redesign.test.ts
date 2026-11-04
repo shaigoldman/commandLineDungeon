@@ -49,7 +49,7 @@ describe("requested interaction redesign", () => {
     expect(a.monsters[0].hp).toBe(27.812345);
     expect(a.player.hp).toBe(9.75);
     expect(a.log.some((s) => s.includes("damage"))).toBe(false);
-    expect(act(a, { type: "wait" }).monsters[0].hp).toBe(27.812345);
+    expect(act(a, { type: "move", dx: 0, dy: -1 }).monsters[0].hp).toBe(27.812345);
   });
   it("throws a reachable floor projectile at an adjacent enemy without taking inventory space", () => {
     const g = arena(),
@@ -162,7 +162,7 @@ describe("requested interaction redesign", () => {
     );
   });
   it("rounds display values without changing real values and cycles distinct themes", () => {
-    expect(displayNumber(12.345678)).toBe("12.3");
+    expect(displayNumber(12.345678)).toBe("12");
     expect(displayNumber(10)).toBe("10");
     expect(new Set([0, 1, 2, 3].map((f) => floorTheme(f).name)).size).toBe(4);
     expect(floorTheme(4)).toEqual(floorTheme(0));
