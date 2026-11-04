@@ -813,7 +813,7 @@ export function PlayScreen({
             ) : enemy.merchant || enemy.className === "Ghost" ? (
               <img
                 className="chief-hud"
-                src={worldArt(enemy.className).toDataURL()}
+                src={worldArt(enemy.className, 2, enemy.name).toDataURL()}
                 alt={enemy.className}
               />
             ) : enemy.npc ? (
@@ -903,7 +903,7 @@ export function PlayScreen({
                 enemy.merchant ? "Villager" : enemy.npc!.tribe + " chieftain"
               }
               src={(enemy.merchant
-                ? worldArt(enemy.className, 3)
+                ? worldArt(enemy.className, 3, enemy.name)
                 : enemy.npc!.tribe === "Emperor"
                   ? worldArt("Emperor", 3)
                   : sprite("Chieftan", 3, enemy.npc!.tribe)

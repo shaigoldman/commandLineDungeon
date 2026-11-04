@@ -21,7 +21,7 @@ export function MerchantPanel({
     <>
       <img
         className="chief-modal-art"
-        src={worldArt(m.className, 4).toDataURL()}
+        src={worldArt(m.className, 4, m.name).toDataURL()}
         alt={m.className}
       />
       <h2>{m.name}</h2>

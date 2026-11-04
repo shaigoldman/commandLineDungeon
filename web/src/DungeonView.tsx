@@ -663,12 +663,21 @@ export function DungeonView({
                   : a.className === "Over9000"
                     ? "Warrior"
                     : a.className;
+              let merchantTexture = textures[a.className];
+              if (a.merchant && !a.merchant.king) {
+                const key = "villager-" + a.name;
+                if (!textures[key]) {
+                  textures[key] = Texture.from(worldArt(a.className, 2, a.name));
+                  textures[key].source.scaleMode = "nearest";
+                }
+                merchantTexture = textures[key];
+              }
               const s = new Sprite(
                 a.id === "player"
                   ? textures["hero-" + a.className + "-idle"] ||
                     textures["hero-Warrior-idle"]
                   : a.merchant
-                    ? textures[a.className]
+                    ? merchantTexture
                     : a.npc?.tribe === "Emperor"
                       ? textures.Emperor
                       : a.npc
@@ -682,17 +691,8 @@ export function DungeonView({
               }
               if (a.className === "Dark Hero") s.tint=0x685478;
               if (a.name.startsWith("Ergathon")) s.tint=0xa47fe6;
-              if (a.merchant && !a.merchant.king) { let hash=0; for (const ch of a.name) hash=(hash*31+ch.charCodeAt(0))>>>0; s.tint=[0xffd9a6,0xb3e1bf,0xd5b9ef,0xbad8f2,0xedb9b6][hash%5]; }
               s.y = y - 19;
               world.addChild(s);
-              if (a.merchant && !a.merchant.king) {
-                let hash=0;for(const ch of a.name) hash=(hash*31+ch.charCodeAt(0))>>>0;
-                const hat=new Graphics(); const color=[0xa96d62,0x7e9a62,0x8470af,0x6599aa][hash%4];
-                if(hash%3===0) hat.rect(x+12,y-13,24,5).rect(x+17,y-19,14,7);
-                else if(hash%3===1) hat.rect(x+15,y-15,18,4).rect(x+18,y-21,12,7);
-                else hat.rect(x+13,y-11,22,3).rect(x+17,y-16,15,5);
-                hat.fill(color);world.addChild(hat);
-              }
               if (a.burn) { const fire = new Text({text:`🔥 ${Math.round(a.burn[1])} × ${a.burn[0]}`,style:{fontSize:12,fill:0xffba5c,fontWeight:"bold"}}); fire.x=x;fire.y=y-32;world.addChild(fire); }
               const gear: { s: Sprite; dx: number; dy: number }[] = [];
               if (a.id === "player")
