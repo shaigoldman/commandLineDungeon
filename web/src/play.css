@@ -1249,7 +1249,6 @@ body.playing-game {
   }
 }
 @media (max-height: 500px) and (orientation: portrait) {
-  .encounter-swipe-hint { display: none; }
 }
 @media (max-height: 500px) and (orientation: landscape) {
   .actor-panels.has-enemy {

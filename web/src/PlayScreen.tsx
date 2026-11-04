@@ -1057,7 +1057,6 @@ export function PlayScreen({
                     {enemy && hitRate(p,enemy)<60 && <p className="kill-warning">{hitRate(p,enemy)<40 ? "⚠ Very low" : "⚠ Low"} hit chance: {n(hitRate(p,enemy))}%</p>}
                     {enemy?.burn && <p className="kill-warning">🔥 BURNING · {n(enemy.burn[1])} damage per action · {enemy.burn[0]} turns</p>}
                     {enemy?.className==="Dark Hero" && <p className="speech-bubble">...</p>}
-                    <small className="encounter-swipe-hint">Use the {encounterExit.type === "flee" ? "Flee" : "Leave encounter"} button to exit this encounter.</small>
                     {ground && (
                       <button
                         onClick={() =>
