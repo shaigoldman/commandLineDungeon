@@ -62,7 +62,7 @@ it("API persists gold, fixed merchant offers and room state; rejects forged pric
     saved.monsters = [];
     const d = addSecretDoor(saved, "king");
     Object.assign(saved.player, { x: 28, y: d.y });
-    saved.player.poisonImmune = true;
+    saved.inventory.push(makeItem(saved, "Poison Antibody"));
     await reopened.put(key, saved, saved.revision);
     const opened = await request(createApp(reopened))
       .post("/api/action")

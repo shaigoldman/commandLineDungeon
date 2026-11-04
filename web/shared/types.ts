@@ -29,6 +29,8 @@ export interface Actor {
   x: number;
   y: number;
   level: number;
+  inventory?: Item[];
+  heroClass?: string;
   poison?: [number, number];
   poisonSource?: string;
   curseSource?: string;
@@ -73,6 +75,8 @@ export interface Chest {
   ultra: boolean;
   opened: boolean;
   reward: Item;
+  kind?: string;
+  trapped?: boolean;
 }
 export interface SecretDoor {
   id: string;
@@ -120,7 +124,10 @@ export interface Game {
   pendingLoot?: Item;
   pendingLevels: number;
   status: "playing" | "dead" | "won";
-  death?: { source: string; attacker?: string; damage: number; floor: number; turn: number };
+  achievements?: { name: string; points: number }[];
+  levelBefore?: Stats;
+  kills?: number;
+  death?: { critical?: boolean; source: string; attacker?: string; damage: number; floor: number; turn: number };
   log: string[];
   logSerial?: number;
   chests?: Chest[];

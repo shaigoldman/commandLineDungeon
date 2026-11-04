@@ -1,6 +1,7 @@
 import { describe } from "../shared/catalog";
 import { useState } from "react";
 import type { Actor, Game, Action } from "../shared/types";
+import { saleQuote } from "../shared/expansion";
 import { fleeChance } from "../shared/engine";
 import { itemIcon } from "./item-art";
 import { worldArt } from "./world-art";
@@ -16,12 +17,6 @@ export function MerchantPanel({
   const shop = m.merchant!;
   const [chosen, setChosen] = useState("");
   const [tab, setTab] = useState<"buy" | "sell">("buy");
-  const id = g.inventory.some((i) => i.id === chosen)
-    ? chosen
-    : g.inventory[0]?.id;
-  const selected = g.inventory.find((i) => i.id === id),
-    quoted = id !== undefined && Object.hasOwn(shop.buyPrices, id),
-    price = id ? shop.buyPrices[id] : undefined;
   return (
     <>
       <img
@@ -76,40 +71,12 @@ export function MerchantPanel({
       ) : (
         <>
           <h3>Sell from your bag</h3>
-          {selected ? (
-            <>
-              <label>
-                Item to sell
-                <select
-                  aria-label="Item to sell"
-                  value={id}
-                  onChange={(e) => setChosen(e.target.value)}
-                >
-                  {g.inventory.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.name}
-                      {shop.wanted === i.name ? " ★ WANTED" : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="modal-actions">
-                <button onClick={() => void send({ type: "quote", id: id! })}>
-                  Ask for offer
-                </button>
-                {quoted && price !== null && (
-                  <button onClick={() => void send({ type: "sell", id: id! })}>
-                    Sell for {price} gold
-                  </button>
-                )}
-              </div>
-              {quoted && price === null && <p>{shop.refusal}</p>}
-            </>
-          ) : (
-            <p>
-              Your bag is empty. Unequip a weapon first if you want to sell it.
-            </p>
-          )}
+          <p>Select an item and review its offer before selling.</p>
+          <div className="market-stock">{g.inventory.map(item=>{
+            const offer=saleQuote(structuredClone(m),item);
+            return <div className="market-offer" key={item.id}><img src={itemIcon(item)} alt=""/><span><b>{item.name}</b><small>{describe(item)}</small><em>{offer===null ? "Not buying this item" : `${offer} gold`}</em></span><button disabled={offer===null} onClick={()=>setChosen(item.id)}>{chosen===item.id ? "Selected" : "Review sale"}</button>{chosen===item.id && offer!==null && <button onClick={()=>{void send({type:"sell",id:item.id});setChosen("");}}>Sell for {offer} gold</button>}</div>;
+          })}</div>
+          {!g.inventory.length && <p>Your bag is empty.</p>}
         </>
       )}
       {g.marketNotice && (

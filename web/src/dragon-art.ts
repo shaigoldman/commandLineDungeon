@@ -1,5 +1,5 @@
 /** Original two-tile, red serpentine dragon with gold whiskers and batlike wings. */
-export function dragonArt(scale = 2) {
+export function dragonArt(scale = 2, green = false) {
   const c = document.createElement("canvas");
   c.width = 48 * scale;
   c.height = 32 * scale;
@@ -11,9 +11,9 @@ export function dragonArt(scale = 2) {
     ctx.fillRect(x, y, w, h);
   };
   const ink = "#1e2333",
-    red = "#ba4453",
-    bright = "#ec7861",
-    shade = "#762d43",
+    red = green ? "#4a9d61" : "#ba4453",
+    bright = green ? "#8bd47b" : "#ec7861",
+    shade = green ? "#285a45" : "#762d43",
     gold = "#e4bb6b",
     cream = "#ffe5a3";
   // High swept wings, deliberately wider than the serpentine torso.

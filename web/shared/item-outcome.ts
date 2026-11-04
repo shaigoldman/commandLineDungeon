@@ -7,7 +7,7 @@ export function itemOutcome(before: Game, after: Game, item: Item, entries: stri
   const reward = [...after.inventory, ...after.loot.map((loot) => loot.item)].find((entry) => !known.has(entry.id) && entry.kind !== "gold");
   const changes: string[] = [];
   const delta = (label: string, amount: number) => {
-    if (amount) changes.push(`${label} ${amount > 0 ? "+" : "−"}${Math.abs(Math.round(amount * 10) / 10)}`);
+    if (amount) changes.push(`${label} ${amount > 0 ? "+" : "−"}${Math.abs(Math.round(amount))}`);
   };
   delta("HP", after.player.hp - before.player.hp);
   delta("MP", after.player.stats.Mana - before.player.stats.Mana);

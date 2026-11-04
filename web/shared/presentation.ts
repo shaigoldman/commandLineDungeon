@@ -10,8 +10,8 @@ import {
 } from "./engine";
 export const displayNumber = (n: number) =>
   Number.isFinite(n)
-    ? (Math.round(n * 10) / 10).toLocaleString("en-US", {
-        maximumFractionDigits: 1,
+    ? Math.round(n).toLocaleString("en-US", {
+        maximumFractionDigits: 0,
       })
     : "—";
 export function swipeDirection(dx: number, dy: number, threshold = 24) {

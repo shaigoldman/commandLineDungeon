@@ -1,6 +1,7 @@
 /** Reproducible headless playthroughs plus targeted game-state probes. No server/save data is touched. */
 import {
   newGame,
+  manaCap,
   act,
   availableSpells,
   makeItem,
@@ -21,14 +22,14 @@ export function violations(g: Game): string[] {
     errors.push("invalid-player-health-bounds");
   if (!Number.isInteger(p.gold || 0) || (p.gold || 0) < 0)
     errors.push("invalid-gold-purse");
-  if (p.stats.Mana < 0 || p.stats.Mana > (p.maxMana || 10)) errors.push("invalid-mana");
+  if (p.stats.Mana < 0 || p.stats.Mana > manaCap(p)) errors.push("invalid-mana");
   if (g.monsters.some((m) => m.hp <= 0)) errors.push("unremoved-dead-monster");
   if (
     actors.some(
       (a) =>
         !Number.isInteger(a.x) ||
         !Number.isInteger(a.y) ||
-        g.tiles[a.y]?.[a.x] !== 0,
+        (g.tiles[a.y]?.[a.x] !== 0 && a.className !== "Ghost" && !(a.id === "player" && g.inventory.some(i=>i.kind==="ghost-boots"))),
     )
   )
     errors.push("invalid-actor-position");
@@ -382,7 +383,7 @@ export function simulate(
               }
             }
           }
-          a ??= { type: "wait" };
+          a ??= { type: "move", dx: 0, dy: -1 };
           report.coverage[a.type] = (report.coverage[a.type] || 0) + 1;
           report.actions++;
           const input = g;
@@ -455,7 +456,7 @@ export function simulate(
   probe(
     "zero-health-after-rounding",
     g,
-    { type: "wait" },
+    { type: "move", dx: 0, dy: -1 },
     (n) => n.status === "dead" || n.player.hp > 0,
   );
   g = newGame("Probe", "Knight", "Wind", 0, 7);
@@ -488,7 +489,7 @@ export function simulate(
   const monster = g.monsters[0];
   monster.hp = 0.3;
   g.monsters = [monster];
-  probe("rounded-monster-corpse", g, { type: "wait" }, (n) =>
+  probe("rounded-monster-corpse", g, { type: "move", dx: 0, dy: -1 }, (n) =>
     n.monsters.every((m) => m.hp > 0),
   );
   g = newGame("Probe", "Mage", "Wind", 0, 7);

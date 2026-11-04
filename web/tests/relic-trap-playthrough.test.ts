@@ -21,7 +21,7 @@ describe("new relic and trap playthroughs", () => {
     g.pods = [{ x: 11, y: 7, max: false }];
     g = act(g, { type: "move", dx: 1, dy: 0 });
     expect(g.pods).toHaveLength(1);
-    expect(g.log.at(-1)).toContain("ENERGY FULL:");
+    expect(g.log.at(-1)).toContain("HEALTH FULL:");
     expect(g.player.hp).toBe(100);
   });
   it("charges jewels and crowns their rolled gold price for the chosen permanent stat", () => {

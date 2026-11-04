@@ -1,0 +1,33 @@
+# Teeny Dungeon expansion
+
+The shared engine powers browser saves and the offline Android game. Existing saves remain readable; additional inventory, chest, death, and achievement fields are optional.
+
+## Combat and controls
+
+Spells open inspections, including spells whose mana or Magic requirements are not yet met. Heal works in combat. Encounters show levels, expected EXP, normal and critical damage, low hit warnings below 60% and 40%, and burn status. Missing, enemy attacks, curses, and failed escapes receive explicit feedback. Flee requires its button; movement gestures cannot flee. Waiting is rejected.
+
+The HUD includes a yellow animated EXP bar below mana. Level-up reviews show the reached level and each stat before and after growth. Bag menus show free capacity or FULL, allow using an item to free space, and separate repeated use from discarding. Floor auto-use presents one use action. Selling offers a visual list, fixed offers, and a review step.
+
+Death fades from transparent over the dungeon, retains a translucent background, identifies fatal critical hits, and shows a skull, score, high score, and run achievements. Victory offers an explicit continuation into deeper floors. Mage map art follows the portrait; named villagers have deterministic outfit colors and hats.
+
+## Creatures and exploration
+
+Wild Villagers start with 0–2 items; Dark Heroes start with 0–5 and an adventurer class. These creatures have a 10% pickup chance when stepping on loot and a 2% drop chance on an empty square. Gremlins have a 25% chance to steal an item on a damaging hit. Item users have a 25% chance to attempt a random bag item instead of moving. Equipped staves can cast applicable spells. Held items drop at death.
+
+Dark Heroes resemble a darkened adventurer and greet you with “...”. Ergathon is always a distinctively colored golem. Ordinary green two-tile dragons roam deeper floors and inflict burn on damaging hits. Ghosts cross walls within the board. Shadows can teleport instead of moving; teleportation can reach hidden rooms. Secret rooms can contain rare enemies.
+
+Traps have individual mechanisms and colors. Chests include Standard, Steel, Sapphire, Ruby, Gold, Obsidian, and rarer Amethyst variants, with themed reward pools. Trapped chests share their outward appearance and spring a trap when opened.
+
+## New loot and magic
+
+The catalog adds Sand, Tiny Mana Potion, Energy Potion, Sandstorm Wand, Sand Bag, Quicksand Wand, Mana Link, Alchemy Nuke, Decoy, Escape Pod, Critical Diamond, Mana Stream, Mana Pool, Mana Spring, Mana Pot, Golden Apple, Diamond Apple, Thief’s Gloves, Mana Leech, Energy Belt, Energy Armor, Quickfoot Boots, Ghost Boots, Lucky Amulet, Lucky Necklace, Golden Gauntlet, Silver Gauntlet, Mana Battery, Mixing Potion, and Bloodthirsty Dagger.
+
+Advanced staves are loot, rather than starting Mage choices or Magic Wand results. Emerald, Sapphire, and Ruby staves grant +5 Magic. Dark Staff grants +5, and Onyx Staff and Elemental Staff grant +10. Elemental Staff exposes the basic spell families. Dark spells are Mana Drain, Nightmare, Life Drain, Dark Summon, and Pick. Wind gains Blow; Water gains Study, which grants EXP. Anvils upgrade carried or equipped weapons, shields, and applicable staves.
+
+Health Pot heals 2 HP for 1 gold. Poison Antibody protects while carried. Losing an Infinite Bag destroys all belongings. Bad Candy weakens level-one enemies as well as lowering stronger enemies’ levels. Cleansing a stair-key carrier preserves access to that key through a villager’s shop or an immediate chieftain transformation reward.
+
+Energy Potion restores health or mana according to the larger missing amount. This interprets “magic or mana” as the two replenishable resources. The new Water EXP spell is named Study; the purple gemstone chest is Amethyst.
+
+## Verification
+
+`npm test` covers engine rules, saves, APIs, source mechanics, art, and seeded simulations. `npm run test:python` verifies the preserved original game. Production browser checks exercise persistent saves and recovery. `npm run test:android:browser` exercises the current phone interaction contract at five viewport sizes and captures README screenshots. The Android web bundle and production web/server bundle both typecheck and build.

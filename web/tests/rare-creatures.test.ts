@@ -86,7 +86,7 @@ describe("rare creatures and keyless magic", () => {
     g = act(g, { type: "attack" });
     expect(g.xp).toBeGreaterThan(0); expect(g.player.effects.Curse).toBeDefined();
     expect(g.haunting).toHaveLength(1);
-    for (let n = 0; n < 5; n++) g = act(g, { type: "wait" });
+    for (let n = 0; n < 5; n++) g = act(g, { type: "move", dx: 0, dy: -1 });
     expect(g.monsters.some((m) => m.className === "Ghost")).toBe(true);
   });
   it("makes shadows hard to flee, move twice, ambush and harm NPCs", () => {
@@ -95,7 +95,7 @@ describe("rare creatures and keyless magic", () => {
     let doubleMove = false;
     for (let seed = 1; seed <= 100; seed++) {
       const trial = structuredClone(g); trial.seed = seed;
-      const after = act(trial, { type: "wait" });
+      const after = act(trial, { type: "move", dx: 0, dy: -1 });
       if (Math.abs(after.monsters[0].x - 12) + Math.abs(after.monsters[0].y - 7) === 2) doubleMove = true;
     }
     expect(doubleMove).toBe(true);
@@ -103,9 +103,9 @@ describe("rare creatures and keyless magic", () => {
     for (let seed = 1; seed <= 100; seed++) {
       const trial = structuredClone(g); trial.seed = seed; trial.turn = 1;
       trial.player.stats.Speed = 1;
-      const after = act(trial, { type: "wait" });
+      const after = act(trial, { type: "move", dx: 0, dy: -1 });
       const distance = Math.abs(after.monsters[0].x - 12) + Math.abs(after.monsters[0].y - 7);
-      expect(distance).toBeLessThanOrEqual(2);
+      expect(distance <= 2 || after.log.some(l=>l.includes("teleports"))).toBe(true);
       if (distance > 0) evenMove = true;
     }
     expect(evenMove).toBe(true);
@@ -114,7 +114,7 @@ describe("rare creatures and keyless magic", () => {
       const trial = arena(seed); const attacker = target(trial, "Shadow", 6, 7);
       trial.combat = undefined; attacker.stats.Accuracy = 1000; attacker.stats.Power = 10;
       const villager = makeVillager(trial); Object.assign(villager, { x: 7, y: 7 }); trial.monsters.push(villager);
-      const after = act(trial, { type: "wait" });
+      const after = act(trial, { type: "move", dx: 0, dy: -1 });
       struck = after.log.some((line) => line.includes("Shadow attacks")) && !after.player.effects.Curse;
     }
     expect(struck).toBe(true);
@@ -123,7 +123,7 @@ describe("rare creatures and keyless magic", () => {
       const trial = arena(seed); const attacker = target(trial, "Shadow", 6, 7);
       trial.combat = undefined; attacker.stats.Accuracy = 1000;
       const chief = makeChief(trial); Object.assign(chief, { x: 7, y: 7 }); trial.monsters.push(chief);
-      struckChief = act(trial, { type: "wait" }).log.some((line) => line.includes("Shadow attacks " + chief.name));
+      struckChief = act(trial, { type: "move", dx: 0, dy: -1 }).log.some((line) => line.includes("Shadow attacks " + chief.name));
     }
     expect(struckChief).toBe(true);
     const approaches = (type: string) => {
@@ -131,7 +131,7 @@ describe("rare creatures and keyless magic", () => {
       for (let seed = 1; seed <= 300; seed++) {
         const trial = arena(seed); target(trial, type, 6, 7); trial.combat = undefined;
         trial.player.stats.Speed = 1;
-        if (act(trial, { type: "wait" }).encounter?.origin === "enemy") encounters++;
+        if (act(trial, { type: "move", dx: 0, dy: -1 }).encounter?.origin === "enemy") encounters++;
       }
       return encounters;
     };

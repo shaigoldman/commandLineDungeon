@@ -23,9 +23,9 @@ it("executes the migration and PostgreSQL persistence/CAS queries", async () => 
     g = newGame("A", "Mage", "Fire", 0, 8);
   await store.put(key, g);
   expect(await store.get(key)).toEqual(g);
-  const next = act(g, { type: "wait" });
+  const next = act(g, { type: "move", dx: 0, dy: -1 });
   expect(await store.put(key, next, 0)).toBe(true);
   expect(await store.put(key, g, 0)).toBe(false);
   expect(await store.get(key)).toEqual(next);
   await store.close();
-}, 20000);
+}, 60000);

@@ -48,8 +48,8 @@ describe("offline Android game saves", () => {
       app = new LocalGameAPI(storage);
     const key = (await app.request("games", options)).data.recoveryKey!;
     const replies = await Promise.all([
-      app.request("action", { revision: 0, action: { type: "wait" } }, key),
-      app.request("action", { revision: 0, action: { type: "wait" } }, key),
+      app.request("action", { revision: 0, action: { type: "move", dx: 0, dy: -1 } }, key),
+      app.request("action", { revision: 0, action: { type: "move", dx: 0, dy: -1 } }, key),
     ]);
     expect(replies.map((r) => r.status)).toEqual([200, 409]);
     expect(
@@ -95,7 +95,7 @@ describe("offline Android game saves", () => {
     };
     const r = await new LocalGameAPI(failing).request(
       "action",
-      { revision: 0, action: { type: "wait" } },
+      { revision: 0, action: { type: "move", dx: 0, dy: -1 } },
       key,
     );
     expect(r.status).toBe(503);

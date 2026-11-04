@@ -88,7 +88,8 @@ describe("Ashfall playthroughs", () => {
   it("antibody cures poison permanently, survives cleanse/reload and blocks snake hits", () => {
     let g = arena();
     g.player.effects.Poison = [5, 2];
-    g = use(g, "Poison Antibody");
+    const antibody = makeItem(g, "Poison Antibody"); g.inventory.push(antibody);
+    g = act(g, {type:"move",dx:0,dy:-1});
     expect(g.player.effects.Poison).toBeUndefined();
     staff(g, "Water");
     g = act(JSON.parse(JSON.stringify(g)), { type: "cast", spell: "Cleanse" });
@@ -212,7 +213,7 @@ describe("Ashfall playthroughs", () => {
     expect(g.log.some((l) => l.includes(v.name + ": “"))).toBe(true);
     expect(g.player.effects.Curse).toEqual([12, 3]);
     for (let n = 1; n <= 5; n++) {
-      g = act(JSON.parse(JSON.stringify(g)), { type: "wait" });
+      g = act(JSON.parse(JSON.stringify(g)), { type: "move", dx: 0, dy: -1 });
       expect(g.monsters.filter((m) => m.className === "Ghost")).toHaveLength(
         n === 5 ? 1 : 0,
       );
@@ -224,8 +225,8 @@ describe("Ashfall playthroughs", () => {
   });
   it("occupied ghost spawns defer safely; a damaging ghost hit can curse", () => {
     let g = arena();
-    g.haunting = [{ x: 5, y: 7, due: 1, name: "Pip" }];
-    g = act(g, { type: "wait" });
+    g.haunting = [{ x: 5, y: 6, due: 1, name: "Pip" }];
+    g = act(g, { type: "move", dx: 0, dy: -1 });
     expect(g.monsters).toHaveLength(0);
     g = act(g, { type: "move", dx: 0, dy: 1 });
     const m = g.monsters[0];

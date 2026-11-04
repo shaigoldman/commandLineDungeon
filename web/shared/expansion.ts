@@ -1,7 +1,7 @@
 /** Ashfall market rules. All RNG is part of the persisted game seed. */
 import type { Actor, Game, Item, SecretDoor } from "./types";
 import { itemDefinitions } from "./catalog";
-import { makeItem, makeMonster, random, randomItem, pickItemDefinition, log, capacityOf } from "./engine";
+import { makeItem, makeMonster, random, randomItem, pickItemDefinition, log, capacityOf, triggerTrap } from "./engine";
 const roll = (g: Game, n: number) => Math.floor(random(g) * n);
 const pick = <T>(g: Game, a: T[]) => a[roll(g, a.length)];
 const uid = (g: Game) => "ash-" + roll(g, 2 ** 32).toString(36);
@@ -205,8 +205,7 @@ export function quote(g: Game, m: Actor, id: string, sell = false) {
       : `${m.name} offers ${n} gold for ${i.name}${m.merchant.wanted === i.name ? " — my most wanted item!" : ""}.`;
   log(g, g.marketNotice);
   if (sell && n !== null) {
-    if (i.kind === "infinite-bag" && g.inventory.length - 1 + Number(g.player.weapons.length > 0) > g.capacity)
-      throw Error("Bag too full to sell the Infinite Bag.");
+    if (i.kind === "infinite-bag") { g.inventory = []; g.player.weapons = []; log(g,"Losing the Infinite Bag destroyed all your items!"); }
     g.inventory = g.inventory.filter((a) => a.id !== id);
     g.player.gold = (g.player.gold || 0) + n;
     g.marketNotice = `Sold ${i.name} for ${n} gold.`;
@@ -332,15 +331,27 @@ export function addChest(
   y: number,
   locked = true,
   ultra = false,
+  kind = ultra ? "Amethyst" : "Standard",
+  trapped = false,
 ) {
+  const families: Record<string,string[]> = {
+    Steel:["weapon","projectile","anvil","blade-shard","sharpening-stone","skill-book","gentle-grip"],
+    Sapphire:["tome","mana","mana-pool","mana-battery","mana-star","mana-stream","mana-pot","mana-leech","mana-link","mana-gem","mana-diamond"],
+    Ruby:["heal","reusable-heal","health-pot","golden-apple","diamond-apple","lucky-amulet","lucky-necklace","energy-potion"],
+    Gold:["gold","greedy-amulet","thief-gloves","gold-chalice","mana-channel"],
+    Obsidian:["stat","boost","jewel","crown","double","mixing-potion"]
+  };
+  const pool = itemDefinitions.filter(d=>families[kind]?.includes(d[1]));
+  const reward = pool.length ? makeItem(g,pickItemDefinition(g,pool)[0]) : chestReward(g,ultra || kind==="Amethyst");
   const c = {
+    kind, trapped,
     id: uid(g),
     x,
     y,
     locked,
     ultra,
     opened: false,
-    reward: chestReward(g, ultra),
+    reward,
   };
   (g.chests ??= []).push(c);
   return c;
@@ -367,7 +378,9 @@ export function addSecretDoor(g: Game, outcome?: string) {
           ? "chest"
           : r < 0.65
             ? "ultra"
-            : r < 0.87
+            : r < 0.77
+              ? "rare"
+              : r < 0.87
               ? "chief"
               : r < 0.98
                 ? "emperor"
@@ -397,7 +410,7 @@ export function expansionFloor(g: Game) {
   const chestCount = 1 + roll(g, 2);
   for (let n = 0; n < chestCount; n++) {
     const loc = pick(g, spots());
-    if (loc) addChest(g, loc.x, loc.y);
+    if (loc) addChest(g, loc.x, loc.y, true, false, pick(g,["Standard","Standard","Steel","Sapphire","Ruby","Gold","Obsidian", ...(random(g)<0.12 ? ["Amethyst"] : [])]), random(g)<0.08);
   }
   for (let n = 0; n < roll(g, 3); n++) {
     const loc = pick(g, spots());
@@ -435,11 +448,18 @@ export function openChest(g: Game, id: string) {
   c.opened = true;
   c.locked = false;
   g.pendingChest = undefined;
+  if (c.trapped) {
+    const kind=pick(g,["poison","curse","rust","trip","fairy","sap","monster"] as const);
+    (g.traps ??= []).push({id:uid(g),x:g.player.x,y:g.player.y,kind,revealed:true});
+    log(g, `TRAPPED CHEST! A ${kind} trap springs open!`);
+    triggerTrap(g);
+    return;
+  }
   g.loot.push({ x: g.player.x, y: g.player.y, item: c.reward });
   g.pendingLoot = c.reward;
   log(g, `Chest opened: ${c.reward.name}.`);
 }
-export function enterSecret(g: Game, door: SecretDoor) {
+export function prepareSecretRoom(g: Game, door: SecretDoor) {
   if (!door.roomMade) {
     for (let y = 0; y < g.tiles.length; y++) {
       while (g.tiles[y].length < 41) g.tiles[y].push(1);
@@ -463,7 +483,9 @@ export function enterSecret(g: Game, door: SecretDoor) {
       addChest(g, 37, 7, false, door.outcome === "ultra");
     else {
       const m =
-        door.outcome === "king"
+        door.outcome === "rare"
+          ? makeMonster(g,pick(g,["Dark Hero","Shadow","Robot","Dark Fairy"]),Math.max(1,g.floor+2))
+          : door.outcome === "king"
           ? makeVillager(g, true)
           : makeChief(g, door.outcome === "emperor");
       Object.assign(m, { x: 37, y: 7 });
@@ -471,6 +493,9 @@ export function enterSecret(g: Game, door: SecretDoor) {
     }
     door.roomMade = true;
   }
+}
+export function enterSecret(g: Game, door: SecretDoor) {
+  prepareSecretRoom(g,door);
   g.inSecret = door.id;
   const spots = [];
   for (let y = 4; y <= 10; y++)
