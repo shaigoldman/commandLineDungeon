@@ -1,5 +1,5 @@
 /** Original pixel art for Ashfall inhabitants and interactable objects. */
-export function worldArt(kind: string, scale = 2) {
+export function worldArt(kind: string, scale = 2, name = "") {
   const c = document.createElement("canvas");
   c.width = c.height = 32 * scale;
   const x = c.getContext("2d")!;
@@ -106,10 +106,27 @@ export function worldArt(kind: string, scale = 2) {
   } else if (kind === "Villager" || kind === "VillagerKing") {
     // Three-quarter travelling merchant, with layered cloak, satchel and boots.
     const king = kind === "VillagerKing";
+    // Named outfits are painted into the same canvas as the face and existing cap.
+    // They therefore share the sprite's scale, movement, and idle animation.
+    let identity = 0;
+    for (const character of name) identity = (identity * 31 + character.charCodeAt(0)) >>> 0;
+    const outfit = [
+      ["#526d68", "#304747", "#90a18a"],
+      ["#806047", "#503d35", "#b9a17a"],
+      ["#68597d", "#40364e", "#a797b4"],
+      ["#557589", "#324957", "#9bb8bf"],
+      ["#8c5b61", "#563b43", "#c39a91"],
+    ][identity % 5];
+    const cap = [
+      ["#71543c", "#a88451", "#d2b573"],
+      ["#546044", "#899363", "#c0bf86"],
+      ["#634f62", "#9b7b91", "#c9a8b4"],
+      ["#4f5966", "#8795a2", "#b9c4c7"],
+    ][identity % 4];
     const ink = "#202c35",
-      cloth = king ? "#973e57" : "#526d68",
-      clothShade = king ? "#542c48" : "#304747",
-      clothLight = king ? "#d56a70" : "#90a18a",
+      cloth = king ? "#973e57" : outfit[0],
+      clothShade = king ? "#542c48" : outfit[1],
+      clothLight = king ? "#d56a70" : outfit[2],
       skin = "#dba379",
       skinLight = "#f3c99a",
       leather = "#795339";
@@ -169,11 +186,11 @@ export function worldArt(kind: string, scale = 2) {
       r(18, 16, 2, 2, gold);
     } else {
       // Worn ochre cap and one feather, rather than a flat block hat.
-      r(10, 3, 10, 3, "#71543c");
-      r(12, 2, 7, 3, "#a88451");
-      r(13, 2, 5, 1, "#d2b573");
+      r(10, 3, 10, 3, cap[0]);
+      r(12, 2, 7, 3, cap[1]);
+      r(13, 2, 5, 1, cap[2]);
       r(9, 6, 14, 1, "#382f2d");
-      r(10, 5, 11, 1, "#bc955b");
+      r(10, 5, 11, 1, cap[1]);
       r(11, 1, 1, 3, "#b8c3a0");
       r(10, 0, 1, 2, "#e0dec0");
     }
