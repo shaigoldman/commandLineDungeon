@@ -1228,7 +1228,7 @@ export function PlayScreen({
                       : item.uses && item.maxUses
                         ? `${item.uses}/${item.maxUses} uses`
                       : item.kind === "tome"
-                        ? item.element
+                        ? `${item.element}${item.value ? ` · +${item.value} Magic` : ""}`
                         : problem || "View / use"}
                   </em>
                   {!held &&
