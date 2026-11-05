@@ -1,3 +1,4 @@
+import { rarityRank } from "../shared/rarity";
 import { Chronicle } from "./Chronicle";
 import { itemIcon } from "./item-art";
 import { deathStory } from "../shared/death-story";
@@ -1626,7 +1627,7 @@ export function PlayScreen({
                           <button key={item.id} className="upgrade-choice" disabled={busy} onClick={() => void send({ type: "use", id: picked.id, target: item.id })}>
                             <ItemIcon item={item} /><span><b>Double {item.name}</b><small>{item.uses} → {(item.uses || 0) * 2} uses · usual max {item.maxUses}</small></span>
                           </button>)}
-                        {picked.kind === "alchemy-book" && g.inventory.filter((item) => item.id !== picked.id && item.rarity < 9).map((item) =>
+                        {picked.kind === "alchemy-book" && g.inventory.filter((item) => item.id !== picked.id && rarityRank(item.rarity) < 3).map((item) =>
                           <button key={item.id} className="upgrade-choice" disabled={busy || !!itemUseProblem(g, picked)} onClick={() => void send({ type: "use", id: picked.id, target: item.id })}>
                             <ItemIcon item={item} /><span><b>Transmute {item.name}</b><small>5 gold · usually one rarity tier higher · small misfire chance</small></span>
                           </button>)}
