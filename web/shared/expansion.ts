@@ -394,6 +394,7 @@ export function addSecretDoor(g: Game, outcome?: string) {
       x: 29,
       y: anchor.y,
       unlocked: false,
+      fogVersion: 1,
       outcome:
         outcome ||
         (r < 0.4
@@ -481,25 +482,42 @@ export function openChest(g: Game, id: string) {
   g.pendingLoot = c.reward;
   log(g, `Chest opened: ${c.reward.name}.`);
 }
+/** Older room generation accidentally wrote temporary room light into permanent reveals. */
+export function repairSecretRoomLighting(g: Game) {
+  const legacy = (g.secretDoors || []).filter(door => !door.fogVersion);
+  if (!legacy.length) return;
+  // Night Vision deliberately reveals the entire main dungeon; keep that reveal.
+  const nightVision = g.light.every(row => row.slice(0, 30).every(Boolean));
+  const darken = (x: number, y: number) => {
+    if (g.light[y]?.[x] !== undefined) g.light[y][x] = false;
+  };
+  for (const door of legacy) {
+    if (door.roomMade && !nightVision) {
+      for (let y = 4; y <= 10; y++) for (let x = 33; x <= 39; x++) darken(x, y);
+      for (let x = 29; x <= 33; x++) darken(x, door.y);
+      for (let y = Math.min(door.y, 7); y <= Math.max(door.y, 7); y++) darken(33, y);
+    }
+    door.fogVersion = 1;
+  }
+}
 export function prepareSecretRoom(g: Game, door: SecretDoor) {
+  repairSecretRoomLighting(g);
   if (!door.roomMade) {
+    const nightVision = g.light.every(row => row.every(Boolean));
     for (let y = 0; y < g.tiles.length; y++) {
       while (g.tiles[y].length < 41) g.tiles[y].push(1);
-      while (g.light[y].length < 41) g.light[y].push(false);
+      while (g.light[y].length < 41) g.light[y].push(nightVision);
     }
     for (let y = 4; y <= 10; y++)
       for (let x = 33; x <= 39; x++) {
         g.tiles[y][x] = 0;
-        g.light[y][x] = true;
       }
     for (let x = 29; x <= 33; x++) {
       g.tiles[door.y][x] = 0;
-      g.light[door.y][x] = true;
     }
     // Corridor meets the room even when the border door is above or below it.
     for (let y = Math.min(door.y, 7); y <= Math.max(door.y, 7); y++) {
       g.tiles[y][33] = 0;
-      g.light[y][33] = true;
     }
     if (["chest", "ultra"].includes(door.outcome))
       addChest(g, 37, 7, false, door.outcome === "ultra");

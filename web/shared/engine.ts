@@ -15,6 +15,7 @@ import {
   enterSecret,
   prepareSecretRoom,
   chestReward,
+  repairSecretRoomLighting,
 } from "./expansion";
 import npcDialogue from "./npc-dialogue.json";
 import {
@@ -1998,6 +1999,7 @@ export function act(input: Game, a: Action): Game {
   const g = structuredClone(input),
     p = g.player;
   migrateItemRarities(g);
+  repairSecretRoomLighting(g);
   // Upgrade saved guardians once, preserving damage already dealt.
   for (const enemy of g.monsters) if (enemy.name.startsWith("Ergathon") && enemy.level === 1 + g.floor + 3 + (g.floor + 2) * g.floor) {
     const fraction = Math.max(0, enemy.hp / enemy.stats.Health);

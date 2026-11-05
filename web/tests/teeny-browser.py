@@ -19,6 +19,23 @@ try:
    page.evaluate('''game=>{const k=Object.keys(localStorage).find(k=>k.endsWith('dungeon.android.saves.v1'));const all=JSON.parse(localStorage.getItem(k));all.games[localStorage.getItem('dungeon-key')]=game;localStorage.setItem(k,JSON.stringify(all));}''',g)
    page.reload();page.wait_for_selector('canvas');page.wait_for_timeout(350)
   def saved():return page.evaluate('''()=>{const k=Object.keys(localStorage).find(k=>k.endsWith('dungeon.android.saves.v1'));return JSON.parse(localStorage.getItem(k)).games[localStorage.getItem('dungeon-key')];}''')
+  page.emulate_media(reduced_motion='reduce')
+  def mapshot(game):
+   load(game);page.get_by_role('button',name='Overview',exact=True).click();page.wait_for_timeout(150)
+   return page.locator('canvas').screenshot()
+  fog=fixtures['fogSecret'];plain=json.loads(json.dumps(fog));plain['secretDoors']=[]
+  dark_map=mapshot(plain);assert mapshot(fog)==dark_map,'Secret door leaked through darkness'
+  near=json.loads(json.dumps(fog));near['player']['x']=28;near_plain=json.loads(json.dumps(near));near_plain['secretDoors']=[]
+  assert mapshot(near)!=mapshot(near_plain),'Secret door did not appear within sight'
+  lit=json.loads(json.dumps(fog));lit['light']=[[True for _ in row]for row in lit['light']];lit_plain=json.loads(json.dumps(lit));lit_plain['secretDoors']=[]
+  assert mapshot(lit)!=mapshot(lit_plain),'Night Vision failed to reveal the door'
+  legacy=json.loads(json.dumps(fog));legacy['secretDoors'][0].pop('fogVersion',None)
+  for yy in range(4,11):
+   for xx in range(33,40):legacy['light'][yy][xx]=True
+  for xx in range(29,34):legacy['light'][7][xx]=True
+  assert mapshot(legacy)==dark_map,'Legacy secret-door light was not repaired on load'
+  assert saved()['secretDoors'][0].get('fogVersion') is None,'Read-only loading unexpectedly overwrote a save'
+  page.emulate_media(reduced_motion='no-preference')
   load(fixtures['explore']);page.screenshot(path=str(shots/'explore.png'));assert page.get_by_role('button',name='Wait',exact=True).count()==0
   journal=json.loads(json.dumps(fixtures['explore']));journal['log']=['Zombie takes 12 poison damage. You gain 5 HP and 3 mana.','Gained 20 EXP.'];journal['logSerial']=2;load(journal)
   page.get_by_role('button',name='Open journey chronicle',exact=True).click()
