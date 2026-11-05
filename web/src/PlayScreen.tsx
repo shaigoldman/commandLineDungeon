@@ -1,3 +1,4 @@
+import { Chronicle } from "./Chronicle";
 import { itemIcon } from "./item-art";
 import { deathStory } from "../shared/death-story";
 import { itemOutcome, type ItemOutcome } from "../shared/item-outcome";
@@ -78,7 +79,7 @@ export function PlayScreen({
       g.status === "playing" && !g.pendingLevels ? availableSpells(g, { free: true, ignoreReq: true }) : [];
   const [inspectedSpell, setInspectedSpell] = useState<(typeof spellDefinitions)[number] | null>(null);
   const [panel, setPanel] = useState<
-      "stats" | "enemy" | "save" | "help" | "npc" | "level" | null
+      "stats" | "enemy" | "save" | "help" | "npc" | "level" | "chronicle" | null
     >(null),
     [selection, setSelection] = useState<Selection | null>(null),
     [overview, setOverview] = useState(false),
@@ -346,6 +347,7 @@ export function PlayScreen({
         announce("Choose a direction to move.");
       } else if (e.key.toLowerCase() === "v") setPanel("save");
       else if (e.key.toLowerCase() === "s") setPanel("stats");
+      else if (e.key.toLowerCase() === "l") setPanel("chronicle");
       else if (e.key.toLowerCase() === "h") setPanel("help");
     };
     window.addEventListener("keydown", listener);
@@ -1255,6 +1257,9 @@ export function PlayScreen({
           )}
         </div>
       </section>
+      <button className="chronicle-peek" onClick={() => setPanel("chronicle")} aria-label="Open journey chronicle">
+        <strong>✦ Chronicle</strong><span>{g.log.at(-1) || "Your story begins…"}</span><b>Read ›</b>
+      </button>
       {spells.length > 0 && (
         <section className="magic-ribbon" aria-label="Available magic">
           <span className="ribbon-label">MAGIC · {n(p.stats.Mana)} MP</span>
@@ -1354,7 +1359,7 @@ export function PlayScreen({
                           ? "Level up"
                           : panel === "save"
                             ? "Saved journey"
-                            : "How to play"
+                            : panel === "chronicle" ? "Journey chronicle" : "How to play"
             }
             onClick={(e) => e.stopPropagation()}
           >
@@ -1892,6 +1897,8 @@ export function PlayScreen({
                   {actButton("Leave peacefully", { type: "leave" })}
                 </div>
               </>
+            ) : panel === "chronicle" ? (
+              <Chronicle game={g} />
             ) : panel === "save" ? (
               <>
                 <h2>Saved after every action</h2>
