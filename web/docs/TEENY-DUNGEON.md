@@ -49,3 +49,5 @@ All twelve named villagers have individually authored sprites with distinct silh
 `tests/villager-art.test.ts` covers every villager name and compares monochrome body silhouettes below the head, preventing a return to hat-only or color-only variants.
 
 Named villagers now stock and pay extra for items related to their character. Their market displays the specialty and marks matching sale offers. See [villager trades](VILLAGER-TRADES.md) for the roster and rules.
+
+Golden Gauntlet is automatic while carried: it adds 10 Attack at exactly 0 mana, after Magic Scales selects your attacking stat. Silver Gauntlet adds 10 Attack and Speed at 5 HP or less. Item cards and inspections show whether these effects are active; no use or equip action is required. Their Attack bonuses also work with staves when applicable.

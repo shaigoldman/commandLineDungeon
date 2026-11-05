@@ -513,8 +513,17 @@ fogSecret.light=fogSecret.tiles.map(row=>row.map(()=>false));fogSecret.sight=1;
 Object.assign(fogSecret.player,{x:26,y:7});
 const fogDoor=addSecretDoor(fogSecret,"chest");fogDoor.y=7;
 prepareSecretRoom(fogSecret,fogDoor);
+const goldenGauntlet = openArena("Warrior");
+goldenGauntlet.inventory=[makeItem(goldenGauntlet,"Golden Gauntlet"),makeItem(goldenGauntlet,"Magic Scales"),makeItem(goldenGauntlet,"Tiny Mana Potion"),makeItem(goldenGauntlet,"Mana Channel")];
+goldenGauntlet.player.weapons=[];goldenGauntlet.player.passiveStats={};
+Object.assign(goldenGauntlet.player.stats,{Power:12,Magic:30,Mana:0,Luck:0,Accuracy:1000,Speed:100,Armor:0});
+goldenGauntlet.monsters=[makeMonster(goldenGauntlet,"Zombie",1)];
+Object.assign(goldenGauntlet.monsters[0],{hp:500,x:16,y:7});Object.assign(goldenGauntlet.monsters[0].stats,{Health:500,Power:0,Armor:0,Speed:0,Luck:0});
+goldenGauntlet.combat=goldenGauntlet.monsters[0].id;
+goldenGauntlet.encounter={enemyId:goldenGauntlet.combat,origin:"inspection",engaged:false,exchanges:0};
 console.log(
   JSON.stringify({
+    goldenGauntlet,
     fogSecret,
     specialtyMarket,
     relicUi,

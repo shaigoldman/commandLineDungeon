@@ -1,3 +1,4 @@
+import { gauntletDescriptions } from "./passive-items";
 import type { Rarity } from "./rarity";
 import type { Item, Stats } from "./types";
 export const classes: Record<string, Stats> = {
@@ -352,5 +353,5 @@ export function describe(i: Item) {
     return `${i.poison ? "Poison on hit: 2 damage for 5 actions · " : ""}Attack +${i.attack} · Luck +${i.luck} · Weight ${i.weight} · Power required ${(i.weight || 0) * 2} · ${i.uses}/${i.maxUses} uses`;
   if (i.kind === "tome")
     return `${i.element} magic${i.value > 0 ? ` · +${i.value} Magic while carried or equipped` : ""} · Attack +${i.attack} · Luck +${i.luck} · Basic attack costs 2 mana`;
-  return i.description;
+  return gauntletDescriptions[i.kind] || i.description;
 }

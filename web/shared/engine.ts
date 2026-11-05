@@ -18,6 +18,7 @@ import {
   repairSecretRoomLighting,
 } from "./expansion";
 import npcDialogue from "./npc-dialogue.json";
+import { gauntletBonus, isCarriedPassive, gauntletDescriptions } from "./passive-items";
 import {
   classes,
   bonuses,
@@ -269,7 +270,7 @@ export function makeItem(g: Game, name: string): Item {
     trash: "It is just trash. Please do not litter.",
   };
   const newDescriptions: Record<string,string> = {
-    sand:"Throw at an adjacent target: −50% Accuracy for 5 turns.", sandstorm:"Permanently reduce an adjacent target’s Accuracy by 50%.", "sand-bag":"Throw at an adjacent target: −80% Speed for 5 turns.", quicksand:"Permanently reduce an adjacent target’s Speed by 80%.", "energy-potion":"Restore 5 to health or mana, whichever is farther below maximum.", "mana-link":"While carried, each health gain also restores 3 mana.", "alchemy-nuke":"Transmute every floor item using the usual alchemy rules.", "escape-pod":"Rescue an adjacent villager for EXP and a valuable gift.", "critical-diamond":"Your next 5 landed attacks are critical hits.", "mana-stream":"Trade 10 gold for +1 maximum mana. Reusable.", "mana-pool":`Permanently gain +${i.value} maximum mana.`, "mana-pot":"Trade 1 gold for 1 mana. Reusable.", "golden-apple":"While carried, a fatal blow instead leaves you with 5 HP and consumes this apple.", "diamond-apple":"While carried, revive at full HP and mana on death; all your items are destroyed.", "thief-gloves":"While carried, kills have a 25% chance to grant 1–5 gold.", "mana-leech":"While carried, gain 1 mana per enemy kill.", "energy-belt":"While carried, pods restore both health and mana.", "energy-armor":"While carried, pods are twice as effective.", quickfoot:"Act first in your next combat.", "ghost-boots":"While carried, walk through walls. Dropping them inside a wall kills you.", "lucky-amulet":"While carried, critical hits heal you for 10 HP.", "lucky-necklace":"While carried, dodging heals you for 5 HP.", "golden-gauntlet":"While carried, +10 Strength at 0 mana.", "silver-gauntlet":"While carried, +10 Strength and Speed at 5 HP or less.", "mana-battery":"While carried, +2 maximum mana.", immunity:"Immune to poison while carried.", "mixing-potion":"Choose one stat to lose 3 and a different stat to gain 3.", "stair-key":"Unlocks locked dungeon stairs. Automatically added to your key ring."
+    sand:"Throw at an adjacent target: −50% Accuracy for 5 turns.", sandstorm:"Permanently reduce an adjacent target’s Accuracy by 50%.", "sand-bag":"Throw at an adjacent target: −80% Speed for 5 turns.", quicksand:"Permanently reduce an adjacent target’s Speed by 80%.", "energy-potion":"Restore 5 to health or mana, whichever is farther below maximum.", "mana-link":"While carried, each health gain also restores 3 mana.", "alchemy-nuke":"Transmute every floor item using the usual alchemy rules.", "escape-pod":"Rescue an adjacent villager for EXP and a valuable gift.", "critical-diamond":"Your next 5 landed attacks are critical hits.", "mana-stream":"Trade 10 gold for +1 maximum mana. Reusable.", "mana-pool":`Permanently gain +${i.value} maximum mana.`, "mana-pot":"Trade 1 gold for 1 mana. Reusable.", "golden-apple":"While carried, a fatal blow instead leaves you with 5 HP and consumes this apple.", "diamond-apple":"While carried, revive at full HP and mana on death; all your items are destroyed.", "thief-gloves":"While carried, kills have a 25% chance to grant 1–5 gold.", "mana-leech":"While carried, gain 1 mana per enemy kill.", "energy-belt":"While carried, pods restore both health and mana.", "energy-armor":"While carried, pods are twice as effective.", quickfoot:"Act first in your next combat.", "ghost-boots":"While carried, walk through walls. Dropping them inside a wall kills you.", "lucky-amulet":"While carried, critical hits heal you for 10 HP.", "lucky-necklace":"While carried, dodging heals you for 5 HP.", ...gauntletDescriptions, "mana-battery":"While carried, +2 maximum mana.", immunity:"Immune to poison while carried.", "mixing-potion":"Choose one stat to lose 3 and a different stat to gain 3.", "stair-key":"Unlocks locked dungeon stairs. Automatically added to your key ring."
   };
   i.description = newDescriptions[i.kind] || i.description || desc[i.kind] || "";
   if (i.kind === "stair-key") i.auto=true;
@@ -697,7 +698,7 @@ export function attackStats(
 ) {
   const w = usingWeapons ? a.weapons : [];
   const s: Stats = {
-    Attack: usingTome ? magicOf(a) : powerOf(a),
+    Attack: (usingTome ? magicOf(a) : powerOf(a)) + (a.attackBonus || 0),
     Luck: a.stats.Luck,
     Accuracy: a.stats.Accuracy,
     Speed: a.stats.Speed,
@@ -734,18 +735,19 @@ export function spellCost(g: Game, spell: { cost: number }) {
   return Math.max(0, spell.cost - discount);
 }
 export const capacityOf = (g: Game) => g.inventory.some((i) => i.kind === "infinite-bag") ? Infinity : g.capacity;
-function syncPassiveStats(g: Game) {
+export function syncPassiveStats(g: Game) {
   const p = g.player;
   for (const [stat, bonus] of Object.entries(p.passiveStats || {})) if (stat !== "ManaCapacity") p.stats[stat] = (p.stats[stat] || 0) - bonus;
   const bonus: Stats = {};
+  let attackBonus = 0;
   for (const item of g.inventory)
     if (item.kind === "charm" && item.stat)
       bonus[item.stat] = (bonus[item.stat] || 0) + item.value;
   for (const item of [...g.inventory, ...p.weapons]) {
     if (item.kind === "tome" && item.value) bonus.Magic = (bonus.Magic || 0) + item.value;
     if (item.kind === "mana-battery") bonus.ManaCapacity = (bonus.ManaCapacity || 0) + 2;
-    if (item.kind === "golden-gauntlet" && p.stats.Mana === 0) bonus.Power = (bonus.Power || 0) + 10;
-    if (item.kind === "silver-gauntlet" && p.hp <= 5) { bonus.Power = (bonus.Power || 0) + 10; bonus.Speed = (bonus.Speed || 0) + 10; }
+    const gauntlet = gauntletBonus(p, item);
+    if (gauntlet) { attackBonus += gauntlet.attack; bonus.Speed = (bonus.Speed || 0) + gauntlet.speed; }
     if (item.name === "Bloodthirsty Dagger" && p.hp < 10 && p.weapons.includes(item)) bonus.Luck = (bonus.Luck || 0) + 100;
   }
   p.poisonImmune = g.inventory.some(i => i.kind === "immunity");
@@ -758,6 +760,8 @@ function syncPassiveStats(g: Game) {
   }
   for (const [stat, value] of Object.entries(bonus)) if (stat !== "ManaCapacity") p.stats[stat] = (p.stats[stat] || 0) + value;
   p.passiveStats = bonus;
+  // Flat Attack is applied after Magic Scales chooses Strength/Magic, so it cannot be canceled.
+  p.attackBonus = attackBonus;
   p.sharpening = g.inventory.some((i) => i.kind === "sharpening-stone");
   p.skillBook = g.inventory.some((i) => i.kind === "skill-book");
   p.hp = Math.min(p.hp, p.stats.Health);
@@ -841,7 +845,7 @@ export function floorEquipPlan(g: Game, item: Item) {
 }
 /** Read-only availability shared by item menus; use() remains authoritative. */
 export function itemUseProblem(g: Game, i: Item): string | undefined {
-  if (["mana-link", "golden-apple", "diamond-apple", "thief-gloves", "mana-leech", "energy-belt", "energy-armor", "ghost-boots", "lucky-amulet", "lucky-necklace", "golden-gauntlet", "silver-gauntlet", "mana-battery", "immunity"].includes(i.kind)) return "Active while carried; no use action needed.";
+  if (isCarriedPassive(i)) return "Active while carried; no use action needed.";
   if (g.status === "dead") return "This journey has ended.";
   if (g.status === "won") return "Continue your journey first.";
   if (g.pendingLevels) return "Choose your level bonus first.";
@@ -1146,15 +1150,16 @@ function poison(g: Game) {
 function syncMonsterItems(m: Actor) {
   for(const [stat,bonus] of Object.entries(m.passiveStats || {})) if(stat!=="ManaCapacity") m.stats[stat]=(m.stats[stat] || 0)-bonus;
   const items=[...new Map([...(m.inventory || []),...m.weapons].map(i=>[i.id,i])).values()], bonus: Stats={};
+  let attackBonus = 0;
   for(const i of items) {
     if(i.kind==="tome" && i.value) bonus.Magic=(bonus.Magic || 0)+i.value;
     if(i.kind==="charm" && i.stat) bonus[i.stat]=(bonus[i.stat] || 0)+i.value;
     if(i.kind==="mana-battery") bonus.ManaCapacity=(bonus.ManaCapacity || 0)+2;
-    if(i.kind==="golden-gauntlet" && m.stats.Mana===0) bonus.Power=(bonus.Power || 0)+10;
-    if(i.kind==="silver-gauntlet" && m.hp<=5) {bonus.Power=(bonus.Power || 0)+10;bonus.Speed=(bonus.Speed || 0)+10;}
+    const gauntlet = gauntletBonus(m, i);
+    if (gauntlet) { attackBonus += gauntlet.attack; bonus.Speed = (bonus.Speed || 0) + gauntlet.speed; }
   }
   for(const [stat,n] of Object.entries(bonus)) if(stat!=="ManaCapacity") m.stats[stat]=(m.stats[stat] || 0)+n;
-  m.passiveStats=bonus;m.poisonImmune=items.some(i=>i.kind==="immunity");m.sharpening=items.some(i=>i.kind==="sharpening-stone");m.skillBook=items.some(i=>i.kind==="skill-book");
+  m.attackBonus=attackBonus;m.passiveStats=bonus;m.poisonImmune=items.some(i=>i.kind==="immunity");m.sharpening=items.some(i=>i.kind==="sharpening-stone");m.skillBook=items.some(i=>i.kind==="skill-book");
   if(items.some(i=>i.kind==="mana-link")) m.effects["Mana Link"]=[1000000,3];else delete m.effects["Mana Link"];
 }
 function monsterItemTurn(g: Game, m: Actor) {
@@ -1469,8 +1474,7 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
     log(g, "Equipped " + i.name);
     return;
   }
-  const passive = ["mana-link", "golden-apple", "diamond-apple", "thief-gloves", "mana-leech", "energy-belt", "energy-armor", "ghost-boots", "lucky-amulet", "lucky-necklace", "golden-gauntlet", "silver-gauntlet", "mana-battery", "immunity"];
-  if (passive.includes(i.kind)) throw Error("Active while carried; no use action needed.");
+  if (isCarriedPassive(i)) throw Error("Active while carried; no use action needed.");
   switch (i.kind) {
     case "stair-key": g.keys++; break;
     case "sand": case "sandstorm": case "sand-bag": case "quicksand": {
