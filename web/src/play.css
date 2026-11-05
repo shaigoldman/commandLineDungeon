@@ -1651,14 +1651,13 @@ body.playing-game {
 .inventory-ribbon > .ribbon-label { font-size:10px; font-weight:bold; color:#f6d777; }
 
 .dark-hero-portrait { filter:brightness(.55) sepia(.35) hue-rotate(220deg); }
-.ergathon-portrait { filter:sepia(.4) hue-rotate(220deg); }
 .green-dragon-portrait { filter:hue-rotate(90deg); }
 .victory-screen { padding:28px; text-align:center; border:2px solid #d1b56d; }
 .victory-screen h1 { color:#f6d784; font-family:Georgia,serif; }
 .victory-screen button { display:block; width:100%; margin-top:14px; min-height:46px; }
 
 /* A readable field journal, with redundant word labels alongside semantic color. */
-.chronicle-peek { display:flex; align-items:center; gap:10px; width:100%; margin:6px 0; padding:10px 12px; border:1px solid #9d8857; background:#243440; color:#edddb2; text-align:left; font:15px Georgia,serif; }
+.play-shell .chronicle-peek { display:flex; align-items:center; gap:10px; width:100%; margin:6px 0; padding:10px 12px; border:1px solid #9d8857; background:#243440; color:#edddb2; text-align:left; font:15px Georgia,serif; }
 .chronicle-peek strong,.chronicle-peek b { flex-shrink:0; }
 .chronicle-peek span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; color:#e4d9bf; }
 .play-modal:has(.chronicle) { background:#ede1c2; color:#302b25; border-color:#ac9057; }
