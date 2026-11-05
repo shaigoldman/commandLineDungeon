@@ -28,8 +28,8 @@ it("finds gold more often than any common item and keeps larger coins possible",
   expect(goldShare).toBeLessThan(0.38);
   expect(counts.get("20 Gold Coins")).toBeGreaterThan(0);
   expect(counts.get("1 Gold Coin")).toBeGreaterThan(counts.get("5 Gold Coins") || 0);
-  expect(itemDefinitions.find((d) => d[0] === "1 Gold Coin")?.[2]).toBe(0);
-  expect(itemDefinitions.find((d) => d[0] === "20 Gold Coins")?.[2]).toBe(7);
+  expect(itemDefinitions.find((d) => d[0] === "1 Gold Coin")?.[2]).toBe("common");
+  expect(itemDefinitions.find((d) => d[0] === "20 Gold Coins")?.[2]).toBe("rare");
 });
 
 it("reports exact changes for reusable trades and shows a chalice reward", () => {
