@@ -1436,6 +1436,11 @@ function performSpell(g: Game, s: (typeof spells)[number], m: Actor | undefined,
       }
 }
 
+function engageItemTarget(g: Game, target: Actor) {
+  const previous = g.encounter?.enemyId === target.id ? g.encounter : undefined;
+  g.combat = target.id;
+  g.encounter = { enemyId: target.id, origin: previous?.origin || "resumed", exchanges: previous?.exchanges || 0, engaged: true };
+}
 function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
   const p = g.player,
     m = g.monsters.find((m) => m.id === (targetId || g.combat)) || (i.kind === "projectile" ? g.monsters.find(m => !m.npc && !m.merchant && actorDistance(m,p) === 1) : undefined);
@@ -1470,8 +1475,7 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
     case "sand": case "sandstorm": case "sand-bag": case "quicksand": {
       const target = m || g.monsters.find(a => !a.npc && !a.merchant && Math.abs(a.x-p.x)+Math.abs(a.y-p.y) === 1);
       if (!target) throw Error("Choose an adjacent enemy.");
-      g.combat = target.id;
-      g.encounter = { enemyId: target.id, origin: "resumed", engaged: true, exchanges: g.encounter?.enemyId === target.id ? g.encounter.exchanges : 0 };
+      engageItemTarget(g, target);
       const stat = ["sand", "sandstorm"].includes(i.kind) ? "Accuracy" : "Speed";
       target.effects[stat + " Penalty"] = [["sandstorm", "quicksand"].includes(i.kind) ? 1000000 : 5, i.value];
       log(g, `${target.name}: ${stat} reduced by ${i.value}%${["sandstorm", "quicksand"].includes(i.kind) ? " permanently" : " for 5 turns"}.`);
@@ -1719,6 +1723,7 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
     }
     case "bad-candy": {
       if (!m) throw Error("Choose an enemy target.");
+      engageItemTarget(g, m);
       const lost = Math.min(m.level - 1, 1 + roll(g, 5));
       if (!lost) { for (const stat of ["Health", "Power", "Speed", "Accuracy", "Magic"]) m.stats[stat] *= 0.7; log(g, `${m.name} is weakened by Bad Candy.`); }
       m.level -= lost;
@@ -1814,14 +1819,7 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       break;
     case "projectile":
       if (!m) throw Error("A target is required.");
-      g.combat = m.id;
-      g.encounter = {
-        enemyId: m.id,
-        origin: "resumed",
-        exchanges: 0,
-        ...g.encounter,
-        engaged: true,
-      };
+      engageItemTarget(g, m);
       if (i.name === "Handcuffs") {
         m.stats.Power = Math.max(0, m.stats.Power - 10);
         log(g, `${m.name} loses 10 Strength to the handcuffs.`);
