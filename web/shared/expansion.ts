@@ -67,12 +67,12 @@ const farewells = [
 export function catalogItems(g: Game) {
   const names = [
     ...itemDefinitions
-      .filter((d) => !["weapon", "tome", "stair-key"].includes(d[1]) && d[2] !== "legendary" && d[0] !== "Pot of Gold")
+      .filter((d) => !["Sword", "Spear", "Axe", "Shield", "Magic Staff"].includes(d[0]) && d[1] !== "stair-key" && d[2] !== "legendary" && d[0] !== "Pot of Gold")
       .map((d) => d[0]),
     ...["Fragile", "Iron", "Steel", "Lucky", "Magic", "Obsidian", "Poison"].flatMap((m) =>
-      ["Sword", "Spear", "Axe"].map((w) => m + " " + w),
+      ["Sword", "Spear", "Axe", "Shield"].map((w) => m + " " + w),
     ),
-    ...["Wind", "Fire", "Water", "Mystery"].map((e) => e + " Staff"),
+    ...["Wind", "Fire", "Water"].map((e) => e + " Staff"),
     "Piece of Trash",
   ];
   return names.map((name) => makeItem(g, name));
