@@ -51,3 +51,5 @@ All twelve named villagers have individually authored sprites with distinct silh
 Named villagers now stock and pay extra for items related to their character. Their market displays the specialty and marks matching sale offers. See [villager trades](VILLAGER-TRADES.md) for the roster and rules.
 
 Golden Gauntlet is automatic while carried: it adds 10 Attack at exactly 0 mana, after Magic Scales selects your attacking stat. Silver Gauntlet adds 10 Attack and Speed at 5 HP or less. Item cards and inspections show whether these effects are active; no use or equip action is required. Their Attack bonuses also work with staves when applicable.
+
+Floor-clearing boon: defeat every non-boss hostile while the boss is still alive to spawn three small health pods on distinct, empty random tiles in the main dungeon. Friendly villagers and chieftains do not block it. A persistent, dismissible announcement and chronicle entry explain the reward. The boon is granted only once per floor and survives reloading; new summoned enemies cannot farm another boon. These pods restore health even for staff users; Energy Belt and Energy Armor still improve pods as usual.

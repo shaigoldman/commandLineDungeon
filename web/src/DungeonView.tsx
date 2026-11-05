@@ -577,7 +577,7 @@ export function DungeonView({
             if (visible(p.x, p.y)) {
               const x = p.x * TILE,
                 y = p.y * TILE,
-                c = p.max ? 0xaf89ce : 0x74b9b2;
+                c = p.healthOnly ? 0xc87378 : p.max ? 0xaf89ce : 0x74b9b2;
               rect(x + 12, y + 35, 25, 4, 0x354e50, 0.5);
               rect(x + 20, y + 8, 8, 3, 0xe1c68b);
               rect(x + 22, y + 11, 4, 4, 0x8b765b);
@@ -587,6 +587,10 @@ export function DungeonView({
               rect(x + 19, y + 17, 5, 13, 0xd8f1d7);
               rect(x + 17, y + 32, 14, 3, 0x5b827f);
               rect(x + 21, y + 35, 6, 1, 0x293e45);
+              if (p.healthOnly) {
+                rect(x + 18, y + 23, 10, 3, 0xfff2d5);
+                rect(x + 22, y + 19, 3, 11, 0xfff2d5);
+              }
             }
           for (const trap of g.traps || [])
             if (trap.revealed && visible(trap.x, trap.y)) {

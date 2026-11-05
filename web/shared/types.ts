@@ -107,7 +107,7 @@ export interface Game {
   player: Actor;
   monsters: Actor[];
   loot: { x: number; y: number; item: Item }[];
-  pods: { x: number; y: number; max: boolean }[];
+  pods: { x: number; y: number; max: boolean; healthOnly?: boolean }[];
   stairs: { x: number; y: number; locked: boolean };
   inventory: Item[];
   keys: number;
@@ -131,6 +131,8 @@ export interface Game {
   achievements?: { name: string; points: number }[];
   levelBefore?: Stats;
   kills?: number;
+  floorEnemyKills?: number;
+  floorBoonGranted?: boolean;
   death?: { critical?: boolean; source: string; attacker?: string; damage: number; floor: number; turn: number };
   log: string[];
   logSerial?: number;

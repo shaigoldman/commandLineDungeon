@@ -521,8 +521,15 @@ goldenGauntlet.monsters=[makeMonster(goldenGauntlet,"Zombie",1)];
 Object.assign(goldenGauntlet.monsters[0],{hp:500,x:16,y:7});Object.assign(goldenGauntlet.monsters[0].stats,{Health:500,Power:0,Armor:0,Speed:0,Luck:0});
 goldenGauntlet.combat=goldenGauntlet.monsters[0].id;
 goldenGauntlet.encounter={enemyId:goldenGauntlet.combat,origin:"inspection",engaged:false,exchanges:0};
+const floorBoon = openArena("Warrior");
+floorBoon.pods=[];floorBoon.loot=[];floorBoon.chests=[];floorBoon.traps=[];floorBoon.secretDoors=[];floorBoon.inventory=[];floorBoon.player.weapons=[];
+Object.assign(floorBoon.player.stats,{Power:1000,Accuracy:1000,Speed:1000,Luck:0});
+const boonBoss=makeMonster(floorBoon,"Golem",1);Object.assign(boonBoss,{boss:true,x:25,y:7});
+const boonEnemy=makeMonster(floorBoon,"Zombie",1);Object.assign(boonEnemy,{x:16,y:7,hp:1});
+floorBoon.monsters=[boonBoss,boonEnemy];floorBoon.combat=boonEnemy.id;floorBoon.encounter={enemyId:boonEnemy.id,origin:"inspection",engaged:false,exchanges:0};floorBoon.xp=99;
 console.log(
   JSON.stringify({
+    floorBoon,
     goldenGauntlet,
     fogSecret,
     specialtyMarket,
