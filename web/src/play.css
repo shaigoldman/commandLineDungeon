@@ -1674,3 +1674,6 @@ body.playing-game {
 /* Keep conversations clear of the live journal. */
 .play-map:has(.chief-speech) .chronicle-feed { max-height:max(32px,min(110px,30%)); }
 .play-map .chief-speech { bottom:max(42px,min(120px,calc(30% + 10px))); max-height:max(24px,calc(70% - 54px)); }
+
+/* Keep accuracy warnings on their own row before encounter controls. */
+.play-context .encounter-hit-warning { flex:0 0 100%; width:100%; box-sizing:border-box; }
