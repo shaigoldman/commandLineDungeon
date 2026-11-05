@@ -1033,7 +1033,7 @@ function kill(g: Game, m: Actor, reward = true, drops = reward) {
 }
 /** Resolve after the entire action, including explosions and other chained deaths. */
 function grantFloorBoon(g: Game) {
-  if (g.status !== "playing" || g.floorBoonGranted || !g.floorEnemyKills ||
+  if (g.status !== "playing" || g.floorBoonGranted || g.floorEnemyKills === 0 ||
       !g.monsters.some(m => m.boss && m.hp > 0) ||
       g.monsters.some(m => m.hp > 0 && !m.boss && !m.merchant && !m.npc)) return;
   const spots: { x: number; y: number }[] = [];

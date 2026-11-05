@@ -25,6 +25,9 @@ describe("floor-clearing boon",()=>{
  it("persists across reloads and cannot be farmed with summoned enemies",()=>{
   let g=act(scene(),{type:"attack"});g=JSON.parse(JSON.stringify(g));g=act(g,{type:"ignore"});expect(g.pods).toHaveLength(3);const enemy=makeMonster(g,"Zombie",1);enemy.hp=1;g.monsters.push(enemy);g.combat=enemy.id;g=act(g,{type:"attack"});expect(g.pods).toHaveLength(3);expect(g.log.filter(l=>l.startsWith("FLOOR BOON:"))).toHaveLength(1);
  });
+ it("also rewards an already-cleared floor loaded from an older save",()=>{
+  let g=scene();g.monsters=g.monsters.filter(m=>m.boss);g.combat=undefined;delete g.floorEnemyKills;delete g.floorBoonGranted;g=act(g,{type:"ignore"});expect(g.pods).toHaveLength(3);expect(g.floorBoonGranted).toBe(true);g=act(JSON.parse(JSON.stringify(g)),{type:"ignore"});expect(g.pods).toHaveLength(3);
+ });
  it("resets eligibility for a new floor",()=>{
   const g=act(scene(),{type:"attack"});g.floor++;generateFloor(g);expect(g.floorBoonGranted).toBe(false);expect(g.floorEnemyKills).toBe(0);expect(g.pods.some(p=>p.healthOnly)).toBe(false);
  });
