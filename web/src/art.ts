@@ -252,13 +252,15 @@ export function sprite(
   showWeapon = true,
 ) {
   type = type === "D" ? "Scout" : type === "Over9000" ? "Warrior" : type;
+  const golden = type === "Ergathon";
+  if (golden) type = "Golem";
   const c = document.createElement("canvas");
   c.width = 24 * scale;
   c.height = 32 * scale;
   const ctx = c.getContext("2d")!;
   ctx.scale(scale, scale);
   const r = (x: number, y: number, w: number, h: number, color: string) => {
-    ctx.fillStyle = color;
+    ctx.fillStyle = golden ? ({ "#384452": "#966322", "#a5d7e3": "#ffe29a", "#121c29": "#44301d", "#b6c789": "#ffefb0", "#65946a": "#bb8a35", "#c1b89a": "#fff1b0", "#7ecbd0": "#ffeabd" } as Record<string,string>)[color] || color : color;
     ctx.fillRect(x, y, w, h);
   };
   const outline = "#182134",
@@ -273,7 +275,18 @@ export function sprite(
     Chieftan: ["#775335", "#bd9253", "#efcb86"],
   };
   const col = colors[type];
-  if (col) {
+  if (type === "Robot") {
+    // A narrow clockwork sentinel: antenna, visor, piston limbs and a reactor cage.
+    r(12, 1, 1, 4, "#718d9e"); r(11, 0, 3, 2, "#ff8063");
+    r(7, 5, 11, 8, outline); r(8, 6, 9, 6, "#c6d5db");
+    r(8, 8, 9, 3, "#364454"); r(10, 9, 6, 1, "#f68a6a");
+    r(11, 13, 4, 2, "#6b7e88"); r(6, 15, 13, 10, outline);
+    r(7, 16, 11, 8, "#92a9b6"); r(10, 17, 6, 6, "#374f63");
+    r(11, 18, 4, 4, "#65d9da"); r(12, 19, 2, 2, "#d8ffea");
+    for (const x of [3, 20]) { r(x, 16, 2, 9, "#6b7e88"); r(x-1, 22, 4, 3, "#c6d5db"); }
+    for (const x of [8, 15]) { r(x, 25, 2, 5, "#718d9e"); r(x-1, 30, 5, 2, outline); r(x, 27, 2, 1, "#e0bf77"); }
+    r(7, 16, 1, 7, "#e9f1ec");
+  } else if (col) {
     const [dark, mid, bright] = col;
     // Cape, layered pauldrons, boots, belt and polished trim.
     r(6, 14, 13, 13, outline);
