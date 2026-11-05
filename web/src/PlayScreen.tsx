@@ -937,6 +937,7 @@ export function PlayScreen({
                   {enemy.className === "Robot" && (
                     <p className="kill-warning">⚠ Robot explosion: on death, everyone within 2 tiles takes {8 + Math.floor(enemy.level / 2)} damage.</p>
                   )}
+                  {hitRate(p,enemy)<60 && <p className="kill-warning encounter-hit-warning">{hitRate(p,enemy)<40 ? "⚠ Very low" : "⚠ Low"} hit chance: {n(hitRate(p,enemy))}%</p>}
                   <div className="context-actions">
                     {(enemy.npc || enemy.merchant) && (
                       <button
@@ -960,7 +961,6 @@ export function PlayScreen({
                       encounterExit.type === "flee" ? `Flee · ${Math.round(fleeChance(p, enemy) * 100)}% chance` : "Leave encounter",
                       encounterExit,
                     )}
-                    {enemy && hitRate(p,enemy)<60 && <p className="kill-warning">{hitRate(p,enemy)<40 ? "⚠ Very low" : "⚠ Low"} hit chance: {n(hitRate(p,enemy))}%</p>}
                     {enemy?.burn && <p className="kill-warning">🔥 BURNING · {n(enemy.burn[1])} damage per action · {enemy.burn[0]} turns</p>}
                     {enemy?.className==="Dark Hero" && <p className="speech-bubble">...</p>}
                     {ground && (
