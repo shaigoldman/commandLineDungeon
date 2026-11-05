@@ -20,6 +20,17 @@ try:
    page.reload();page.wait_for_selector('canvas');page.wait_for_timeout(350)
   def saved():return page.evaluate('''()=>{const k=Object.keys(localStorage).find(k=>k.endsWith('dungeon.android.saves.v1'));return JSON.parse(localStorage.getItem(k)).games[localStorage.getItem('dungeon-key')];}''')
   load(fixtures['explore']);page.screenshot(path=str(shots/'explore.png'));assert page.get_by_role('button',name='Wait',exact=True).count()==0
+  journal=json.loads(json.dumps(fixtures['explore']));journal['log']=['Zombie takes 12 poison damage. You gain 5 HP and 3 mana.','Gained 20 EXP.'];journal['logSerial']=2;load(journal)
+  page.get_by_role('button',name='Open journey chronicle',exact=True).click()
+  expect(page.get_by_role('dialog',name='Journey chronicle')).to_be_visible()
+  expect(page.locator('.chronicle-name').first).to_have_text('Zombie')
+  expect(page.locator('.chronicle-status').first).to_have_text('poison')
+  expect(page.locator('.chronicle-hp').first).to_have_text('HP')
+  assert float(page.locator('.chronicle-entries p').first.evaluate('e=>parseFloat(getComputedStyle(e).fontSize)'))>=17
+  page.get_by_role('button',name='Combat',exact=True).click();expect(page.locator('.chronicle-entries li')).to_have_count(1)
+  page.get_by_role('button',name='Discoveries',exact=True).click();expect(page.locator('.chronicle-entries')).to_contain_text('Gained 20 EXP.')
+  page.get_by_role('button',name='All',exact=True).click();page.screenshot(path=str(shots/'chronicle.png'))
+  page.get_by_role('button',name='Close details',exact=True).click()
   g=fixtures['combat'];g['player']['stats']['Mana']=0;load(g)
   expect(page.locator('.magic-ribbon')).to_be_visible();expect(page.locator('.spell-card.unavailable').first).to_be_visible();page.locator('.spell-card').first.click();expect(page.locator('.spell-inspection')).to_be_visible();expect(page.locator('.spell-inspection .primary')).to_be_disabled();page.screenshot(path=str(shots/'spell-inspection.png'));page.get_by_role('button',name='Close spell').click()
   before=saved()['revision'];canvas=page.locator('canvas').bounding_box();x=canvas['x']+canvas['width']/2;y=canvas['y']+canvas['height']/2;page.mouse.move(x,y);page.mouse.down();page.mouse.move(x+60,y,steps=6);page.mouse.up();page.wait_for_timeout(150);assert saved()['revision']==before
