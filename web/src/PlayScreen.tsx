@@ -94,6 +94,8 @@ export function PlayScreen({
     [itemResult, setItemResult] = useState<ItemOutcome | null>(null),
     [trade, setTrade] = useState("");
   const [swapPickup, setSwapPickup] = useState<Item | null>(null);
+  const [boonNotice, setBoonNotice] = useState("");
+  useEffect(() => setBoonNotice(""), [g.floor]);
   const modal = useRef<HTMLDivElement>(null),
     toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const criticalTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -423,6 +425,8 @@ export function PlayScreen({
     )
       setPanel(null);
     const entries = freshGameLog(before, after);
+    const boon = entries.find(line => line.startsWith("FLOOR BOON:"));
+    if (boon) setBoonNotice(boon.replace("FLOOR BOON: ", ""));
     if (a.type === "use" || a.type === "use-floor") {
       const used = [...before.inventory, ...before.player.weapons, ...before.loot.map((loot) => loot.item)]
         .find((item) => item.id === a.id);
@@ -678,6 +682,10 @@ export function PlayScreen({
       }
     >
       <header className="play-header">
+        {boonNotice && <aside className="boon-notice" role="status" aria-live="polite">
+          <strong>Floor-clearing boon</strong><span>{boonNotice}</span>
+          <button aria-label="Dismiss boon announcement" onClick={() => setBoonNotice("")}>×</button>
+        </aside>}
         <b>◈ TEENY DUNGEON</b>
         <span className="floor-name">
           {g.inSecret

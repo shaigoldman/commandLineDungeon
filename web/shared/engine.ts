@@ -499,6 +499,8 @@ export function balanceGuardian(g: Game, boss: Actor) {
   boss.hp = boss.stats.Health;
 }
 export function generateFloor(g: Game) {
+  g.floorEnemyKills = 0;
+  g.floorBoonGranted = false;
   g.chests = [];
   g.traps = [];
   g.secretDoors = [];
@@ -897,6 +899,7 @@ export function itemUseProblem(g: Game, i: Item): string | undefined {
     return "Need one gold and room to heal.";
   if (i.kind === "health-drain" && (g.player.hp <= 1 || g.player.stats.Mana >= manaCap(g.player)))
     return "Need more than one health and room for mana.";
+  if (i.kind === "energy-magnet" && g.pods[0]?.healthOnly && g.player.hp >= g.player.stats.Health && !g.inventory.some(item => item.kind === "energy-belt")) return "Health is already full.";
   if (i.kind === "energy-magnet" && !g.pods.length)
     return "No energy pod remains on this floor.";
   if (i.kind === "heal" && g.player.hp >= g.player.stats.Health)
@@ -982,6 +985,7 @@ function achievement(g: Game, name: string, points: number) {
 function kill(g: Game, m: Actor, reward = true, drops = reward) {
   if (!g.monsters.some((a) => a.id === m.id)) return;
   g.monsters = g.monsters.filter((a) => a.id !== m.id);
+  if (!m.boss && !m.merchant && !m.npc) g.floorEnemyKills = (g.floorEnemyKills || 0) + 1;
   if (g.combat === m.id) g.combat = undefined;
   log(g, m.name + " falls.");
   for (const item of [...new Map([...(m.inventory || []), ...m.weapons].map(i=>[i.id,i])).values()]) g.loot.push({x:m.x,y:m.y,item});
@@ -1026,6 +1030,26 @@ function kill(g: Game, m: Actor, reward = true, drops = reward) {
         hurt(g, a, 8 + Math.floor(m.level / 2), "Explosion", reward, m);
   }
   if (reward && g.status === "playing") checkLevel(g);
+}
+/** Resolve after the entire action, including explosions and other chained deaths. */
+function grantFloorBoon(g: Game) {
+  if (g.status !== "playing" || g.floorBoonGranted || !g.floorEnemyKills ||
+      !g.monsters.some(m => m.boss && m.hp > 0) ||
+      g.monsters.some(m => m.hp > 0 && !m.boss && !m.merchant && !m.npc)) return;
+  const spots: { x: number; y: number }[] = [];
+  const mainFloor = g.inSecret ? {...g, inSecret:undefined} : g;
+  for (let y = 0; y < g.tiles.length; y++) for (let x = 0; x < Math.min(29, g.tiles[y].length); x++) {
+    if (!empty(mainFloor, x, y) || g.secretDoors?.some(d => d.x === x && d.y === y)) continue;
+    spots.push({x,y});
+  }
+  // Wait for space rather than stacking pods or ever granting a partial boon.
+  if (spots.length < 3) return;
+  for (let n = 0; n < 3; n++) {
+    const [spot] = spots.splice(roll(g, spots.length), 1);
+    g.pods.push({...spot, max:false, healthOnly:true});
+  }
+  g.floorBoonGranted = true;
+  log(g, "FLOOR BOON: All non-boss enemies defeated! Three health pods appeared at random locations on this floor.");
 }
 function checkLevel(g: Game) {
   if (g.xp >= 100 && !g.pendingLevels) {
@@ -1752,8 +1776,10 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
     }
     case "energy-magnet": {
       const multiplier = g.inventory.some(i=>i.kind==="energy-armor") ? 2 : 1;
-      const pod = g.pods.shift();
+      const pod = g.pods[0];
       if (!pod) throw Error("No energy pod remains on this floor.");
+      if (pod.healthOnly && p.hp >= p.stats.Health && !g.inventory.some(i=>i.kind==="energy-belt")) throw Error("Health is already full.");
+      g.pods.shift();
       if (g.inventory.some(i=>i.kind==="energy-belt")) { heal(p,(pod.max ? p.stats.Health : p.stats.Health/4+1)*multiplier); p.stats.Mana=Math.min(manaCap(p),p.stats.Mana+(pod.max ? 10 : 3)*multiplier); }
       else if (p.hp < p.stats.Health) heal(p, (pod.max ? p.stats.Health : p.stats.Health / 4 + 1)*multiplier);
       else p.stats.Mana = Math.min(manaCap(p), p.stats.Mana + (pod.max ? 10 : 3)*multiplier);
@@ -2154,7 +2180,7 @@ export function act(input: Game, a: Action): Game {
         const multiplier=g.inventory.some(i=>i.kind==="energy-armor") ? 2 : 1;
         const both=g.inventory.some(i=>i.kind==="energy-belt");
         const magic =
-          [...g.inventory, ...p.weapons].some((i) => i.kind === "tome") &&
+          !pod.healthOnly && [...g.inventory, ...p.weapons].some((i) => i.kind === "tome") &&
           ((random(g) > 0.5 && p.stats.Mana !== p.stats.Magic) ||
             p.hp === p.stats.Health);
         if (both && (p.hp<p.stats.Health || p.stats.Mana<manaCap(p))) {
@@ -2565,5 +2591,6 @@ export function act(input: Game, a: Action): Game {
   if (input.inventory.some(i=>i.kind==="infinite-bag") && !g.inventory.some(i=>i.kind==="infinite-bag")) { g.inventory=[]; p.weapons=[]; log(g,"Losing the Infinite Bag destroyed all your items!"); }
   if (input.inventory.some(i=>i.kind==="ghost-boots") && !g.inventory.some(i=>i.kind==="ghost-boots") && g.tiles[p.y]?.[p.x]!==0 && p.hp>0) hurt(g,p,p.hp,"Entombed");
   syncPassiveStats(g);
+  grantFloorBoon(g);
   return g;
 }
