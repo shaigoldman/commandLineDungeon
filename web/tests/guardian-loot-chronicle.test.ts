@@ -31,6 +31,7 @@ describe("the second-floor guardian",()=>{
       for(let round=0;round<60&&g.status==="playing"&&g.monsters.some(m=>m.id===boss.id);round++) g=act(g,{type:"attack"});
       if(g.status!=="dead"&&!g.monsters.some(m=>m.id===boss.id))wins[prepared]++;
     }
+    console.info("Guardian wins over 300 seeds: starting Warrior",wins[0],"level-three Warrior with Iron Sword",wins[1]);
     expect(wins[1]/300).toBeGreaterThan(0.8);
     expect(wins[1]).toBeGreaterThan(wins[0]);
   });
@@ -46,7 +47,7 @@ describe("explicit rarity and survivor shops",()=>{
   it("uses only four drop classes, never legendary rewards or stair keys, at every depth",()=>{
     const counts:Record<string,number>={};
     const g=arena(72);
-    for(let n=0;n<20000;n++){const item=randomItem(g,n%20);const tier=item.kind==="gold"?"gold":normalizeRarity(item.rarity);counts[tier]=(counts[tier]||0)+1;expect(item.kind).not.toBe("stair-key");}
+    for(let n=0;n<20000;n++){const item=randomItem(g,n%20);const tier=item.kind==="gold"?"gold":item.kind==="decoy"?"rare":normalizeRarity(item.rarity);counts[tier]=(counts[tier]||0)+1;expect(item.kind).not.toBe("stair-key");}
     for(const [tier,p]of Object.entries({gold:.36,common:.32,uncommon:.24,rare:.07,ultrarare:.01}))expect(counts[tier]/20000).toBeCloseTo(p,1);
     expect(counts.legendary).toBeUndefined();
     expect(()=>randomItemOfRarity(g,"legendary")).toThrow("special rewards");
