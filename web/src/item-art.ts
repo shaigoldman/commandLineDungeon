@@ -11,6 +11,7 @@ export function itemArtKey(item: Pick<Item, "kind" | "name" | "element">) {
       || (name.endsWith(" staff") ? "tome" : / (sword|spear|axe|shield)$/.test(name) ? "weapon" : "trash");
     return itemArtKey({ ...item, kind: kind === "decoy" ? "trash" : kind });
   }
+  if (item.kind === "armor" && name.includes("rusty")) return "armor-rusty";
   if (name === "bloodthirsty dagger") return "bloodthirsty-dagger";
   if (["elemental staff", "dark staff", "emerald staff", "sapphire staff", "ruby staff", "onyx staff"].includes(name)) return "advanced-" + name.replaceAll(" ", "-");
   if (name === "tiny mana potion") return "tiny-mana-potion";
@@ -27,7 +28,7 @@ export function itemArtKey(item: Pick<Item, "kind" | "name" | "element">) {
           ? "spear"
           : "sword";
     const material =
-      ["fragile", "iron", "steel", "lucky", "magic", "obsidian"].find((m) =>
+      ["fragile", "iron", "steel", "lucky", "magic", "obsidian", "poison"].find((m) =>
         name.startsWith(m + " "),
       ) || (name.includes("awathon") ? "relic" : "iron");
     return shape + ":" + material;
@@ -84,6 +85,7 @@ export function itemCanvas(
   const metal: Record<string, string[]> = {
     fragile: ["#a99c83", "#d8c9a2", "#977755"],
     iron: ["#a4bdc9", "#e1e8dc", "#c49e62"],
+    poison: ["#7eaa85", "#cef3b8", "#719a48"],
     steel: ["#8dbdd6", "#effaff", "#c9cbd1"],
     lucky: ["#e2b75d", "#fff0ad", "#7fbd9a"],
     magic: ["#9e8dd6", "#eee2ff", "#d9be7f"],
@@ -305,7 +307,7 @@ export function itemCanvas(
     r(19, 3, 1, 20, gold);
     r(18, 24, 5, 4, gold);
     r(21, 27, 3, 4, brown);
-  } else if (key === "armor" || key === "hand") {
+  } else if (key === "armor" || key === "armor-rusty" || key === "hand") {
     r(7, 5, 18, 4, dark);
     r(3, 9, 26, 8, dark);
     r(7, 17, 18, 12, dark);
@@ -316,6 +318,11 @@ export function itemCanvas(
     r(14, 8, 5, 2, dark);
     r(8, 24, 16, 3, gold);
     r(19, 12, 3, 11, "#617a94");
+    if (key === "armor-rusty") {
+      for (const [x,y,w,h] of [[7,10,4,5],[9,16,5,3],[18,20,6,4],[24,11,3,4],[13,24,4,3]]) {
+        r(x,y,w,h,"#874624"); r(x+1,y,Math.max(1,w-2),1,"#ce7c3c");
+      }
+    }
     if (key === "hand") {
       r(12, 5, 12, 17, gold);
       r(9, 14, 4, 8, gold);

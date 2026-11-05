@@ -1,14 +1,16 @@
+import type { Rarity } from "./rarity";
 export type Stats = Record<string, number>;
 export type Effects = Record<string, [number, number]>;
 export interface Item {
   id: string;
   name: string;
   kind: string;
-  rarity: number;
+  rarity: Rarity | number;
   value: number;
   stat?: string;
   duration?: number;
   attack?: number;
+  poison?: [number, number];
   weight?: number;
   luck?: number;
   uses?: number;

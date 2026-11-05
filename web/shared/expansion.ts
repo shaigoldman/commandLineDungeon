@@ -1,7 +1,8 @@
+import { rarityRank } from "./rarity";
 /** Ashfall market rules. All RNG is part of the persisted game seed. */
 import type { Actor, Game, Item, SecretDoor } from "./types";
 import { itemDefinitions } from "./catalog";
-import { makeItem, makeMonster, random, randomItem, pickItemDefinition, log, capacityOf, triggerTrap } from "./engine";
+import { makeItem, makeMonster, random, randomItem, randomItemOfRarity, pickItemDefinition, log, capacityOf, triggerTrap } from "./engine";
 const roll = (g: Game, n: number) => Math.floor(random(g) * n);
 const pick = <T>(g: Game, a: T[]) => a[roll(g, a.length)];
 const uid = (g: Game) => "ash-" + roll(g, 2 ** 32).toString(36);
@@ -66,14 +67,12 @@ const farewells = [
 export function catalogItems(g: Game) {
   const names = [
     ...itemDefinitions
-      .filter((d) => !["weapon", "tome"].includes(d[1]) && d[0] !== "Pot of Gold")
+      .filter((d) => !["Sword", "Spear", "Axe", "Shield", "Magic Staff"].includes(d[0]) && d[1] !== "stair-key" && d[2] !== "legendary" && d[0] !== "Pot of Gold")
       .map((d) => d[0]),
-    ...["Fragile", "Iron", "Steel", "Lucky", "Magic", "Obsidian"].flatMap((m) =>
-      ["Sword", "Spear", "Axe"].map((w) => m + " " + w),
+    ...["Fragile", "Iron", "Steel", "Lucky", "Magic", "Obsidian", "Poison"].flatMap((m) =>
+      ["Sword", "Spear", "Axe", "Shield"].map((w) => m + " " + w),
     ),
-    ...["Wind", "Fire", "Water", "Mystery"].map((e) => e + " Staff"),
-    "Awathons Broadsword",
-    "EXP Pill",
+    ...["Wind", "Fire", "Water"].map((e) => e + " Staff"),
     "Piece of Trash",
   ];
   return names.map((name) => makeItem(g, name));
@@ -84,7 +83,7 @@ export function marketValue(i: Item) {
   return Math.max(
     2,
     Math.round(
-      3 + i.rarity * 1.5 + i.rarity * i.rarity * 0.35 + (i.attack || 0) * 0.8,
+      [5, 15, 31, 53, 100][rarityRank(i.rarity)] + (i.attack || 0) * 0.8,
     ),
   );
 }
@@ -93,8 +92,19 @@ function askingPrice(g: Game, item: Item) {
     item.kind === "gold" ? 0.8 + random(g) * 0.2 : 0.72 + random(g) * 0.33;
   return Math.max(1, Math.ceil(marketValue(item) * multiplier));
 }
+/** Ordinary slots: 90% Uncommon, 10% Common. Half of shops replace one slot with a premium item. */
+export function villagerStock(g: Game): Item[] {
+  const count = 3 + roll(g, 3);
+  const premium = random(g) < 0.5 ? roll(g, count) : -1;
+  return Array.from({ length: count }, (_, index) => randomItemOfRarity(g,
+    index === premium ? (random(g) < 0.8 ? "rare" : "ultrarare") : random(g) < 0.1 ? "common" : "uncommon"));
+}
 export function makeVillager(g: Game, king = false): Actor {
-  const [name, line] = pick(g, [...history]);
+  if (king && g.monsters.some(m => m.merchant?.king)) return makeVillager(g);
+  const identities = history.filter(([name]) => !g.monsters.some(m => m.merchant && m.name === name));
+  // A floor with all twelve survivors already present receives a chieftain instead.
+  if (!king && !identities.length) return makeChief(g);
+  const [name, line] = pick(g, identities.length ? identities : [...history]);
   const all = king ? catalogItems(g) : [];
   const stock = king
     ? all
@@ -102,7 +112,7 @@ export function makeVillager(g: Game, king = false): Actor {
         .sort((a, b) => a.sort - b.sort)
         .slice(0, Math.ceil(all.length / 2))
         .map((a) => a.item)
-    : Array.from({ length: 3 + roll(g, 3) }, () => randomItem(g));
+    : villagerStock(g);
   // A villager cannot sell the very item they are hunting for.
   const wantedCandidates = [
     "Fragile Axe",
@@ -322,7 +332,7 @@ export function chestReward(g: Game, ultra = false) {
     min = ultra ? (r < 0.3 ? 9 : 6) : r < 0.15 ? 9 : r < 0.65 ? 6 : 3;
   return makeItem(
     g,
-    pickItemDefinition(g, itemDefinitions.filter((d) => d[2] >= min && d[0] !== "Pot of Gold"))[0],
+    pickItemDefinition(g, itemDefinitions.filter((d) => rarityRank(d[2]) >= rarityRank(min) && d[2] !== "legendary" && d[1] !== "stair-key" && d[0] !== "Pot of Gold"))[0],
   );
 }
 export function addChest(

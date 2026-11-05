@@ -1,12 +1,8 @@
 import type { Item } from "./types";
-export function rarityInfo(rarity: number) {
-  return rarity >= 9
-    ? { name: "Ultrarare", className: "ultra" }
-    : rarity >= 6
-      ? { name: "Rare", className: "rare" }
-      : rarity >= 3
-        ? { name: "Uncommon", className: "uncommon" }
-        : { name: "Common", className: "common" };
+import { normalizeRarity } from "./rarity";
+export function rarityInfo(rarity: Item["rarity"]) {
+  const tier = normalizeRarity(rarity);
+  return { name: tier[0].toUpperCase() + tier.slice(1), className: tier === "ultrarare" ? "ultra" : tier };
 }
 /** Three authored lore variations per item, selected by persistent item identity. */
 export function loreOptions(item: Item): string[] {

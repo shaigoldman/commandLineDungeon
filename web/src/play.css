@@ -1651,8 +1651,32 @@ body.playing-game {
 .inventory-ribbon > .ribbon-label { font-size:10px; font-weight:bold; color:#f6d777; }
 
 .dark-hero-portrait { filter:brightness(.55) sepia(.35) hue-rotate(220deg); }
-.ergathon-portrait { filter:sepia(.4) hue-rotate(220deg); }
 .green-dragon-portrait { filter:hue-rotate(90deg); }
 .victory-screen { padding:28px; text-align:center; border:2px solid #d1b56d; }
 .victory-screen h1 { color:#f6d784; font-family:Georgia,serif; }
 .victory-screen button { display:block; width:100%; margin-top:14px; min-height:46px; }
+
+/* A readable field journal, with redundant word labels alongside semantic color. */
+.play-shell .chronicle-peek { display:flex; align-items:center; gap:10px; width:100%; margin:6px 0; padding:10px 12px; border:1px solid #9d8857; background:#243440; color:#edddb2; text-align:left; font:15px Georgia,serif; }
+.chronicle-peek strong,.chronicle-peek b { flex-shrink:0; }
+.chronicle-peek span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; color:#e4d9bf; }
+.play-modal:has(.chronicle) { background:#ede1c2; color:#302b25; border-color:#ac9057; }
+.chronicle { padding:8px 4px; font:17px/1.65 Georgia,"Times New Roman",serif; }
+.chronicle h2 { font-size:28px; line-height:1.2; margin:4px 0 12px; color:#3d3025; }
+.chronicle-kicker { margin:0; color:#735b35; font-variant:small-caps; letter-spacing:.06em; }
+.chronicle-subtitle { font:13px/1.5 system-ui,sans-serif; color:#655c4a; }
+.chronicle-filters { display:flex; flex-wrap:wrap; gap:6px; margin:15px 0; }
+.chronicle-filters button { background:#e0d1aa; color:#3f3529; border:1px solid #a89670; padding:7px 10px; font:14px system-ui,sans-serif; }
+.chronicle-filters button[aria-pressed="true"] { background:#3f5149; color:#fff3cf; }
+.chronicle-entries { list-style:none; margin:0; padding:0; }
+.chronicle-entries li { display:flex; gap:12px; border-bottom:1px solid #c7b995; padding:10px 0; }
+.chronicle-entries p { margin:0; overflow-wrap:anywhere; }
+.chronicle-number { flex:0 0 30px; color:#7b6746; font:12px/2.3 system-ui,sans-serif; }
+.chronicle-name { color:#354e78; }
+.chronicle-status { color:#715082; text-decoration:underline dotted; text-underline-offset:3px; }
+.chronicle-combat { color:#963b28; }
+.chronicle-hp { color:#366341; }
+.chronicle-mana { color:#315e85; }
+.chronicle-reward { color:#7b5219; }
+.chronicle-stat { color:#554428; font-variant-numeric:tabular-nums; }
+.rarity-legendary { color:#ffdd87; border-color:#e4b54b; }

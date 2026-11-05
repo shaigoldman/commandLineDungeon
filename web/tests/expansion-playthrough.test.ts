@@ -1,3 +1,4 @@
+import { rarityRank } from "../shared/rarity";
 import { describe, it, expect } from "vitest";
 import {
   act,
@@ -123,10 +124,10 @@ describe("Ashfall playthroughs", () => {
       expect(g.inventory).toHaveLength(0);
     });
   for (const [name, value, rarity] of [
-    ["1 Gold Coin", 1, 0],
-    ["5 Gold Coins", 5, 2],
-    ["10 Gold Coins", 10, 4],
-    ["20 Gold Coins", 20, 7],
+    ["1 Gold Coin", 1, "common"],
+    ["5 Gold Coins", 5, "common"],
+    ["10 Gold Coins", 10, "uncommon"],
+    ["20 Gold Coins", 20, "rare"],
   ] as const)
     it(`collects ${name} through a full bag`, () => {
       let g = arena();
@@ -306,7 +307,7 @@ describe("Ashfall playthroughs", () => {
     for (let seed = 0; seed < 160; seed++) {
       const g = arena(seed),
         c = addChest(g, 6, 7);
-      if (c.reward.rarity >= 6) rares++;
+      if (rarityRank(c.reward.rarity) >= 2) rares++;
       expect(() => act(g, { type: "open-chest", id: c.id })).toThrow("Key");
       g.inventory = [makeItem(g, "Rare Key")];
       c.x = 20;
@@ -336,7 +337,7 @@ describe("Ashfall playthroughs", () => {
       if (["chest", "ultra"].includes(outcome)) {
         expect(g.chests![0].locked).toBe(false);
         if (outcome === "ultra")
-          expect(g.chests![0].reward.rarity).toBeGreaterThanOrEqual(6);
+          expect(rarityRank(g.chests![0].reward.rarity)).toBeGreaterThanOrEqual(2);
       } else if (outcome === "king")
         expect(g.monsters[0].merchant!.stock.length).toBe(
           Math.ceil(catalogItems(arena()).length / 2),
@@ -356,8 +357,8 @@ describe("Ashfall playthroughs", () => {
     let ultra = 0;
     for (let seed = 0; seed < 100; seed++) {
       const c = addChest(arena(seed), 6, 7, false, true);
-      expect(c.reward.rarity).toBeGreaterThanOrEqual(6);
-      if (c.reward.rarity >= 9) ultra++;
+      expect(rarityRank(c.reward.rarity)).toBeGreaterThanOrEqual(2);
+      if (rarityRank(c.reward.rarity) >= 3) ultra++;
     }
     expect(ultra).toBeGreaterThan(0);
   });
@@ -382,7 +383,7 @@ describe("Ashfall playthroughs", () => {
       if (deal === "Crown of Plenty") {
         if (g.pendingLoot) {
           expect(g.player.gold).toBe(60);
-          expect(g.pendingLoot.rarity).toBeGreaterThanOrEqual(6);
+          expect(rarityRank(g.pendingLoot.rarity)).toBeGreaterThanOrEqual(2);
         } else {
           // A coin gift goes directly to the purse, never to inspection.
           expect(g.player.gold).toBe(80);

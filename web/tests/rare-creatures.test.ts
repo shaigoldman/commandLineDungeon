@@ -1,3 +1,4 @@
+import { rarityRank } from "../shared/rarity";
 import { describe, expect, it } from "vitest";
 import { act, availableSpells, fleeChance, generateFloor, makeItem, makeMonster, newGame, randomItem } from "../shared/engine";
 import { makeVillager, makeChief, addChest, addSecretDoor, catalogItems } from "../shared/expansion";
@@ -81,7 +82,7 @@ describe("rare creatures and keyless magic", () => {
   it("gives dark fairies rarer loot and wild villagers EXP, curse and a delayed ghost", () => {
     let g = arena(4); const fairy = target(g, "Dark Fairy"); fairy.hp = 1; fairy.stats.Speed = 0;
     g = act(g, { type: "attack" });
-    expect(g.loot[0].item.rarity).toBeGreaterThanOrEqual(3);
+    expect(rarityRank(g.loot[0].item.rarity)).toBeGreaterThanOrEqual(1);
     g = arena(5); const wild = target(g, "Wild Villager"); wild.hp = 1; wild.stats.Speed = 0;
     g = act(g, { type: "attack" });
     expect(g.xp).toBeGreaterThan(0); expect(g.player.effects.Curse).toBeDefined();

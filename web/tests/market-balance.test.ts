@@ -1,3 +1,4 @@
+import { rarityRank } from "../shared/rarity";
 import { describe, expect, it } from "vitest";
 import { act, makeItem, newGame } from "../shared/engine";
 import { makeVillager, marketValue, saleQuote } from "../shared/expansion";
@@ -46,7 +47,7 @@ describe("villager prices", () => {
     let g = fresh(8);
     const m = makeVillager(g, true);
     const offer = m.merchant!.stock.find(
-      ({ item, price }) => item.rarity >= 4 && !item.auto && price <= 20,
+      ({ item, price }) => rarityRank(item.rarity) >= 1 && !item.auto && price <= 20,
     );
     expect(offer).toBeDefined();
     Object.assign(m, { x: g.player.x + 1, y: g.player.y });

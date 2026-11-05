@@ -1,3 +1,5 @@
+import { rarityRank } from "../shared/rarity";
+import { Chronicle } from "./Chronicle";
 import { itemIcon } from "./item-art";
 import { deathStory } from "../shared/death-story";
 import { itemOutcome, type ItemOutcome } from "../shared/item-outcome";
@@ -78,7 +80,7 @@ export function PlayScreen({
       g.status === "playing" && !g.pendingLevels ? availableSpells(g, { free: true, ignoreReq: true }) : [];
   const [inspectedSpell, setInspectedSpell] = useState<(typeof spellDefinitions)[number] | null>(null);
   const [panel, setPanel] = useState<
-      "stats" | "enemy" | "save" | "help" | "npc" | "level" | null
+      "stats" | "enemy" | "save" | "help" | "npc" | "level" | "chronicle" | null
     >(null),
     [selection, setSelection] = useState<Selection | null>(null),
     [overview, setOverview] = useState(false),
@@ -346,6 +348,7 @@ export function PlayScreen({
         announce("Choose a direction to move.");
       } else if (e.key.toLowerCase() === "v") setPanel("save");
       else if (e.key.toLowerCase() === "s") setPanel("stats");
+      else if (e.key.toLowerCase() === "l") setPanel("chronicle");
       else if (e.key.toLowerCase() === "h") setPanel("help");
     };
     window.addEventListener("keydown", listener);
@@ -828,7 +831,7 @@ export function PlayScreen({
                 }
               />
             ) : (
-              <Portrait type={enemy.className === "Dark Hero" ? enemy.heroClass || "Warrior" : enemy.className} className={enemy.className === "Dark Hero" ? "dark-hero-portrait" : enemy.name.startsWith("Ergathon") ? "ergathon-portrait" : enemy.className === "Dragon" && !enemy.boss ? "green-dragon-portrait" : ""} />
+              <Portrait type={enemy.name.startsWith("Ergathon") ? "Ergathon" : enemy.className === "Dark Hero" ? enemy.heroClass || "Warrior" : enemy.className} className={enemy.className === "Dark Hero" ? "dark-hero-portrait"  : enemy.className === "Dragon" && !enemy.boss ? "green-dragon-portrait" : ""} />
             )}
             <span>
               <strong>
@@ -1226,7 +1229,7 @@ export function PlayScreen({
                       : item.uses && item.maxUses
                         ? `${item.uses}/${item.maxUses} uses`
                       : item.kind === "tome"
-                        ? item.element
+                        ? `${item.element}${item.value ? ` · +${item.value} Magic` : ""}`
                         : problem || "View / use"}
                   </em>
                   {!held &&
@@ -1255,6 +1258,9 @@ export function PlayScreen({
           )}
         </div>
       </section>
+      <button className="chronicle-peek" onClick={() => setPanel("chronicle")} aria-label="Open journey chronicle">
+        <strong>✦ Chronicle</strong><span>{g.log.at(-1) || "Your story begins…"}</span><b>Read ›</b>
+      </button>
       {spells.length > 0 && (
         <section className="magic-ribbon" aria-label="Available magic">
           <span className="ribbon-label">MAGIC · {n(p.stats.Mana)} MP</span>
@@ -1354,7 +1360,7 @@ export function PlayScreen({
                           ? "Level up"
                           : panel === "save"
                             ? "Saved journey"
-                            : "How to play"
+                            : panel === "chronicle" ? "Journey chronicle" : "How to play"
             }
             onClick={(e) => e.stopPropagation()}
           >
@@ -1621,7 +1627,7 @@ export function PlayScreen({
                           <button key={item.id} className="upgrade-choice" disabled={busy} onClick={() => void send({ type: "use", id: picked.id, target: item.id })}>
                             <ItemIcon item={item} /><span><b>Double {item.name}</b><small>{item.uses} → {(item.uses || 0) * 2} uses · usual max {item.maxUses}</small></span>
                           </button>)}
-                        {picked.kind === "alchemy-book" && g.inventory.filter((item) => item.id !== picked.id && item.rarity < 9).map((item) =>
+                        {picked.kind === "alchemy-book" && g.inventory.filter((item) => item.id !== picked.id && rarityRank(item.rarity) < 3).map((item) =>
                           <button key={item.id} className="upgrade-choice" disabled={busy || !!itemUseProblem(g, picked)} onClick={() => void send({ type: "use", id: picked.id, target: item.id })}>
                             <ItemIcon item={item} /><span><b>Transmute {item.name}</b><small>5 gold · usually one rarity tier higher · small misfire chance</small></span>
                           </button>)}
@@ -1892,6 +1898,8 @@ export function PlayScreen({
                   {actButton("Leave peacefully", { type: "leave" })}
                 </div>
               </>
+            ) : panel === "chronicle" ? (
+              <Chronicle game={g} />
             ) : panel === "save" ? (
               <>
                 <h2>Saved after every action</h2>

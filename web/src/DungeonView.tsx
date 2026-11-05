@@ -135,6 +135,7 @@ export function DungeonView({
           textures[kind] = Texture.from(worldArt(kind));
           textures[kind].source.scaleMode = "nearest";
         }
+        textures.Ergathon = Texture.from(sprite("Ergathon", 2));
         textures.Dragon = Texture.from(dragonArt());
         textures.Dragon.source.scaleMode = "nearest";
         textures.GreenDragon = Texture.from(dragonArt(2,true));
@@ -165,6 +166,7 @@ export function DungeonView({
             lungeX: number;
             lungeY: number;
             hurt: boolean;
+            baseTint: number;
             gear?: { s: Sprite; dx: number; dy: number }[];
             hero?: string;
           }[] = [],
@@ -671,15 +673,15 @@ export function DungeonView({
                       ? textures.Emperor
                       : a.npc
                         ? textures["chief-" + a.npc.tribe] || textures.Chieftan
-                        : a.className === "Dragon" && !a.boss ? textures.GreenDragon : textures[design] || textures.Warrior,
+                        : a.name.startsWith("Ergathon") ? textures.Ergathon : a.className === "Dragon" && !a.boss ? textures.GreenDragon : textures[design] || textures.Warrior,
               );
               s.x = a.className === "Dragon" ? x - 24 : x;
               if (a.className === "Dragon" && g.player.x < a.x) {
                 s.scale.x = -1;
                 s.x = x + 72;
               }
-              if (a.className === "Dark Hero") s.tint=0x685478;
-              if (a.name.startsWith("Ergathon")) s.tint=0xa47fe6;
+              if (a.className === "Dark Hero") s.tint=0x50405e;
+              
               s.y = y - 19;
               world.addChild(s);
               if (a.burn) { const fire = new Text({text:`🔥 ${Math.round(a.burn[1])} × ${a.burn[0]}`,style:{fontSize:12,fill:0xffba5c,fontWeight:"bold"}}); fire.x=x;fire.y=y-32;world.addChild(fire); }
@@ -733,6 +735,7 @@ export function DungeonView({
                     ? Math.sign(opponent.y - a.y) * 10
                     : 0,
                 hurt: !!old && old.hp > a.hp,
+                baseTint: a.className === "Dark Hero" ? 0x50405e : 0xffffff,
                 gear,
                 hero: a.id === "player" ? a.className : undefined,
               });
@@ -905,7 +908,7 @@ export function DungeonView({
                 : lunge * (u.lungeX || u.lungeY ? (mirrored ? 0.6 : -0.6) : 0);
             }
             u.s.tint =
-              !reduced && u.hurt && now - moveStart < 220 ? 0xff9e8c : 0xffffff;
+              !reduced && u.hurt && now - moveStart < 220 ? 0xff9e8c : u.baseTint;
           }
           for (const l of labels) {
             const age = (now - moveStart) / 1400;

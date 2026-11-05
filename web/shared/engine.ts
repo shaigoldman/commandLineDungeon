@@ -1,3 +1,4 @@
+import { lootRarities, rarityRank, migrateItemRarities, type Rarity } from "./rarity";
 import {
   expansionFloor,
   applyCurse,
@@ -42,7 +43,7 @@ export function log(g: Game, s: string) {
 }
 export function makeItem(g: Game, name: string): Item {
   const named =
-    /^(Fragile|Iron|Steel|Lucky|Magic|Obsidian) (Sword|Spear|Axe|Shield)$/.exec(name);
+    /^(Fragile|Iron|Steel|Lucky|Magic|Obsidian|Poison) (Sword|Spear|Axe|Shield)$/.exec(name);
   const element = /^(Wind|Fire|Water|Mystery) Staff$/.exec(name)?.[1];
   const base = named?.[2] || (element ? "Magic Staff" : name);
   const d = itemDefinitions.find((d) => d[0] === base);
@@ -50,7 +51,7 @@ export function makeItem(g: Game, name: string): Item {
     id: id(g),
     name,
     kind: d?.[1] || "trash",
-    rarity: d?.[2] || 0,
+    rarity: d?.[2] || "common",
     value: d?.[3] || 0,
     stat: d?.[4],
     description: "",
@@ -177,7 +178,7 @@ export function makeItem(g: Game, name: string): Item {
     let m = 0;
     if (named)
       m = ["Fragile", "Iron", "Steel", "Lucky", "Magic", "Obsidian"].indexOf(
-        named[1],
+        named[1] === "Poison" ? "Iron" : named[1],
       );
     else while (m < 5 && random(g) > chance) m++;
     const material = ["Fragile", "Iron", "Steel", "Lucky", "Magic", "Obsidian"][
@@ -215,6 +216,13 @@ export function makeItem(g: Game, name: string): Item {
     }
     i.uses = random(g) < 0.3 ? roll(g, i.maxUses) + 1 : i.maxUses;
     i.name = material + " " + base;
+    if (named?.[1] === "Poison" || (!named && ["Sword", "Spear", "Axe", "Shield"].includes(base) && random(g) < 0.2)) {
+      // Poison variants always have Iron statistics.
+      if (m !== 1) return makeItem(g, "Poison " + base);
+      i.name = "Poison " + base;
+      i.poison = [5, 2];
+      i.description += " Landed hits poison: 2 damage per action for 5 actions.";
+    }
   }
   if (i.kind === "tome") {
     i.element = element || pick(g, ["Wind", "Fire", "Water"]);
@@ -223,11 +231,11 @@ export function makeItem(g: Game, name: string): Item {
   const advanced: Record<string, string> = { "Elemental Staff": "Elemental", "Dark Staff": "Dark", "Onyx Staff": "Dark", "Emerald Staff": "Wind", "Sapphire Staff": "Water", "Ruby Staff": "Fire" };
   if (advanced[name]) { staff(i, advanced[name]); i.name = name; i.description = `${i.element} spells; +${i.value} Magic while carried or equipped.`; }
   if (name === "Bloodthirsty Dagger") Object.assign(i, { name, attack: 6, weight: 1, luck: 5, uses: 30, maxUses: 30, description: "A swift blade. Below 10 HP, gain 100 Luck while equipped." });
-  if (i.kind === "decoy") { const disguise = makeItem(g, pick(g, itemDefinitions.filter(d => d[2] === 10 && d[1] !== "decoy"))[0]); i = { ...disguise, id: i.id, kind: "decoy" }; }
+  if (i.kind === "decoy") { const disguise = makeItem(g, pick(g, itemDefinitions.filter(d => d[2] === "ultrarare" && d[1] !== "decoy"))[0]); i = { ...disguise, id: i.id, kind: "decoy" }; }
   if (name === "Awathons Broadsword")
     Object.assign(i, {
       kind: "weapon",
-      rarity: 10,
+      rarity: "legendary",
       attack: 25,
       weight: 10,
       luck: 11,
@@ -235,8 +243,9 @@ export function makeItem(g: Game, name: string): Item {
       maxUses: 50,
     });
   if (name === "EXP Pill")
-    Object.assign(i, { kind: "xp", rarity: 9, description: "Gain 100 EXP." });
-  if (name === "Piece of Trash") Object.assign(i, { rarity: 1 });
+    Object.assign(i, { kind: "xp", rarity: "legendary", description: "Gain 100 EXP." });
+  if (name === "Mystery Staff") i.rarity = "legendary";
+  if (name === "Piece of Trash") Object.assign(i, { rarity: "common" });
   const desc: Record<string, string> = {
     antidote: "Cure poison and curses.",
     seismic:
@@ -269,32 +278,29 @@ function staff(i: Item, e: string) {
   i.element = e;
   i.name = e + " Staff";
   i.attack = (
-    { Wind: 5, Fire: 6, Water: 4, Mystery: 0 } as Record<string, number>
+    { Wind: 5, Fire: 6, Water: 4, Mystery: 0, Dark: 5, Elemental: 6 } as Record<string, number>
   )[e];
   i.luck = (
-    { Wind: 3, Fire: 10, Water: 5, Mystery: 50 } as Record<string, number>
+    { Wind: 3, Fire: 10, Water: 5, Mystery: 50, Dark: 8, Elemental: 10 } as Record<string, number>
   )[e];
   i.weight = 0;
 }
+/** Explicit drop tickets: gold 36, common 32, uncommon 24, rare 7, ultrarare 1. */
 export function randomItem(g: Game, depth = g.floor): Item {
-  const rars: number[] = [];
-  for (let n = 0; n < 11; n++) {
-    let v = Math.trunc(Math.abs(depth * 2 - n) ** 2);
-    if (v > 100) v = 99;
-    for (let j = 0; j < 100 - v; j++) rars.push(n);
+  const draw = random(g) * 100;
+  if (draw < 36) {
+    const coins = itemDefinitions.filter(d => d[1] === "gold" && d[0] !== "Pot of Gold");
+    const weights = [12, 5, 2, 1];
+    let ticket = random(g) * weights.reduce((a,b) => a+b, 0);
+    for (let n=0;n<coins.length;n++) if ((ticket -= weights[n] || 1) < 0) return makeItem(g,coins[n][0]);
+    return makeItem(g,coins[0][0]);
   }
-  const rarity = pick(g, rars) + 1;
-  // Currency has its own draw, below the ordinary common-item pool.
-  if (random(g) < 0.34) {
-    const coins = itemDefinitions.filter((d) => d[1] === "gold" && d[0] !== "Pot of Gold" && d[2] <= rarity);
-    const weights = coins.map((d) => ({ "1 Gold Coin": 12, "5 Gold Coins": 5, "10 Gold Coins": 2, "20 Gold Coins": 1 })[d[0]] || 1);
-    let draw = random(g) * weights.reduce((a, b) => a + b, 0);
-    for (let n = 0; n < coins.length; n++) if ((draw -= weights[n]) < 0) return makeItem(g, coins[n][0]);
-    return makeItem(g, coins.at(-1)![0]);
-  }
-  const candidates = itemDefinitions.filter(
-    (d) => d[2] <= rarity && d[0] !== "Small Health Potion" && d[1] !== "gold",
-  );
+  void depth;
+  return randomItemOfRarity(g, draw < 68 ? "common" : draw < 92 ? "uncommon" : draw < 99 ? "rare" : "ultrarare");
+}
+export function randomItemOfRarity(g: Game, rarity: Rarity): Item {
+  if (rarity === "legendary") throw Error("Legendary items are special rewards, never random drops.");
+  const candidates = itemDefinitions.filter(d => d[2] === rarity && d[1] !== "gold" && d[1] !== "stair-key");
   return makeItem(g, pickItemDefinition(g, candidates, true)[0]);
 }
 type ItemDefinition = (typeof itemDefinitions)[number];
@@ -311,22 +317,20 @@ export function pickItemDefinition(g: Game, definitions: ItemDefinition[], boost
   }
   const families = [...groups.keys()];
   if (boostKeys && groups.has("key")) families.push("key", "key", "key");
+  for (const [family, definitions] of groups) if (definitions[0][1] === "weapon") families.push(family, family);
   const variants = groups.get(pick(g, families))!;
   if (variants.length === 1) return variants[0];
-  const minimum = Math.min(...variants.map((d) => d[2]));
-  const weights = variants.map((d) => 1 / (1 + d[2] - minimum));
+  const minimum = Math.min(...variants.map((d) => rarityRank(d[2])));
+  const weights = variants.map((d) => 1 / (1 + rarityRank(d[2]) - minimum));
   let draw = random(g) * weights.reduce((a, b) => a + b, 0);
   for (let n = 0; n < variants.length; n++) if ((draw -= weights[n]) < 0) return variants[n];
   return variants.at(-1)!;
 }
-function rarityTier(rarity: number) {
-  return rarity >= 9 ? 3 : rarity >= 6 ? 2 : rarity >= 3 ? 1 : 0;
-}
+function rarityTier(rarity: Item["rarity"]) { return rarityRank(rarity); }
 function transmute(g: Game, original: Item) {
   if (random(g) < 0.06) return makeItem(g, "Piece of Trash");
   const tier = Math.min(3, rarityTier(original.rarity) + 1 + (random(g) < 0.12 ? 1 : 0));
-  const bounds = [[1, 2], [3, 5], [6, 8], [9, 11]][tier];
-  const candidates = itemDefinitions.filter((d) => d[2] >= bounds[0] && d[2] <= bounds[1] && d[0] !== "Pot of Gold");
+  const candidates = itemDefinitions.filter((d) => d[2] === lootRarities[tier] && d[1] !== "gold" && d[1] !== "stair-key");
   return makeItem(g, pickItemDefinition(g, candidates)[0]);
 }
 
@@ -483,6 +487,15 @@ function position(g: Game) {
   if (!a.length) throw Error("No open tiles");
   return pick(g, a);
 }
+/** A slow armored checkpoint, rather than an ordinary over-levelled golem. */
+export function balanceGuardian(g: Game, boss: Actor) {
+  const depth = Math.max(0, g.floor - 1), hard = 1.3 ** g.difficulty;
+  boss.className = "Golem";
+  boss.level = 3 + depth * 2;
+  boss.stats = { Health: Math.round((44 + depth * 12) * hard), Power: Math.round((9 + depth * 3) * hard),
+    Armor: 3 + depth * 2, Accuracy: 68, Speed: 2 + depth, Luck: 0, Magic: 5, Mana: 10 };
+  boss.hp = boss.stats.Health;
+}
 export function generateFloor(g: Game) {
   g.chests = [];
   g.traps = [];
@@ -569,6 +582,7 @@ export function generateFloor(g: Game) {
         ? "Ergathon, Ruthagor’s chosen"
         : boss.name + " Boss";
   boss.boss = true;
+  if (boss.name.startsWith("Ergathon")) balanceGuardian(g, boss);
   Object.assign(boss, { x: g.stairs.x, y: g.stairs.y });
   g.monsters.push(boss);
   if (g.floor > 0 && random(g) > 0.5) {
@@ -1034,6 +1048,7 @@ function checkLevel(g: Game) {
 function tickPenalties(a: Actor) { for (const key of ["Accuracy Penalty","Speed Penalty"]) if (a.effects[key] && --a.effects[key][0]<=0) delete a.effects[key]; }
 function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
   syncPassiveStats(g);
+  if (a.id !== "player") { tickEnemyPoison(g, a); if (a.hp <= 0) return false; }
   if (a.id!=="player") syncMonsterItems(a);
   if (b.id!=="player") syncMonsterItems(b);
   if (a.burn) {
@@ -1044,6 +1059,7 @@ function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
     else a.burn[0]--;
   }
   log(g, `${a.name} attacks ${b.name}.`);
+  const weaponPoison = !unarmed ? a.weapons.find(w => w.poison)?.poison : undefined;
   const physical = !unarmed && a.weapons.some((w) => w.kind === "weapon");
   const s = combatAttackStats(a, true, unarmed);
   const h = attackStats(a, true, physical, false),
@@ -1098,11 +1114,12 @@ function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
     random(g) < a.curseChance
   )
     applyCurse(g, 12, 3, a.name);
-  if (a.poison && b.hp > 0 && !b.poisonImmune) {
+  const poisonOnHit = a.poison || weaponPoison;
+  if (poisonOnHit && b.hp > 0 && b.hp < hpBeforeHit && !b.poisonImmune) {
     const old = b.effects.Poison || [0, 0];
     b.effects.Poison = [
-      Math.max(old[0], a.poison[0]),
-      Math.max(old[1], a.poison[1]),
+      Math.max(old[0], poisonOnHit[0]),
+      Math.max(old[1], poisonOnHit[1]),
     ];
     b.poisonSource = a.name;
     log(g, b.name + " is poisoned.");
@@ -1110,6 +1127,12 @@ function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
   if (a.id === "player" && g.inventory.some((i) => i.kind === "mana-pod"))
     a.stats.Mana = Math.min(manaCap(a), a.stats.Mana + 1);
   return damage > 0;
+}
+function tickEnemyPoison(g: Game, enemy: Actor) {
+  const effect = enemy.effects.Poison;
+  if (!effect || enemy.poisonImmune) return;
+  hurt(g, enemy, effect[1], "Poison", enemy.poisonSource === g.player.name);
+  if (--effect[0] <= 0) delete enemy.effects.Poison;
 }
 function poison(g: Game) {
   const e = g.player.effects.Poison;
@@ -1197,6 +1220,8 @@ function monsterTurn(g: Game) {
       if (g.status !== "playing" || g.combat) break;
       if (g.player.stats.Speed > 5 && g.turn % 2 === 0 && m.stats.Speed <= 5 && m.className !== "Shadow")
         continue;
+      tickEnemyPoison(g, m);
+      if (m.hp <= 0) continue;
       // Keep equipped staves selectable for item use without duplicating their death drops.
       if (m.inventory && monsterItemTurn(g,m)) continue;
       if (m.className==="Shadow" && random(g)<0.25) { Object.assign(m,teleportPosition(g)); log(g, `${m.name} teleports through the shadows.`); continue; }
@@ -1411,6 +1436,11 @@ function performSpell(g: Game, s: (typeof spells)[number], m: Actor | undefined,
       }
 }
 
+function engageItemTarget(g: Game, target: Actor) {
+  const previous = g.encounter?.enemyId === target.id ? g.encounter : undefined;
+  g.combat = target.id;
+  g.encounter = { enemyId: target.id, origin: previous?.origin || "resumed", exchanges: previous?.exchanges || 0, engaged: true };
+}
 function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
   const p = g.player,
     m = g.monsters.find((m) => m.id === (targetId || g.combat)) || (i.kind === "projectile" ? g.monsters.find(m => !m.npc && !m.merchant && actorDistance(m,p) === 1) : undefined);
@@ -1445,6 +1475,7 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
     case "sand": case "sandstorm": case "sand-bag": case "quicksand": {
       const target = m || g.monsters.find(a => !a.npc && !a.merchant && Math.abs(a.x-p.x)+Math.abs(a.y-p.y) === 1);
       if (!target) throw Error("Choose an adjacent enemy.");
+      engageItemTarget(g, target);
       const stat = ["sand", "sandstorm"].includes(i.kind) ? "Accuracy" : "Speed";
       target.effects[stat + " Penalty"] = [["sandstorm", "quicksand"].includes(i.kind) ? 1000000 : 5, i.value];
       log(g, `${target.name}: ${stat} reduced by ${i.value}%${["sandstorm", "quicksand"].includes(i.kind) ? " permanently" : " for 5 turns"}.`);
@@ -1533,7 +1564,7 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
     case "gold-chalice": {
       if ((p.gold || 0) < 10) throw Error("Need 10 gold.");
       p.gold! -= 10;
-      const candidates = itemDefinitions.filter((d) => d[2] >= 6 && d[2] < 9 && d[1] !== "gold");
+      const candidates = itemDefinitions.filter((d) => d[2] === "rare" && d[1] !== "gold" && d[1] !== "stair-key");
       const reward = makeItem(g, pickItemDefinition(g, candidates)[0]);
       if (g.inventory.length + Number(p.weapons.length > 0) + (g.inventory.some((item) => item.id === i.id) ? 0 : 1) > capacityOf(g))
         g.loot.push({ x: p.x, y: p.y, item: reward });
@@ -1692,6 +1723,7 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
     }
     case "bad-candy": {
       if (!m) throw Error("Choose an enemy target.");
+      engageItemTarget(g, m);
       const lost = Math.min(m.level - 1, 1 + roll(g, 5));
       if (!lost) { for (const stat of ["Health", "Power", "Speed", "Accuracy", "Magic"]) m.stats[stat] *= 0.7; log(g, `${m.name} is weakened by Bad Candy.`); }
       m.level -= lost;
@@ -1787,13 +1819,7 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       break;
     case "projectile":
       if (!m) throw Error("A target is required.");
-      g.encounter = {
-        enemyId: m.id,
-        origin: "resumed",
-        exchanges: 0,
-        ...g.encounter,
-        engaged: true,
-      };
+      engageItemTarget(g, m);
       if (i.name === "Handcuffs") {
         m.stats.Power = Math.max(0, m.stats.Power - 10);
         log(g, `${m.name} loses 10 Strength to the handcuffs.`);
@@ -1814,7 +1840,7 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       )
         hurt(g, m, i.value);
       else log(g, "The dragon dodged!");
-      g.encounter.result = `You threw ${i.name}. ${m.name}: ${m.hp} HP remaining.`;
+      if (g.encounter) g.encounter.result = `You threw ${i.name}. ${m.name}: ${m.hp} HP remaining.`;
       if (i.name === "Boomerang") {
         i.uses!--;
         if (i.uses! > 0) {
@@ -1971,6 +1997,12 @@ export function triggerTrap(g: Game) {
 export function act(input: Game, a: Action): Game {
   const g = structuredClone(input),
     p = g.player;
+  migrateItemRarities(g);
+  // Upgrade saved guardians once, preserving damage already dealt.
+  for (const enemy of g.monsters) if (enemy.name.startsWith("Ergathon") && enemy.level === 1 + g.floor + 3 + (g.floor + 2) * g.floor) {
+    const fraction = Math.max(0, enemy.hp / enemy.stats.Health);
+    balanceGuardian(g, enemy); enemy.hp = Math.ceil(enemy.stats.Health * fraction);
+  }
   syncPassiveStats(g);
   g.revision++;
   if (g.status === "dead") throw Error("This journey has ended.");
