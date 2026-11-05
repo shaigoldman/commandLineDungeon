@@ -3,7 +3,7 @@ import { act, newGame, makeItem, makeMonster, randomItem, randomItemOfRarity, ge
 import { makeVillager, villagerStock, catalogItems } from "../shared/expansion";
 import { describe as describeItem, itemDefinitions } from "../shared/catalog";
 import { normalizeRarity, migrateItemRarities } from "../shared/rarity";
-import { chronicleTokens } from "../src/Chronicle";
+import { chronicleEntries, chronicleTokens } from "../src/Chronicle";
 import type { Game } from "../shared/types";
 function arena(seed=1): Game {
   const g=newGame("Test Warrior","Warrior","Wind",0,seed);
@@ -88,4 +88,9 @@ describe("hostile throws and poison weapons",()=>{
 it("chronicle tokens preserve text while identifying names, conditions and HP",()=>{
   const text="Dark Hero takes 12 poison damage. You gain 5 HP.";const tokens=chronicleTokens(text,["Dark Hero"]);
   expect(tokens.map(t=>t.value).join("")).toBe(text);expect(tokens).toContainEqual({value:"Dark Hero",kind:"name"});expect(tokens).toContainEqual({value:"poison",kind:"status"});expect(tokens).toContainEqual({value:"HP",kind:"hp"});
+});
+
+it("keeps chronicle event numbers stable when older events are trimmed",()=>{
+  expect(chronicleEntries({log:["older","newest"],logSerial:102})).toEqual([{text:"older",serial:101},{text:"newest",serial:102}]);
+  expect(chronicleEntries({log:["legacy"],logSerial:undefined})).toEqual([{text:"legacy",serial:1}]);
 });

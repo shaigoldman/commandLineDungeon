@@ -1,6 +1,6 @@
 import { gauntletBonus, isCarriedPassive } from "../shared/passive-items";
 import { rarityRank } from "../shared/rarity";
-import { Chronicle } from "./Chronicle";
+import { Chronicle, ChronicleFeed } from "./Chronicle";
 import { itemIcon } from "./item-art";
 import { deathStory } from "../shared/death-story";
 import { itemOutcome, type ItemOutcome } from "../shared/item-outcome";
@@ -85,7 +85,7 @@ export function PlayScreen({
     >(null),
     [selection, setSelection] = useState<Selection | null>(null),
     [overview, setOverview] = useState(false),
-    [toast, setToast] = useState(""),
+    [chronicleNotice, setChronicleNotice] = useState(""),
     [poisonFlash, setPoisonFlash] = useState(0),
     [curseFlash, setCurseFlash] = useState(0),
     [trapNotice, setTrapNotice] = useState<{ message: string; revision: number } | null>(null),
@@ -96,8 +96,7 @@ export function PlayScreen({
   const [swapPickup, setSwapPickup] = useState<Item | null>(null);
   const [boonNotice, setBoonNotice] = useState("");
   useEffect(() => setBoonNotice(""), [g.floor]);
-  const modal = useRef<HTMLDivElement>(null),
-    toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const modal = useRef<HTMLDivElement>(null);
   const criticalTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
@@ -267,15 +266,12 @@ export function PlayScreen({
   }
   const origin = g.encounter?.enemyId === enemy?.id ? g.encounter : undefined;
   function announce(message: string) {
-    setToast(message.replace(/\b\d+\.\d{2,}\b/g, (v) => n(Number(v))));
-    clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(""), 6500);
+    setChronicleNotice(message.replace(/\b\d+\.\d{2,}\b/g, (v) => n(Number(v))));
   }
   useEffect(() => {
     document.body.classList.add("playing-game");
     return () => {
       document.body.classList.remove("playing-game");
-      clearTimeout(toastTimer.current);
       clearTimeout(criticalTimer.current);
     };
   }, []);
@@ -403,6 +399,7 @@ export function PlayScreen({
     const before = g;
     const after = await onAction(a);
     if (!after) return;
+    setChronicleNotice("");
     const opensLoot =
       after.status === "playing" &&
       !after.pendingLevels &&
@@ -451,11 +448,6 @@ export function PlayScreen({
       setGoldFlash({ amount: gainedGold, revision: after.revision });
       setTimeout(() => setGoldFlash((current) => current?.revision === after.revision ? null : current), 2400);
     }
-    if (["buy", "quote", "sell"].includes(a.type)) {
-      announce(after.marketNotice || "Trade complete.");
-      return;
-    }
-
     if (entries.some((line) => line.includes("CRITICAL HIT!"))) {
       const index = entries.findIndex((line) => line.includes("CRITICAL HIT!"));
       setCriticalNotice("CRITICAL HIT! " + (entries[index + 1] || ""));
@@ -473,80 +465,8 @@ export function PlayScreen({
       requestAnimationFrame(() => requestAnimationFrame(() => setCurseFlash(after.revision)));
     if (a.type === "move" && moved && before.player.effects.Poison)
       requestAnimationFrame(() => requestAnimationFrame(() => setPoisonFlash(after.revision)));
-    const curseNotice = entries.find((s) => s.startsWith("CURSED:"));
-    if (curseNotice) {
-      setCurseFlash(after.revision);
-      announce(
-        [gainedGold > 0 ? `+${gainedGold} gold.` : undefined, entries.find((line) => line.includes(": “")), curseNotice]
-          .filter(Boolean)
-          .join(" "),
-      );
-    }
-    else if (entries.some(line=>line.startsWith("FLEE FAILED"))) announce("FLEE FAILED! The enemy blocks your escape and attacks.");
-    else if (gainedGold > 0) announce(`✦ +${gainedGold} gold · ${after.player.gold} total`);
-    else if (a.type === "move" && moved && before.player.effects.Poison) {
-      announce(
-        `Poison: −${n(Math.trunc(before.player.effects.Poison[1]))} HP. ${after.player.effects.Poison?.[0] || 0} steps remaining.`,
-      );
-    } else if (after.status === "dead") announce("Your journey has ended.");
-    else if (after.keys > before.keys)
-      announce("Stair Key acquired · unlocks locked stairs only.");
-    else if (after.pendingLevels) announce("Level up! Choose a bonus.");
-    else if (entries.some((line) => line.includes("robot explodes")))
-      announce(`Robot explosion! ${Math.max(0, before.player.hp - after.player.hp)} HP lost nearby.`);
-    else if (
-      after.combat &&
-      !before.combat &&
-      after.encounter?.origin === "enemy"
-    )
-      announce(
-        `${after.monsters.find((m) => m.id === after.combat)?.name} approaches you!`,
-      );
-    else if (
-      a.type === "move" &&
-      moved &&
-      after.pods.length < before.pods.length
-    )
-      announce(
-        `Energy restored: +${n(Math.max(0, after.player.hp - before.player.hp))} HP · +${n(Math.max(0, after.player.stats.Mana - before.player.stats.Mana))} MP`,
-      );
-    else if (entries.some((line) => line.startsWith("Collected ")))
-      announce(
-        entries.filter((line) => line.startsWith("Collected ")).join(" "),
-      );
-    else if (broken) announce(broken);
-    else if (trapMessages.length) announce(trapMessages.join(" "));
-    else if (entries.some((line) => /^(HEALTH|MANA) FULL:/.test(line)))
-      announce(entries.find(line=>/^(HEALTH|MANA) FULL:/.test(line))!);
-    else if (a.type === "attack")
-      announce(
-        (after.encounter?.result || entries.slice(-3).join(" ")) + (before.player.hp>after.player.hp ? ` ENEMY ATTACK: −${n(before.player.hp-after.player.hp)} HP!` : "") +
-          " " +
-          entries
-            .filter(
-              (line) =>
-                line.includes("broke!") || line.includes("is poisoned.") || line.startsWith("MISS!") || line.includes("BURNING") || line.includes("CRITICAL HIT!"),
-            )
-            .join(" "),
-      );
-    else if (a.type === "deal") {
-      const changes = Object.keys(before.player.stats)
-        .filter((k) => after.player.stats[k] !== before.player.stats[k])
-        .map(
-          (k) =>
-            `${k} ${after.player.stats[k] > before.player.stats[k] ? "+" : ""}${n(after.player.stats[k] - before.player.stats[k])}`,
-        );
-      announce(
-        `Bargain complete. ${after.player.hp > before.player.hp ? `+${n(after.player.hp - before.player.hp)} HP. ` : ""}${changes.join(" · ")}${after.pendingLoot ? ` Gift: ${after.pendingLoot.name}.` : ""}`,
-      );
-    } else if (a.type === "cast")
-      announce(
-        `Cast ${a.spell}.${a.spell === "Kindle" ? ` Enemy burns for ${after.monsters.find((m) => m.id === before.combat)?.burn?.[1] || 0} per move or attack.` : ""}${a.spell === "Unseal" && after.pendingLoot ? ` Chest opened: ${after.pendingLoot.name}.` : ""}${after.player.hp !== before.player.hp ? ` HP ${after.player.hp > before.player.hp ? "+" : ""}${n(after.player.hp - before.player.hp)}.` : ""}${before.combat && !after.combat ? " Encounter ended." : ""}${before.player.effects.Poison && !after.player.effects.Poison ? " Poison cleared." : ""}`,
-      );
-    else if (a.type !== "move" && a.type !== "wait" && a.type !== "talk")
-      announce(after.log.slice(-2).join(" "));
-    else if (a.type === "move" && !moved && !after.combat)
-      announce("Stone wall. Swipe another direction.");
+    if (entries.some(line => line.startsWith("CURSED:"))) setCurseFlash(after.revision);
+    if (a.type === "move" && !moved && !after.combat) announce("Stone wall. Swipe another direction.");
     return after;
   }
   const actButton = (label: string, a: Action, disabled = false, cls = "") => (
@@ -897,18 +817,6 @@ export function PlayScreen({
           </button>
 
         </div>
-        {!context && !toast && g.turn < 3 && (
-          <p className="swipe-hint">
-            Swipe the dungeon to move · arrow keys also work
-          </p>
-        )}
-        {lootMovementHint && !toast && (
-          <p className="loot-movement-hint" role="status">
-            ITEM FOUND
-            <br />
-            Swipe to leave the loot and move.
-          </p>
-        )}
         {(enemy?.npc || enemy?.merchant) && (
           <div className="chief-speech" aria-label="Chieftain speech bubble">
             <img
@@ -937,23 +845,7 @@ export function PlayScreen({
           </div>
         )}
         {breakNotice && <div className="break-notice" role="alert">⚠ {breakNotice}</div>}
-        {toast && (
-          <div
-            className={"play-toast" + (error ? " toast-error" : "")}
-            role={error ? "alert" : "status"}
-          >
-            <span>{toast}</span>
-            <button
-              aria-label="Dismiss notice"
-              onClick={() => {
-                setToast("");
-                clearError();
-              }}
-            >
-              ×
-            </button>
-          </div>
-        )}
+        <ChronicleFeed game={g} notice={chronicleNotice} isError={!!error} onRead={()=>setPanel("chronicle")} onDismiss={()=>{setChronicleNotice("");clearError();}} />
         {!!poisonFlash && (
           <div
             key={poisonFlash}
@@ -1276,9 +1168,6 @@ export function PlayScreen({
           )}
         </div>
       </section>
-      <button className="chronicle-peek" onClick={() => setPanel("chronicle")} aria-label="Open journey chronicle">
-        <strong>✦ Chronicle</strong><span>{g.log.at(-1) || "Your story begins…"}</span><b>Read ›</b>
-      </button>
       {spells.length > 0 && (
         <section className="magic-ribbon" aria-label="Available magic">
           <span className="ribbon-label">MAGIC · {n(p.stats.Mana)} MP</span>
