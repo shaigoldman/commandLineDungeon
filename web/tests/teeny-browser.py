@@ -66,7 +66,7 @@ try:
   page.get_by_role('button',name='Hide recent chronicle entries').click();page.get_by_role('button',name='Attack',exact=True).click()
   expect(page.locator('.chronicle-feed ol')).to_be_visible();expect(page.locator('.chronicle-feed li').first).to_contain_text(saved()['log'][-1])
   page.reload();page.wait_for_selector('canvas');expect(page.locator('.chronicle-feed li').first).to_contain_text(saved()['log'][-1])
-  before=saved()['revision'];page.keyboard.press('Space');page.wait_for_timeout(100);assert saved()['revision']==before
+  page.evaluate('document.activeElement.blur()');before=saved()['revision'];page.keyboard.press('Space');page.wait_for_timeout(100);assert saved()['revision']==before
   load(fixtures['fullBag']);expect(page.locator('.inventory-ribbon')).to_contain_text('FULL');page.screenshot(path=str(shots/'bag.png'))
   load(fixtures['market']);assert page.locator('.chief-speech').bounding_box()['y']+page.locator('.chief-speech').bounding_box()['height']<=page.locator('.chronicle-feed').bounding_box()['y'];page.get_by_role('button',name='Talk / trade',exact=True).click();page.get_by_role('button',name='Sell items',exact=True).click();expect(page.locator('.market-offer').first).to_be_visible();review=page.get_by_role('button',name='Review sale').first;review.click();expect(page.get_by_role('button',name='Sell for',exact=False)).to_be_visible();page.screenshot(path=str(shots/'market.png'))
   load(fixtures['floorBoon']);page.get_by_role('button',name='Attack',exact=True).click()
