@@ -1,3 +1,4 @@
+import { rarityRank } from "../shared/rarity";
 import { describe, expect, it } from "vitest";
 import { act, armorOf, combatAttackStats, generateFloor, itemUseProblem, makeItem, makeMonster, newGame, randomItem } from "../shared/engine";
 import { itemDefinitions } from "../shared/catalog";
@@ -79,16 +80,16 @@ describe("new relic and trap playthroughs", () => {
     g.inventory.push(source, book);
     g = act(g, { type: "use", id: book.id, target: source.id });
     const changed = g.inventory.find((item) => item.id === source.id)!;
-    expect(changed.kind === "trash" || changed.rarity >= 3).toBe(true);
+    expect(changed.kind === "trash" || rarityRank(changed.rarity) >= 1).toBe(true);
     const wand = makeItem(g, "Alchemy Wand"), second = makeItem(g, "Tiny Health Potion");
     g.inventory.push(wand, second);
     const before = g.player.gold!;
     g = act(g, { type: "use", id: wand.id });
     expect(g.player.gold).toBeLessThan(before);
-    expect(g.inventory.find((item) => item.id === second.id)!.kind === "trash" || g.inventory.find((item) => item.id === second.id)!.rarity >= 3).toBe(true);
+    expect(g.inventory.find((item) => item.id === second.id)!.kind === "trash" || rarityRank(g.inventory.find((item) => item.id === second.id)!.rarity) >= 1).toBe(true);
     const chalice = makeItem(g, "Gold Chalice"); g.inventory.push(chalice);
     g = act(g, { type: "use", id: chalice.id });
-    expect(g.inventory.some((item) => item.rarity >= 6 && item.rarity < 9)).toBe(true);
+    expect(g.inventory.some((item) => rarityRank(item.rarity) >= 2 && rarityRank(item.rarity) < 3)).toBe(true);
     const magicWand = makeItem(g, "Magic Wand"), target = makeItem(g, "Mana Potion");
     g.inventory.push(magicWand, target);
     g = act(g, { type: "use", id: magicWand.id, target: target.id, spell: "Water" });
@@ -104,8 +105,8 @@ describe("new relic and trap playthroughs", () => {
       g = act(g, { type: "use", id: book.id, target: source.id });
       const result = g.inventory.find((item) => item.id === source.id)!;
       if (result.kind === "trash") misfires++;
-      else if (result.rarity >= 6) leaps++;
-      else expect(result.rarity).toBeGreaterThanOrEqual(3);
+      else if (rarityRank(result.rarity) >= 2) leaps++;
+      else expect(rarityRank(result.rarity)).toBeGreaterThanOrEqual(1);
     }
     expect(misfires).toBeGreaterThan(0);
     expect(leaps).toBeGreaterThan(0);
