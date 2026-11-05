@@ -1,8 +1,21 @@
 import type { Item } from "../shared/types";
+import { itemDefinitions } from "../shared/catalog";
+import { drawExpansionItem } from "./expansion-item-art";
 import { drawSpecialItem } from "./special-item-art";
 /** Original pixel icons, shared verbatim by the dungeon and all item menus. */
 export function itemArtKey(item: Pick<Item, "kind" | "name" | "element">) {
   const name = item.name.toLowerCase();
+  // A decoy must retain the exact appearance of the item it impersonates.
+  if (item.kind === "decoy") {
+    const kind = itemDefinitions.find(([label]) => label === item.name)?.[1]
+      || (name.endsWith(" staff") ? "tome" : / (sword|spear|axe|shield)$/.test(name) ? "weapon" : "trash");
+    return itemArtKey({ ...item, kind: kind === "decoy" ? "trash" : kind });
+  }
+  if (name === "bloodthirsty dagger") return "bloodthirsty-dagger";
+  if (["elemental staff", "dark staff", "emerald staff", "sapphire staff", "ruby staff", "onyx staff"].includes(name)) return "advanced-" + name.replaceAll(" ", "-");
+  if (name === "tiny mana potion") return "tiny-mana-potion";
+  if (name === "mana spring") return "mana-spring";
+  if (name === "giant bomb") return "giant-bomb";
   if (item.kind === "weapon") {
     const shape = name.includes("broadsword")
       ? "broadsword"
@@ -94,7 +107,7 @@ export function itemCanvas(
     r(7, 22, 3, 7, gold);
     r(5, 24, 7, 2, gold);
   };
-  if (drawSpecialItem(key, r)) {
+  if (drawExpansionItem(key, r) || drawSpecialItem(key, r)) {
     // Named relics have their own silhouettes in menus and on the floor.
   } else if (key === "gold-chalice") {
     r(5, 5, 22, 4, dark); r(8, 9, 16, 13, dark); r(10, 10, 12, 11, gold);
