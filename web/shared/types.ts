@@ -87,6 +87,7 @@ export interface SecretDoor {
   unlocked: boolean;
   outcome: string;
   roomMade?: boolean;
+  fogVersion?: 1;
 }
 export interface Trap {
   id: string;

@@ -1,5 +1,6 @@
 import {
   makeVillager,
+  prepareSecretRoom,
   addSecretDoor,
   addChest,
   makeChief,
@@ -506,8 +507,15 @@ specialtyMarket.monsters[0].merchant!.dislikes = ["projectile"];
 specialtyMarket.monsters[0].merchant!.line = "I trade staves and mana supplies, and pay extra for sound enchantments.";
 specialtyMarket.monsters[0].merchant!.stock = ["Sapphire Staff", "Tiny Mana Potion"].map(name => ({item:makeItem(specialtyMarket,name),price:20}));
 specialtyMarket.inventory = [makeItem(specialtyMarket,"Dark Staff"),makeItem(specialtyMarket,"Throwing Knife")];
+const fogSecret = openArena("Scout");
+fogSecret.monsters=[];fogSecret.chests=[];fogSecret.pods=[];fogSecret.loot=[];fogSecret.traps=[];fogSecret.secretDoors=[];fogSecret.inventory=[];
+fogSecret.light=fogSecret.tiles.map(row=>row.map(()=>false));fogSecret.sight=1;
+Object.assign(fogSecret.player,{x:26,y:7});
+const fogDoor=addSecretDoor(fogSecret,"chest");fogDoor.y=7;
+prepareSecretRoom(fogSecret,fogDoor);
 console.log(
   JSON.stringify({
+    fogSecret,
     specialtyMarket,
     relicUi,
     trapUi,
