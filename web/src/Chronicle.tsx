@@ -33,15 +33,15 @@ export function ChronicleFeed({game:g,notice,isError,onRead,onDismiss}: {
   const serial = g.logSerial ?? g.log.length;
   useEffect(()=>setCollapsed(false),[serial,notice]);
   useEffect(()=>{if(scroll.current)scroll.current.scrollTop=0;},[serial,notice,collapsed]);
-  const names=namesIn(g), entries=chronicleEntries(g).slice(-8).reverse();
+  const names=namesIn(g), entries=chronicleEntries(g).slice(-1);
   return <section className="chronicle-feed" aria-label="Live chronicle">
     <header><strong>✦ Chronicle</strong><button aria-label="Open journey chronicle" onClick={onRead}>Read all ›</button>
       <button aria-label={collapsed ? "Show recent chronicle entries" : "Hide recent chronicle entries"} aria-expanded={!collapsed} onClick={()=>setCollapsed(!collapsed)}>{collapsed ? "+" : "−"}</button>
     </header>
     {!collapsed && <div ref={scroll} className="chronicle-feed-scroll" tabIndex={0} aria-label="Recent chronicle entries" onKeyDown={e=>{if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Home","End","PageUp","PageDown"].includes(e.key))e.stopPropagation();}}>
       {notice && <div className={"chronicle-feedback"+(isError ? " chronicle-feedback-error" : "")} role={isError ? "alert" : "status"}><p><ChronicleText text={notice} names={names}/></p><button aria-label="Dismiss chronicle message" onClick={onDismiss}>×</button></div>}
-      <ol role="log" aria-live="polite" aria-relevant="additions text">{entries.map(({text,serial})=><li key={serial}><span className="chronicle-number">{serial}</span><p><ChronicleText text={text} names={names}/></p></li>)}</ol>
-      {!entries.length && <p>Your story begins here.</p>}
+      {!notice && <ol role="log" aria-live="polite" aria-relevant="additions text">{entries.map(({text,serial})=><li key={serial}><span className="chronicle-number">{serial}</span><p><ChronicleText text={text} names={names}/></p></li>)}</ol>}
+      {!notice && !entries.length && <p>Your story begins here.</p>}
     </div>}
   </section>;
 }

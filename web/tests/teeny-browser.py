@@ -39,15 +39,16 @@ try:
   load(fixtures['explore']);page.screenshot(path=str(shots/'explore.png'));assert page.get_by_role('button',name='Wait',exact=True).count()==0
   journal=json.loads(json.dumps(fixtures['explore']));journal['log']=['Zombie takes 12 poison damage. You gain 5 HP and 3 mana.','Gained 20 EXP.'];journal['logSerial']=2;load(journal)
   feed=page.locator('.play-map .chronicle-feed');expect(feed).to_be_visible()
-  expect(feed).to_contain_text('Zombie takes 12 poison damage.')
+  expect(feed.locator('li')).to_have_count(1)
+  expect(feed).to_contain_text('Gained 20 EXP.')
+  expect(feed).not_to_contain_text('Zombie takes 12 poison damage.')
   assert feed.locator('header').bounding_box()['height']<=34
   assert feed.locator('header button').last.bounding_box()['x']+feed.locator('header button').last.bounding_box()['width']<=feed.bounding_box()['x']+feed.bounding_box()['width']
   assert page.locator('.play-toast,.chronicle-peek').count()==0
-  expect(feed.locator('.chronicle-status')).to_have_text('poison')
   before=saved()['revision'];feed.locator('.chronicle-feed-scroll').focus();page.keyboard.press('ArrowDown');assert saved()['revision']==before
   page.wait_for_timeout(6700);expect(feed).to_contain_text('Gained 20 EXP.')
   page.get_by_role('button',name='Hide recent chronicle entries').click();expect(feed.locator('ol')).to_have_count(0)
-  page.get_by_role('button',name='Show recent chronicle entries').click();expect(feed.locator('li')).to_have_count(2)
+  page.get_by_role('button',name='Show recent chronicle entries').click();expect(feed.locator('li')).to_have_count(1)
   (root/'work').mkdir(exist_ok=True);page.screenshot(path=str(root/'work/live-chronicle.png'))
   page.get_by_role('button',name='Open journey chronicle',exact=True).click()
   expect(page.get_by_role('dialog',name='Journey chronicle')).to_be_visible()
