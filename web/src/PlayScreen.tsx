@@ -14,6 +14,7 @@ import { Capacitor } from "@capacitor/core";
 import type { Action, Game, Item } from "../shared/types";
 import {
   availableSpells,
+  spellMenu,
   combatAttackStats,
   attackInitiative,
   incomingDamage,
@@ -78,7 +79,7 @@ export function PlayScreen({
     enemy = g.monsters.find((m) => m.id === g.combat),
     danger = enemy ? incomingDamage(enemy, p) : undefined,
     spells =
-      g.status === "playing" && !g.pendingLevels ? availableSpells(g, { free: true, ignoreReq: true }) : [];
+      g.status === "playing" && !g.pendingLevels ? spellMenu(g) : [];
   const [inspectedSpell, setInspectedSpell] = useState<(typeof spellDefinitions)[number] | null>(null);
   const [panel, setPanel] = useState<
       "stats" | "enemy" | "save" | "help" | "npc" | "level" | "chronicle" | null
@@ -1495,7 +1496,7 @@ export function PlayScreen({
                             )}
                           </>
                         )}
-                        {picked.kind === "mana-star" && availableSpells(g, { free: true }).map((s) =>
+                        {picked.kind === "mana-star" && availableSpells(g, { free: true }).sort((a,b)=>spellCost(g,a)-spellCost(g,b)).map((s) =>
                           actButton(`Cast ${s.name} free`, { type: "use-floor", id: picked.id, spell: s.name }, false, "primary"))}
                         {picked.kind === "mixing-potion" && ["Health","Power","Speed","Luck","Magic","Accuracy","Armor"].flatMap(lose=>["Health","Power","Speed","Luck","Magic","Accuracy","Armor"].filter(gain=>gain!==lose && (p.stats[lose] || 0)>=3).map(gain=>actButton(`${lose} −3 → ${gain} +3`,{type:"use",id:picked.id,spell:`${lose}:${gain}`})))}
                         {picked.kind === "spiked-potion" && ["Health", "Power", "Luck", "Speed", "Magic", "Accuracy", "Armor"].map((stat) =>
@@ -1520,7 +1521,7 @@ export function PlayScreen({
                             {itemUseProblem(g, picked)}
                           </p>
                         )}
-                        {picked.kind === "mana-star" && availableSpells(g, { free: true }).map((s) =>
+                        {picked.kind === "mana-star" && availableSpells(g, { free: true }).sort((a,b)=>spellCost(g,a)-spellCost(g,b)).map((s) =>
                           actButton(`Cast ${s.name} free`, { type: "use", id: picked.id, spell: s.name }, false, "primary"))}
                         {picked.kind === "mixing-potion" && ["Health","Power","Speed","Luck","Magic","Accuracy","Armor"].flatMap(lose=>["Health","Power","Speed","Luck","Magic","Accuracy","Armor"].filter(gain=>gain!==lose && (p.stats[lose] || 0)>=3).map(gain=>actButton(`${lose} −3 → ${gain} +3`,{type:"use",id:picked.id,spell:`${lose}:${gain}`})))}
                         {picked.kind === "spiked-potion" && ["Health", "Power", "Luck", "Speed", "Magic", "Accuracy", "Armor"].map((stat) =>

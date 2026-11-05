@@ -317,13 +317,23 @@ export function pickItemDefinition(g: Game, definitions: ItemDefinition[], boost
     group.push(definition);
     groups.set(family, group);
   }
-  const families = [...groups.keys()];
-  if (boostKeys && groups.has("key")) families.push("key", "key", "key");
-  for (const [family, definitions] of groups) if (definitions[0][1] === "weapon") families.push(family, family);
-  const variants = groups.get(pick(g, families))!;
+  // Keep a modest weapon bonus; restorative potions get a smaller boost.
+  // Choose families before variants so extra sizes or materials do not
+  // multiply a family's odds.
+  const families = [...groups.values()];
+  const familyWeights = families.map(group => {
+    const [definition] = group;
+    if (definition[1] === "weapon") return 2;
+    if (["heal", "mana", "energy-potion"].includes(definition[1])) return 1.25;
+    if (group.some(d => ["Throwing Knife", "Javelin"].includes(d[0]))) return 1.25;
+    return boostKeys && definition[1] === "key" ? 4 : 1;
+  });
+  let familyDraw = random(g) * familyWeights.reduce((sum,weight) => sum+weight,0);
+  const familyIndex = familyWeights.findIndex(weight => (familyDraw -= weight) < 0);
+  const variants = families[familyIndex < 0 ? families.length-1 : familyIndex];
   if (variants.length === 1) return variants[0];
   const minimum = Math.min(...variants.map((d) => rarityRank(d[2])));
-  const weights = variants.map((d) => 1 / (1 + rarityRank(d[2]) - minimum));
+  const weights = variants.map((d) => (["Throwing Knife", "Javelin"].includes(d[0]) ? 1.25 : 1) / (1 + rarityRank(d[2]) - minimum));
   let draw = random(g) * weights.reduce((a, b) => a + b, 0);
   for (let n = 0; n < variants.length; n++) if ((draw -= weights[n]) < 0) return variants[n];
   return variants.at(-1)!;
@@ -500,8 +510,8 @@ export function balanceGuardian(g: Game, boss: Actor) {
   const depth = Math.max(0, g.floor - 1), hard = 1.3 ** g.difficulty;
   boss.className = "Golem";
   boss.level = 3 + depth * 2;
-  boss.stats = { Health: Math.round((44 + depth * 12) * hard), Power: Math.round((9 + depth * 3) * hard),
-    Armor: 3 + depth * 2, Accuracy: 68, Speed: 2 + depth, Luck: 0, Magic: 5, Mana: 10 };
+  boss.stats = { Health: Math.round((58 + depth * 12) * hard), Power: Math.round((11 + depth * 3) * hard),
+    Armor: 4 + depth * 2, Accuracy: 70, Speed: 2 + depth, Luck: 0, Magic: 5, Mana: 10 };
   boss.hp = boss.stats.Health;
 }
 export function generateFloor(g: Game) {
@@ -773,6 +783,7 @@ export function syncPassiveStats(g: Game) {
   p.sharpening = g.inventory.some((i) => i.kind === "sharpening-stone");
   p.skillBook = g.inventory.some((i) => i.kind === "skill-book");
   p.hp = Math.min(p.hp, p.stats.Health);
+  p.stats.Mana = Math.min(p.stats.Mana, manaCap(p));
 }
 /** Preview only: no RNG, durability, mana or effect duration is consumed. */
 export function attackInitiative(player: Actor) {
@@ -1338,6 +1349,12 @@ export function availableSpells(g: Game, options: { free?: boolean; anyElement?:
       ].find((o) => Math.abs(o.x - g.player.x) + Math.abs(o.y - g.player.y) <= 1)))) &&
       (s.when === "any" || s.when === (g.combat ? "combat" : "peace")),
   );
+}
+/** Show castable spells first, then ascending effective mana cost in each group. */
+export function spellMenu(g: Game) {
+  const usable = new Set(availableSpells(g).map(s => s.name));
+  return availableSpells(g, {free:true,ignoreReq:true}).sort((a,b) =>
+    Number(usable.has(b.name))-Number(usable.has(a.name)) || spellCost(g,a)-spellCost(g,b) || a.name.localeCompare(b.name));
 }
 function performSpell(g: Game, s: (typeof spells)[number], m: Actor | undefined, free = false) {
   const p = g.player;
@@ -2039,7 +2056,12 @@ export function act(input: Game, a: Action): Game {
   migrateItemRarities(g);
   repairSecretRoomLighting(g);
   // Upgrade saved guardians once, preserving damage already dealt.
-  for (const enemy of g.monsters) if (enemy.name.startsWith("Ergathon") && enemy.level === 1 + g.floor + 3 + (g.floor + 2) * g.floor) {
+  for (const enemy of g.monsters.filter(m => m.name.startsWith("Ergathon"))) {
+    const depth = Math.max(0,g.floor-1), hard = 1.3 ** g.difficulty;
+    const legacy = enemy.level === 1 + g.floor + 3 + (g.floor + 2) * g.floor;
+    const previous = enemy.stats.Health === Math.round((44+depth*12)*hard)
+      && enemy.stats.Power === Math.round((9+depth*3)*hard);
+    if (!legacy && !previous) continue;
     const fraction = Math.max(0, enemy.hp / enemy.stats.Health);
     balanceGuardian(g, enemy); enemy.hp = Math.ceil(enemy.stats.Health * fraction);
   }
