@@ -1840,7 +1840,7 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       )
         hurt(g, m, i.value);
       else log(g, "The dragon dodged!");
-      g.encounter.result = `You threw ${i.name}. ${m.name}: ${m.hp} HP remaining.`;
+      if (g.encounter) g.encounter.result = `You threw ${i.name}. ${m.name}: ${m.hp} HP remaining.`;
       if (i.name === "Boomerang") {
         i.uses!--;
         if (i.uses! > 0) {
