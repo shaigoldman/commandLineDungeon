@@ -100,6 +100,7 @@ export function villagerStock(g: Game): Item[] {
     index === premium ? (random(g) < 0.8 ? "rare" : "ultrarare") : random(g) < 0.1 ? "common" : "uncommon"));
 }
 export function makeVillager(g: Game, king = false): Actor {
+  if (king && g.monsters.some(m => m.merchant?.king)) return makeVillager(g);
   const identities = history.filter(([name]) => !g.monsters.some(m => m.merchant && m.name === name));
   // A floor with all twelve survivors already present receives a chieftain instead.
   if (!king && !identities.length) return makeChief(g);
