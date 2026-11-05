@@ -216,7 +216,7 @@ export function makeItem(g: Game, name: string): Item {
     }
     i.uses = random(g) < 0.3 ? roll(g, i.maxUses) + 1 : i.maxUses;
     i.name = material + " " + base;
-    if (named?.[1] === "Poison" || (!named && random(g) < 0.2)) {
+    if (named?.[1] === "Poison" || (!named && ["Sword", "Spear", "Axe", "Shield"].includes(base) && random(g) < 0.2)) {
       // Poison variants always have Iron statistics.
       if (m !== 1) return makeItem(g, "Poison " + base);
       i.name = "Poison " + base;
@@ -719,7 +719,6 @@ export function attackStats(
 }
 /** Forecast uses the same selected attack mode as the authoritative strike. */
 export function combatAttackStats(a: Actor, consume = false, unarmed = false) {
-  const weaponPoison = !unarmed ? a.weapons.find(w => w.poison)?.poison : undefined;
   const physical = !unarmed && a.weapons.some((w) => w.kind === "weapon");
   const magical =
     !unarmed && a.weapons.some((w) => w.kind === "tome") && a.stats.Mana >= 2;
@@ -1060,6 +1059,7 @@ function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
     else a.burn[0]--;
   }
   log(g, `${a.name} attacks ${b.name}.`);
+  const weaponPoison = !unarmed ? a.weapons.find(w => w.poison)?.poison : undefined;
   const physical = !unarmed && a.weapons.some((w) => w.kind === "weapon");
   const s = combatAttackStats(a, true, unarmed);
   const h = attackStats(a, true, physical, false),
