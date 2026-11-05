@@ -17,7 +17,7 @@ describe("the second-floor guardian",()=>{
       const g=arena(seed);g.floor=1;generateFloor(g);
       const boss=g.monsters.find(m=>m.name.startsWith("Ergathon"))!;
       expect(boss.className).toBe("Golem");expect(boss.level).toBe(3);
-      expect(boss.stats).toMatchObject({Health:44,Power:9,Armor:3,Speed:2});
+      expect(boss.stats).toMatchObject({Health:58,Power:11,Armor:4,Speed:2});
       expect(combatAttackStats(g.player).Attack-boss.stats.Armor).toBeGreaterThan(0);
     }
   });
@@ -33,24 +33,26 @@ describe("the second-floor guardian",()=>{
     }
     console.info("Guardian wins over 300 seeds: starting Warrior",wins[0],"level-three Warrior with Iron Sword",wins[1]);
     expect(wins[1]/300).toBeGreaterThan(0.8);
+    expect(wins[1]/300).toBeLessThan(0.96);expect(wins[0]/300).toBeLessThan(0.1);
     expect(wins[1]).toBeGreaterThan(wins[0]);
   });
   it("migrates an existing wounded boss without healing it on later actions",()=>{
     let g=arena();g.floor=1;const m=makeMonster(g,"Golem",8);m.name="Ergathon, Ruthagor’s chosen";m.hp=m.stats.Health/2;g.monsters=[m];
     const sand=makeItem(g,"Sand");g.inventory=[sand];Object.assign(m,{x:6,y:5});
-    g=act(g,{type:"use",id:sand.id,target:m.id});expect(g.monsters[0].hp).toBe(22);
+    g=act(g,{type:"use",id:sand.id,target:m.id});expect(g.monsters[0].hp).toBe(29);
     const heal=makeItem(g,"Tiny Mana Potion");g.inventory=[heal];g.player.stats.Mana=0;
-    g=act(g,{type:"use",id:heal.id});expect(g.monsters[0].hp).toBe(22);
+    g=act(g,{type:"use",id:heal.id});expect(g.monsters[0].hp).toBe(29);
   });
 });
 describe("explicit rarity and survivor shops",()=>{
   it("uses only four drop classes, never legendary rewards or stair keys, at every depth",()=>{
-    const counts:Record<string,number>={};let weapons=0;
+    const counts:Record<string,number>={};let weapons=0,potions=0;
     const g=arena(72);
-    for(let n=0;n<20000;n++){const item=randomItem(g,n%20);const tier=item.kind==="gold"?"gold":item.kind==="decoy"?"rare":normalizeRarity(item.rarity);counts[tier]=(counts[tier]||0)+1;if(item.kind==="weapon")weapons++;expect(item.kind).not.toBe("stair-key");}
+    for(let n=0;n<20000;n++){const item=randomItem(g,n%20);const tier=item.kind==="gold"?"gold":item.kind==="decoy"?"rare":normalizeRarity(item.rarity);counts[tier]=(counts[tier]||0)+1;if(item.kind==="weapon")weapons++;if(["heal","mana","energy-potion"].includes(item.kind))potions++;expect(item.kind).not.toBe("stair-key");}
     for(const [tier,p]of Object.entries({gold:.36,common:.32,uncommon:.24,rare:.07,ultrarare:.01}))expect(Math.abs(counts[tier]/20000-p)).toBeLessThan(tier==="ultrarare"?.003:tier==="rare"?.007:.012);
-    expect(counts.legendary).toBeUndefined();expect(weapons/20000).toBeGreaterThan(.035);
-    console.info("Loot counts over 20,000 draws",counts,"weapons",weapons);
+    expect(counts.legendary).toBeUndefined();expect(weapons/20000).toBeGreaterThan(.03);expect(weapons/20000).toBeLessThan(.043);
+    expect(potions/20000).toBeGreaterThan(.10);expect(potions/20000).toBeLessThan(.12);
+    console.info("Loot counts over 20,000 draws",counts,"weapons",weapons,"restorative potions",potions);
     expect(()=>randomItemOfRarity(g,"legendary")).toThrow("special rewards");
     expect(makeItem(g,"Awathons Broadsword").rarity).toBe("legendary");
     expect(catalogItems(g).some(i=>i.rarity==="legendary")).toBe(false);

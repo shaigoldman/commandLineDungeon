@@ -19,6 +19,8 @@ describe("simulation regressions", () => {
   });
   it("preserves fractional player HP when waiting without damage", () => {
     const g = base("Scout");
+    // Keep this a no-healing/no-damage movement fixture as loot RNG changes.
+    g.pods=[];g.loot=[];g.traps=[];g.monsters=[];
     g.player.hp = 0.5;
     const next = act(g, { type: "move", dx: 0, dy: -1 });
     expect(next.player.hp).toBe(0.5);
