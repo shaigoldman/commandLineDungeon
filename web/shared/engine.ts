@@ -442,6 +442,12 @@ export function makeMonster(g: Game, type: string, level: number): Actor {
   };
   if (["Wild Villager", "Dark Hero", "Gremlin"].includes(type)) a.inventory = Array.from({ length: type === "Gremlin" ? 0 : roll(g, type === "Dark Hero" ? 6 : 3) }, () => randomItem(g));
   if (heroClass) { a.heroClass = heroClass; a.name = "Dark Hero"; }
+  if (heroClass === "Mage") {
+    // Equip a rolled staff if available; otherwise supply a basic adventurer staff.
+    const staff = a.inventory!.find(item => item.kind === "tome") || makeItem(g, pick(g, ["Wind Staff", "Fire Staff", "Water Staff"]));
+    a.inventory = a.inventory!.filter(item => item.id !== staff.id);
+    a.weapons = [staff];
+  }
   if (type === "Snake")
     a.poison = [
       level,
@@ -1188,8 +1194,10 @@ function syncMonsterItems(m: Actor) {
 }
 function monsterItemTurn(g: Game, m: Actor) {
   syncMonsterItems(m);
-  if (!m.inventory?.length || random(g)>=0.25) return false;
-  const item=pick(g,m.inventory), adjacent=Math.abs(m.x-g.player.x)+Math.abs(m.y-g.player.y)===1;
+  m.inventory ??= [];
+  const usableItems = [...new Map([...(m.inventory || []), ...m.weapons.filter(item => item.kind === "tome")].map(item => [item.id, item])).values()];
+  if (!usableItems.length || random(g)>=0.25) return false;
+  const item=pick(g,usableItems), adjacent=Math.abs(m.x-g.player.x)+Math.abs(m.y-g.player.y)===1;
   let used=true;
   if (item.kind==="heal" && m.hp<m.stats.Health) heal(m,item.value);
   else if (item.kind==="mana" && m.stats.Mana<manaCap(m)) m.stats.Mana=Math.min(manaCap(m),m.stats.Mana+item.value);
