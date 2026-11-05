@@ -45,11 +45,12 @@ describe("the second-floor guardian",()=>{
 });
 describe("explicit rarity and survivor shops",()=>{
   it("uses only four drop classes, never legendary rewards or stair keys, at every depth",()=>{
-    const counts:Record<string,number>={};
+    const counts:Record<string,number>={};let weapons=0;
     const g=arena(72);
-    for(let n=0;n<20000;n++){const item=randomItem(g,n%20);const tier=item.kind==="gold"?"gold":item.kind==="decoy"?"rare":normalizeRarity(item.rarity);counts[tier]=(counts[tier]||0)+1;expect(item.kind).not.toBe("stair-key");}
-    for(const [tier,p]of Object.entries({gold:.36,common:.32,uncommon:.24,rare:.07,ultrarare:.01}))expect(counts[tier]/20000).toBeCloseTo(p,1);
-    expect(counts.legendary).toBeUndefined();
+    for(let n=0;n<20000;n++){const item=randomItem(g,n%20);const tier=item.kind==="gold"?"gold":item.kind==="decoy"?"rare":normalizeRarity(item.rarity);counts[tier]=(counts[tier]||0)+1;if(item.kind==="weapon")weapons++;expect(item.kind).not.toBe("stair-key");}
+    for(const [tier,p]of Object.entries({gold:.36,common:.32,uncommon:.24,rare:.07,ultrarare:.01}))expect(Math.abs(counts[tier]/20000-p)).toBeLessThan(tier==="ultrarare"?.003:tier==="rare"?.007:.012);
+    expect(counts.legendary).toBeUndefined();expect(weapons/20000).toBeGreaterThan(.035);
+    console.info("Loot counts over 20,000 draws",counts,"weapons",weapons);
     expect(()=>randomItemOfRarity(g,"legendary")).toThrow("special rewards");
     expect(makeItem(g,"Awathons Broadsword").rarity).toBe("legendary");
     expect(catalogItems(g).some(i=>i.rarity==="legendary")).toBe(false);
@@ -57,7 +58,7 @@ describe("explicit rarity and survivor shops",()=>{
   it("gives half of shops exactly one premium item and ordinary slots a ten-percent common chance",()=>{
     const g=arena(200);let premium=0,common=0,ordinary=0;
     for(let n=0;n<5000;n++){const stock=villagerStock(g);const rare=stock.filter(i=>["rare","ultrarare"].includes(normalizeRarity(i.rarity)));expect(rare.length).toBeLessThanOrEqual(1);premium+=rare.length;for(const i of stock)if(["common","uncommon"].includes(normalizeRarity(i.rarity))){ordinary++;if(i.rarity==="common")common++;}}
-    expect(premium/5000).toBeCloseTo(.5,1);expect(common/ordinary).toBeCloseTo(.1,1);
+    expect(Math.abs(premium/5000-.5)).toBeLessThan(.03);expect(Math.abs(common/ordinary-.1)).toBeLessThan(.015);
   });
   it("does not create duplicate villagers even after all named survivors are present",()=>{
     const g=arena(300);for(let n=0;n<20;n++)g.monsters.push(makeVillager(g));
