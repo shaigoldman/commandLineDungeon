@@ -55,6 +55,21 @@ try:
   page.keyboard.press('Space');page.wait_for_timeout(100);assert saved()['revision']==fixtures['combat']['revision']
   load(fixtures['fullBag']);expect(page.locator('.inventory-ribbon')).to_contain_text('FULL');page.screenshot(path=str(shots/'bag.png'))
   load(fixtures['market']);page.get_by_role('button',name='Talk / trade',exact=True).click();page.get_by_role('button',name='Sell items',exact=True).click();expect(page.locator('.market-offer').first).to_be_visible();review=page.get_by_role('button',name='Review sale').first;review.click();expect(page.get_by_role('button',name='Sell for',exact=False)).to_be_visible();page.screenshot(path=str(shots/'market.png'))
+  load(fixtures['goldenGauntlet'])
+  gauntlet=page.get_by_role('button',name='Item: Golden Gauntlet',exact=True)
+  expect(gauntlet).to_contain_text('PASSIVE · ACTIVE');expect(gauntlet).to_contain_text('+10 Attack')
+  assert 'unavailable' not in (gauntlet.get_attribute('class') or '')
+  expect(page.locator('.damage-forecast b')).to_contain_text('40')
+  gauntlet.click();expect(page.locator('.passive-status')).to_contain_text('ACTIVE · +10 Attack')
+  assert page.get_by_role('button',name='Use item',exact=True).count()==0
+  page.get_by_role('button',name='Close details',exact=True).click()
+  hp=saved()['monsters'][0]['hp'];page.get_by_role('button',name='Attack',exact=True).click();page.wait_for_timeout(150);assert saved()['monsters'][0]['hp']==hp-40
+  page.get_by_role('button',name='Item: Tiny Mana Potion',exact=True).click();page.get_by_role('button',name='Use item',exact=True).click();page.wait_for_timeout(150)
+  expect(page.get_by_role('button',name='Item: Golden Gauntlet',exact=True)).to_contain_text('PASSIVE · INACTIVE')
+  expect(page.get_by_role('button',name='Item: Golden Gauntlet',exact=True)).to_contain_text('Needs 0 mana')
+  expect(page.locator('.damage-forecast b')).to_contain_text('30')
+  page.reload();page.wait_for_selector('canvas');expect(page.get_by_role('button',name='Item: Golden Gauntlet',exact=True)).to_contain_text('PASSIVE · INACTIVE')
+  print('PASS: Golden Gauntlet preview, real damage, Magic Scales, passive status, mana refill and reload',flush=True)
   load(fixtures['specialtyMarket']);page.get_by_role('button',name='Talk / trade',exact=True).click()
   expect(page.locator('.trade-specialty')).to_contain_text('Magic & mana')
   page.get_by_role('button',name='Buy Sapphire Staff',exact=True).click();page.wait_for_timeout(150)

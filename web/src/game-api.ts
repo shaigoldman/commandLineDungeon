@@ -2,8 +2,12 @@ import { Capacitor } from "@capacitor/core";
 import { Preferences } from "@capacitor/preferences";
 import { LocalGameAPI, type GameResponse } from "../shared/local-api";
 import { repairSecretRoomLighting } from "../shared/expansion";
-function repairLighting(response: GameResponse): GameResponse {
-  if (response.data.game) repairSecretRoomLighting(response.data.game);
+import { syncPassiveStats } from "../shared/engine";
+function prepareResponse(response: GameResponse): GameResponse {
+  if (response.data.game) {
+    repairSecretRoomLighting(response.data.game);
+    syncPassiveStats(response.data.game);
+  }
   return response;
 }
 export const isDeviceGame =
@@ -19,7 +23,7 @@ export async function requestGame(
   body?: unknown,
   key?: string,
 ): Promise<GameResponse> {
-  if (isDeviceGame) return repairLighting(await device.request(path, body, key));
+  if (isDeviceGame) return prepareResponse(await device.request(path, body, key));
   const r = await fetch("/api/" + path, {
     method: body ? "POST" : "GET",
     headers: {
@@ -28,5 +32,5 @@ export async function requestGame(
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
-  return repairLighting({ ok: r.ok, status: r.status, data: await r.json() });
+  return prepareResponse({ ok: r.ok, status: r.status, data: await r.json() });
 }

@@ -45,6 +45,7 @@ export interface Actor {
   sharpening?: boolean;
   skillBook?: boolean;
   passiveStats?: Stats;
+  attackBonus?: number;
   spawnTurn?: number;
   merchant?: Merchant;
   drain?: boolean;

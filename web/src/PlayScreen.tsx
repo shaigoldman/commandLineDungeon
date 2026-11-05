@@ -1,3 +1,4 @@
+import { gauntletBonus, isCarriedPassive } from "../shared/passive-items";
 import { rarityRank } from "../shared/rarity";
 import { Chronicle } from "./Chronicle";
 import { itemIcon } from "./item-art";
@@ -154,6 +155,7 @@ export function PlayScreen({
     ),
   ];
   const picked = selection?.item,
+    pickedGauntlet = picked ? gauntletBonus(p, picked) : undefined,
     isGear = !!picked && ["weapon", "tome"].includes(picked.kind),
     comparison =
       picked && isGear
@@ -1201,13 +1203,16 @@ export function PlayScreen({
           {cards.length ? (
             cards.map(({ item, equipped: held }) => {
               const problem = held ? undefined : itemUseProblem(g, item);
+              const passive = isCarriedPassive(item);
+              const gauntlet = gauntletBonus(p, item);
               return (
                 <button
                   key={item.id}
                   className={
                     "item-card" +
                     (held ? " is-equipped" : "") +
-                    (problem ? " unavailable" : "")
+                    (problem && !passive ? " unavailable" : "") +
+                    (gauntlet?.active ? " passive-active" : "")
                   }
                   aria-label={(held ? "Equipped: " : "Item: ") + item.name}
                   onClick={() => setSelection({ item })}
@@ -1217,6 +1222,8 @@ export function PlayScreen({
                   <small>
                     {held
                       ? "★ EQUIPPED"
+                      : passive
+                        ? gauntlet && !gauntlet.active ? "PASSIVE · INACTIVE" : "PASSIVE · ACTIVE"
                       : problem
                         ? "Unavailable now"
                         : ["weapon", "tome"].includes(item.kind)
@@ -1224,7 +1231,10 @@ export function PlayScreen({
                           : "Usable now"}
                   </small>
                   <em>
-                    {item.kind === "weapon"
+                    {gauntlet
+                      ? gauntlet.active ? gauntlet.label : `Needs ${gauntlet.requirement}`
+                      : passive ? "Works while in your bag"
+                      : item.kind === "weapon"
                       ? `${item.uses}/${item.maxUses} uses`
                       : item.uses && item.maxUses
                         ? `${item.uses}/${item.maxUses} uses`
@@ -1552,6 +1562,12 @@ export function PlayScreen({
                 ) : (
                   <>
                     <p>{describe(picked)}</p>
+                    {isCarriedPassive(picked) && <p className="passive-status" role="status">
+                      {selection.ground ? "Pick up to carry this passive item." : pickedGauntlet ?
+                        pickedGauntlet.active ? `ACTIVE · ${pickedGauntlet.label}. Already included in your combat damage.` :
+                        `INACTIVE · Requires ${pickedGauntlet.requirement}. Currently ${n(p.stats.Mana)} mana and ${n(p.hp)} HP.` :
+                        "ACTIVE · Works automatically while carried."}
+                    </p>}
                     {selection.ground ? (
                       <>
                         {picked.kind === "projectile" && (
@@ -1587,7 +1603,7 @@ export function PlayScreen({
                         {picked.kind === "mixing-potion" && ["Health","Power","Speed","Luck","Magic","Accuracy","Armor"].flatMap(lose=>["Health","Power","Speed","Luck","Magic","Accuracy","Armor"].filter(gain=>gain!==lose && (p.stats[lose] || 0)>=3).map(gain=>actButton(`${lose} −3 → ${gain} +3`,{type:"use",id:picked.id,spell:`${lose}:${gain}`})))}
                         {picked.kind === "spiked-potion" && ["Health", "Power", "Luck", "Speed", "Magic", "Accuracy", "Armor"].map((stat) =>
                           actButton(`+5 ${stat} · pay half HP`, { type: "use-floor", id: picked.id, spell: stat }, false, "primary"))}
-                        {!picked.auto && !["mana-star", "spiked-potion", "mixing-potion"].includes(picked.kind) && canUseFromFloor(picked) &&
+                        {!picked.auto && !isCarriedPassive(picked) && !["mana-star", "spiked-potion", "mixing-potion"].includes(picked.kind) && canUseFromFloor(picked) &&
                           actButton(
                             picked.kind === "teleport"
                               ? "Use once & teleport"
@@ -1602,7 +1618,7 @@ export function PlayScreen({
                       </>
                     ) : (
                       <>
-                        {itemUseProblem(g, picked) && (
+                        {!isCarriedPassive(picked) && itemUseProblem(g, picked) && (
                           <p className="action-problem">
                             {itemUseProblem(g, picked)}
                           </p>
@@ -1639,7 +1655,7 @@ export function PlayScreen({
                           <button key={`${pod.x},${pod.y}`} className="upgrade-choice" disabled={busy} onClick={() => void send({ type: "use", id: picked.id, target: `${pod.x},${pod.y}` })}>
                             <span><b>Convert adjacent {pod.max ? "large" : "small"} energy pod</b><small>At {pod.x},{pod.y} · item appears there</small></span>
                           </button>)}
-                        {! ["mana-star", "spiked-potion", "anvil", "blade-shard", "magic-scabbard", "alchemy-book", "magic-wand", "energy-harness"].includes(picked.kind) && actButton(
+                        {!isCarriedPassive(picked) && ! ["mana-star", "spiked-potion", "anvil", "blade-shard", "magic-scabbard", "alchemy-book", "magic-wand", "energy-harness"].includes(picked.kind) && actButton(
                           picked.kind === "projectile"
                             ? "Throw at " + (enemy?.name || "enemy")
                             : picked.kind === "teleport"
@@ -1651,7 +1667,7 @@ export function PlayScreen({
                           !!itemUseProblem(g, picked),
                           "primary",
                         )}
-                        <button className="primary" onClick={closeDetails}>Done using</button><details><summary>Discard item…</summary>{actButton("Drop item on floor", { type: "drop", id: picked.id })}</details>
+                        <button className="primary" onClick={closeDetails}>{isCarriedPassive(picked) ? "Close" : "Done using"}</button><details><summary>Discard item…</summary>{actButton("Drop item on floor", { type: "drop", id: picked.id })}</details>
                       </>
                     )}
                   </>
