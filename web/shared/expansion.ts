@@ -1,3 +1,4 @@
+import { merchantSpecialty, specialtyItem, type TradeSpecialty } from "./merchant-trades";
 import { rarityRank } from "./rarity";
 /** Ashfall market rules. All RNG is part of the persisted game seed. */
 import type { Actor, Game, Item, SecretDoor } from "./types";
@@ -93,11 +94,22 @@ function askingPrice(g: Game, item: Item) {
   return Math.max(1, Math.ceil(marketValue(item) * multiplier));
 }
 /** Ordinary slots: 90% Uncommon, 10% Common. Half of shops replace one slot with a premium item. */
-export function villagerStock(g: Game): Item[] {
+export function villagerStock(g: Game, profile?: TradeSpecialty): Item[] {
   const count = 3 + roll(g, 3);
   const premium = random(g) < 0.5 ? roll(g, count) : -1;
-  return Array.from({ length: count }, (_, index) => randomItemOfRarity(g,
-    index === premium ? (random(g) < 0.8 ? "rare" : "ultrarare") : random(g) < 0.1 ? "common" : "uncommon"));
+  return Array.from({ length: count }, (_, index) => {
+    const rarity = index === premium ? (random(g) < 0.8 ? "rare" : "ultrarare") : random(g) < 0.1 ? "common" : "uncommon";
+    // Specialty selection happens after rarity: no extra premium rolls or upgrades.
+    if (profile && random(g) < 0.8) {
+      const candidates = itemDefinitions.filter(([name, kind, tier]) => tier === rarity && kind !== "gold" && kind !== "stair-key" &&
+        (specialtyItem(profile, {name, kind}) || (profile.poisonWeapons && ["Sword", "Spear", "Axe", "Shield"].includes(name)) || (name === "Magic Staff" && profile.elements?.includes("Wind"))));
+      if (candidates.length) {
+        const definition = pickItemDefinition(g, candidates);
+        return makeItem(g, profile.poisonWeapons && definition[1] === "weapon" ? "Poison " + definition[0] : definition[0] === "Magic Staff" && profile.elements?.includes("Wind") ? "Wind Staff" : definition[0]);
+      }
+    }
+    return randomItemOfRarity(g, rarity);
+  });
 }
 export function makeVillager(g: Game, king = false): Actor {
   if (king && g.monsters.some(m => m.merchant?.king)) return makeVillager(g);
@@ -105,22 +117,18 @@ export function makeVillager(g: Game, king = false): Actor {
   // A floor with all twelve survivors already present receives a chieftain instead.
   if (!king && !identities.length) return makeChief(g);
   const [name, line] = pick(g, identities.length ? identities : [...history]);
+  const profile = merchantSpecialty({name: king ? "King Niblet the Underprepared" : name});
   const all = king ? catalogItems(g) : [];
   const stock = king
     ? all
-        .map((item) => ({ item, sort: random(g) }))
-        .sort((a, b) => a.sort - b.sort)
+        .map((item) => ({ item, sort: random(g) ** (1 / (specialtyItem(profile, item) ? 4 : 1)) }))
+        .sort((a, b) => b.sort - a.sort)
         .slice(0, Math.ceil(all.length / 2))
         .map((a) => a.item)
-    : villagerStock(g);
+    : villagerStock(g, profile);
   // A villager cannot sell the very item they are hunting for.
-  const wantedCandidates = [
-    "Fragile Axe",
-    "Mana Potion",
-    "Poison Antidote",
-    "Standard Key",
-    "Tiny Health Potion",
-  ].filter((name) => !stock.some((item) => item.name === name));
+  const wantedCandidates = (profile?.wanted || ["Fragile Axe", "Mana Potion", "Poison Antidote", "Standard Key", "Tiny Health Potion"])
+    .filter((name) => !stock.some((item) => item.name === name));
   const wanted =
     wantedCandidates.length && random(g) < 0.35
       ? pick(g, wantedCandidates)
@@ -151,13 +159,14 @@ export function makeVillager(g: Game, king = false): Actor {
       })),
       buyPrices: {},
       taste: roll(g, 100000),
-      dislikes: [pick(g, ["projectile", "armor", "boost", "trash", "tome"])],
+      dislikes: [pick(g, ["projectile", "armor", "boost", "trash", "tome"].filter(kind => !profile?.kinds.includes(kind) && !(kind === "tome" && profile?.elements?.length)))],
       wanted,
       premium: 1.5 + random(g) * 1.5,
       line:
         (king
           ? "My coronation happened during a roof collapse. The crown is technically a saucepan. I declared that day a holiday. "
           : line) +
+        (profile ? " " + profile.pitch : "") +
         (wanted ? ` Have you seen a ${wanted}? I’m looking for one…` : ""),
       refusal: pick(g, [
         "Last time I bought that, my soup became sentient.",
@@ -182,9 +191,12 @@ export function saleQuote(m: Actor, i: Item): number | null {
   let h = shop.taste;
   for (const c of i.id) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0;
   const wanted = shop.wanted === i.name;
+  const preferred = specialtyItem(merchantSpecialty(m), i);
   const price = wanted
     ? Math.floor(marketValue(i) * shop.premium)
-    : shop.dislikes.includes(i.kind)
+    : preferred
+      ? Math.max(1, Math.floor(marketValue(i) * (0.65 + (h % 500) / 10000)))
+      : shop.dislikes.includes(i.kind)
       ? null
       : Math.max(1, Math.floor(marketValue(i) * (0.4 + (h % 1500) / 10000)));
   shop.buyPrices[i.id] = price;
@@ -212,7 +224,7 @@ export function quote(g: Game, m: Actor, id: string, sell = false) {
   g.marketNotice =
     n === null
       ? `${m.name}: ${m.merchant.refusal}`
-      : `${m.name} offers ${n} gold for ${i.name}${m.merchant.wanted === i.name ? " — my most wanted item!" : ""}.`;
+      : `${m.name} offers ${n} gold for ${i.name}${m.merchant.wanted === i.name ? " — my most wanted item!" : specialtyItem(merchantSpecialty(m), i) ? " — a specialty offer!" : ""}.`;
   log(g, g.marketNotice);
   if (sell && n !== null) {
     if (i.kind === "infinite-bag") { g.inventory = []; g.player.weapons = []; log(g,"Losing the Infinite Bag destroyed all your items!"); }

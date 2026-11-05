@@ -1,3 +1,4 @@
+import { merchantSpecialty, specialtyItem } from "../shared/merchant-trades";
 import { describe } from "../shared/catalog";
 import { useState } from "react";
 import type { Actor, Game, Action } from "../shared/types";
@@ -15,6 +16,7 @@ export function MerchantPanel({
   send: (a: Action) => Promise<unknown>;
 }) {
   const shop = m.merchant!;
+  const profile = merchantSpecialty(m);
   const [chosen, setChosen] = useState("");
   const [tab, setTab] = useState<"buy" | "sell">("buy");
   return (
@@ -27,6 +29,7 @@ export function MerchantPanel({
       <h2>{m.name}</h2>
       <p className="gold-purse">◉ {g.player.gold || 0} gold</p>
       <blockquote>{shop.line}</blockquote>
+      {profile && <p className="trade-specialty"><strong>Specialty · {profile.label}</strong><br />Stocks these items more often and pays extra when you sell them.</p>}
       {shop.wanted && (
         <p className="wanted-item">
           Wanted: {shop.wanted} · pays up to 3× market value
@@ -74,7 +77,7 @@ export function MerchantPanel({
           <p>Select an item and review its offer before selling.</p>
           <div className="market-stock">{g.inventory.map(item=>{
             const offer=saleQuote(structuredClone(m),item);
-            return <div className="market-offer" key={item.id}><img src={itemIcon(item)} alt=""/><span><b>{item.name}</b><small>{describe(item)}</small><em>{offer===null ? "Not buying this item" : `${offer} gold`}</em></span><button disabled={offer===null} onClick={()=>setChosen(item.id)}>{chosen===item.id ? "Selected" : "Review sale"}</button>{chosen===item.id && offer!==null && <button onClick={()=>{void send({type:"sell",id:item.id});setChosen("");}}>Sell for {offer} gold</button>}</div>;
+            return <div className="market-offer" key={item.id}><img src={itemIcon(item)} alt=""/><span><b>{item.name}</b><small>{describe(item)}</small><em>{offer===null ? "Not buying this item" : `${offer} gold${shop.wanted === item.name ? " · Wanted item" : specialtyItem(profile,item) ? " · Specialty offer" : ""}`}</em></span><button disabled={offer===null} onClick={()=>setChosen(item.id)}>{chosen===item.id ? "Selected" : "Review sale"}</button>{chosen===item.id && offer!==null && <button onClick={()=>{void send({type:"sell",id:item.id});setChosen("");}}>Sell for {offer} gold</button>}</div>;
           })}</div>
           {!g.inventory.length && <p>Your bag is empty.</p>}
         </>
