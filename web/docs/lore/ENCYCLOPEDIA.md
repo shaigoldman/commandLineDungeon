@@ -116,11 +116,15 @@ Cinderwhisk once called him a ruler of puddles. Puddlethrone asked how many chil
 
 ### King Niblet the Underprepared
 
+**Trade: Royal treasures.** Niblet maintains a broad royal bazaar but reserves his strongest interest for jewels, crowns and lucky treasures fit for his improvised court.
+
 His saucepan crown dates from a collapsing storehouse, when he held a door after actual officers fled. The title honors that act but does not guarantee his later judgment. He can listen, hide behind procedure, or do both in the same conversation. “Underprepared” remains a reminder that courage preceded any claim to competence.
 
 He keeps the saucepan's dent facing outward. A smith offered to straighten it and received a surprisingly sharp refusal. Later Niblet brought the smith a better meal than his own, without an explanation. The smith began repairing the court's damaged hinges first.
 
 ### Mabel Crumb
+
+**Trade: Provisions & recovery.** Mabel supplies shelter kitchens with restorative provisions and saves the best sweets for exhausted travelers.
 
 A baker for the observatory and now a supplier to scattered shelters, Mabel remembers institutions through orders, flour shortages, and who ate standing up. She undercounts portions when hunger has become embarrassing. Her festival cake shaped like a second sun was an imperial commission, not evidence she understood the experiment.
 
@@ -128,11 +132,15 @@ An astronomer once asked for a cake without a shadow. Mabel proposed eating it i
 
 ### Pip Bellwether
 
+**Trade: Wind & travel.** Pip uses his bell routes to guide survivors, collecting Wind staves, escape gear and anything that makes a journey safer.
+
 Keeper of twelve public bells, Pip understood their social purpose before he heard the extra resonance between the twelfth stroke and silence. He fears a sound awaiting permission, not a hidden physical thirteenth tower bell. His care for timing includes the workers whose days depended on shared hours.
 
 A foreman wanted an earlier morning stroke without moving the evening one. Pip asked whether the missing interval should come from the emperor's sleep. The foreman reported him for insolence. Pip retained the report: it confirmed that someone had once believed an hour could be measured honestly.
 
 ### Orla Soot
+
+**Trade: Magic & mana.** Orla carries on her household's mirror craft by trading staves and mana supplies while studying the engine's magical traces.
 
 Orla's household silvered mirrors; her missing husband delivered the final lower-chamber instrument. The haircut story lets her approach his terror sideways. His fate remains unresolved. Authors must not turn a passing clue into proof of death, a captive location, or an implemented rescue objective.
 
@@ -140,11 +148,15 @@ She trims one side of her own hair shorter now, claiming it saves time. Once, wh
 
 ### Bram Pickle
 
+**Trade: Trade & treasure.** Bram weighs portable valuables and equips small traders, keeping honest accounts of every purse, jewel and costly bargain.
+
 A neighborhood assessment clerk, Bram recorded people who fainted under the shadow levy rather than recording only what the palace collected. He is patient with frightened customers and exacting with officials who ask for convenient approximations. His surname comes from a household trade; preservation matters more to him than prestige.
 
 When ordered to summarize several missing residents as “miscellaneous,” he asked how many miscellaneous persons should receive a widow's allowance. The supervisor sent the ledger back. Bram ruled a wider column and wrote each name again, smaller but still legible.
 
 ### Tansy Bolt
+
+**Trade: Tools & equipment.** Tansy repairs survivors' equipment with recovered workshop tools, upgrade relics and salvaged energy mechanisms.
 
 A technician from a family of observatory maintainers, Tansy obeyed a signed bypass order and pocketed the regulating screw it displaced. Her responsibility is real, though neither total nor equivalent to Vey's informed command. She mistrusts phrases that make a decision sound like a property of machinery.
 
@@ -152,11 +164,15 @@ She keeps tools sorted by the injury each can prevent. Visitors assume the label
 
 ### Hob Nettle
 
+**Trade: Poison & remedies.** Hob's medicinal garden supplies antidotes and careful doses of poison; he also restores poison-coated blades for hunters.
+
 Fuel hauler, herb grower, and an attentive witness to heat, smells, and meals, Hob knows the furnace neighborhood through his body. His account that the sun sneezed is an honest sensory description. He has no privileged knowledge that the actual sun was damaged or replaced.
 
 He grows nettles in an imperial inspection tray. Its raised letters promise efficient use of public resources. Hob says it is the only official promise he can personally guarantee, then pulls on patched gloves and harvests enough for a neighbor's soup.
 
 ### Dora Teaspoon
+
+**Trade: Restoration & supplies.** Dora equips makeshift guest kitchens with dependable healing vessels, carry space and the keys needed to reach them.
 
 Dora marks lintels to track a kitchen displaced from its original street. Her irritation about a kettle protects a larger grief: hospitality needs a place where people can expect to find you. The familiar claim that her kitchen is on floor nine is her reckoning, not a guaranteed map coordinate.
 
@@ -164,11 +180,15 @@ She once scolded a stranger for muddy boots before discovering that the boots we
 
 ### Fenwick Moss
 
+**Trade: Arms & armor.** Fenwick removes unwanted ownership marks from recovered arms, then repairs weapons and armor for people guarding the shelters.
+
 An observatory gardener's descendant, Fenwick preserves seeds and helps remove unwanted ownership marks from weapons. He knows that Ruthagor destroyed a dangerous operating text containing useful shutdown knowledge. His story that the dragon ate the manual makes a terrible unilateral choice small enough to repeat in public.
 
 He buried an arsenal plaque beneath a bed of beans. When Dora called that disrespectful to history, he showed her the names copied on paper and the beans already climbing. He had no quarrel with remembering. He objected to giving a plaque the better soil.
 
 ### Ada Candle
+
+**Trade: Stats & growth.** Ada measures charms and training aids as carefully as rations, trading items whose benefits can be counted and checked.
 
 Ada preserved ration records inside candle molds and now scrutinizes Niblet's labor accounts. She distinguishes declared holidays from actual rest. Her humor measures the distance between official language and lived cost; she is not simply a universal cynic. A promise fulfilled earns her practical loyalty.
 
@@ -176,17 +196,23 @@ Niblet once announced that every worker deserved a day free of worry. Ada brough
 
 ### Nell Thread
 
+**Trade: Wards & cleansing.** Nell's undertaking craft includes remedies for harmful bindings; her counter offers cleansing relics and protection for the living.
+
 Nell prepares the dead and keeps duplicate names in embroidery. She understands haunting through unfinished relations, not through a doctrine that every ghost wants revenge. Her antidote knowledge belongs to an undertaking craft that recognizes harmful bindings as well as bodily poison.
 
 A customer apologized for bringing a torn shroud. Nell asked whether its owner had always dressed perfectly. On hearing that he had not, she left one neat visible patch rather than hiding it. “He should be recognizable,” she said, and gave the unused cloth back.
 
 ### Bix Turnip
 
+**Trade: Alchemy & transformation.** Bix apprentices with salvage alchemists, exchanging catalysts and transformation relics while testing what his impossible harvest can become.
+
 Bix found Tansy's displaced screw inside a root grown near the maintenance drain. His concern for the vegetable is partly practical: seeds and food remain valuable below ground. His speculative question about growing a moon is a gardener's way of handling evidence he cannot yet place.
 
 He washed the screw, then apologized to the turnip for making it look less remarkable. He replanted its top in a bowl. Someone laughed, so he asked whether they had a better method for obtaining leaves. They brought him another bowl the next morning.
 
 ### Wren Lastlight
+
+**Trade: Secrets & forbidden magic.** Wren exchanges survey charms, hidden-route instruments and Dark staves while comparing fragments of the engine's inaccessible passages.
 
 A junior recorder of mirror differences, Wren removed a resonant tuning handbell when every reflection showed an empty room. She carries technical fragments toward a possible repair without possessing complete cosmological knowledge. Her three-part plan remains background intent, not a quest the current game fulfills.
 

@@ -499,8 +499,16 @@ breakUi.combat = breakUi.monsters[0].id;
 const shieldUi = openArena("Warrior");
 shieldUi.monsters = []; shieldUi.traps = [];
 shieldUi.player.weapons = [makeItem(shieldUi, "Iron Shield")];
+const specialtyMarket = structuredClone(market);
+specialtyMarket.monsters[0].name = "Orla Soot";
+specialtyMarket.monsters[0].merchant!.wanted = undefined;
+specialtyMarket.monsters[0].merchant!.dislikes = ["projectile"];
+specialtyMarket.monsters[0].merchant!.line = "I trade staves and mana supplies, and pay extra for sound enchantments.";
+specialtyMarket.monsters[0].merchant!.stock = ["Sapphire Staff", "Tiny Mana Potion"].map(name => ({item:makeItem(specialtyMarket,name),price:20}));
+specialtyMarket.inventory = [makeItem(specialtyMarket,"Dark Staff"),makeItem(specialtyMarket,"Throwing Knife")];
 console.log(
   JSON.stringify({
+    specialtyMarket,
     relicUi,
     trapUi,
     harnessUi,

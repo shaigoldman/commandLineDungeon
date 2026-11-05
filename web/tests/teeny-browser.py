@@ -38,6 +38,21 @@ try:
   page.keyboard.press('Space');page.wait_for_timeout(100);assert saved()['revision']==fixtures['combat']['revision']
   load(fixtures['fullBag']);expect(page.locator('.inventory-ribbon')).to_contain_text('FULL');page.screenshot(path=str(shots/'bag.png'))
   load(fixtures['market']);page.get_by_role('button',name='Talk / trade',exact=True).click();page.get_by_role('button',name='Sell items',exact=True).click();expect(page.locator('.market-offer').first).to_be_visible();review=page.get_by_role('button',name='Review sale').first;review.click();expect(page.get_by_role('button',name='Sell for',exact=False)).to_be_visible();page.screenshot(path=str(shots/'market.png'))
+  load(fixtures['specialtyMarket']);page.get_by_role('button',name='Talk / trade',exact=True).click()
+  expect(page.locator('.trade-specialty')).to_contain_text('Magic & mana')
+  page.get_by_role('button',name='Buy Sapphire Staff',exact=True).click();page.wait_for_timeout(150)
+  assert any(i['name']=='Sapphire Staff' for i in saved()['inventory'])
+  page.get_by_role('button',name='Sell items',exact=True).click()
+  offer=page.locator('.market-offer').filter(has_text='Dark Staff');expect(offer).to_contain_text('Specialty offer')
+  expect(page.locator('.market-offer').filter(has_text='Throwing Knife')).to_contain_text('Not buying this item')
+  price=int(offer.locator('em').inner_text().split()[0]);assert 22<=price<=24
+  offer.get_by_role('button',name='Review sale',exact=True).click();offer.get_by_role('button',name=f'Sell for {price} gold',exact=True).click();page.wait_for_timeout(150)
+  assert saved()['player']['gold']==480+price
+  assert not any(i['name']=='Dark Staff' for i in saved()['inventory'])
+  page.reload();page.wait_for_selector('canvas');assert saved()['player']['gold']==480+price
+  page.get_by_role('button',name='Talk / trade',exact=True).click();expect(page.locator('.trade-specialty')).to_contain_text('Magic & mana')
+  page.set_viewport_size({'width':320,'height':480});assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+  page.screenshot(path=str(root/'work/specialty-market.png'));page.set_viewport_size({'width':390,'height':844})
   load(fixtures['trapUi']);page.screenshot(path=str(shots/'traps.png'))
   load(fixtures['won']);expect(page.get_by_role('dialog',name='Victory')).to_be_visible();page.get_by_role('button',name='Continue to floor 4 →',exact=True).click();page.wait_for_timeout(250);assert saved()['floor']==3;assert saved()['status']=='playing'
   load(fixtures['level']);page.screenshot(path=str(shots/'level-up.png'));expect(page.locator('.level-gains')).to_be_visible()

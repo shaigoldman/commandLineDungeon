@@ -47,3 +47,5 @@ Revealed traps appear as recessed dungeon pits or broken trapdoors, with shaded 
 All twelve named villagers have individually authored sprites with distinct silhouettes, builds, clothing, hair, and personal belongings. Mabel carries a pie tray, Tansy a spanner, Dora a kettle, Orla a mirror, and Bix a turnip. The same character artwork is used in the dungeon, encounter portrait, speech bubble, and market. See the [villager contact sheet](screenshots/named-villagers.png).
 
 `tests/villager-art.test.ts` covers every villager name and compares monochrome body silhouettes below the head, preventing a return to hat-only or color-only variants.
+
+Named villagers now stock and pay extra for items related to their character. Their market displays the specialty and marks matching sale offers. See [villager trades](VILLAGER-TRADES.md) for the roster and rules.
