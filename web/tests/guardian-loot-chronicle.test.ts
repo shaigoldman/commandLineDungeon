@@ -69,7 +69,7 @@ describe("explicit rarity and survivor shops",()=>{
   });
 });
 describe("hostile throws and poison weapons",()=>{
-  for(const name of ["Throwing Knife","Handcuffs","Sand","Sand Bag","Sandstorm Wand","Quicksand Wand"])it(name+" commits the hero to fleeing",()=>{
+  for(const name of ["Throwing Knife","Handcuffs","Sand","Sand Bag","Sandstorm Wand","Quicksand Wand","Bad Candy"])it(name+" commits the hero to fleeing",()=>{
     let g=arena();const m=makeMonster(g,"Zombie",1);Object.assign(m,{x:6,y:5,hp:200});m.stats.Health=200;g.monsters=[m];const i=makeItem(g,name);g.inventory=[i];
     g=act(g,{type:"use",id:i.id,target:m.id});expect(g.combat).toBe(m.id);expect(g.encounter?.engaged).toBe(true);expect(()=>act(g,{type:"leave"})).toThrow("must flee");
   });
