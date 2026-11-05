@@ -57,7 +57,7 @@ try:
         box = page.locator("canvas").bounding_box()
         x, y = box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
         page.mouse.move(x, y); page.mouse.down(); page.mouse.move(x + 65, y, steps=6); page.mouse.up()
-        expect(page.locator(".play-toast")).to_contain_text("TRAP:")
+        expect(page.locator(".chronicle-feed")).to_contain_text("TRAP:")
         expect(page.get_by_test_id("trap-alert")).to_contain_text("TRAP!")
         expect(page.get_by_test_id("trap-alert")).to_contain_text("fairy stole")
         page.wait_for_function("()=>Number(getComputedStyle(document.querySelector('.trap-alert-flash')).opacity)>0", timeout=1000)

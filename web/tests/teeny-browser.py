@@ -38,11 +38,22 @@ try:
   page.emulate_media(reduced_motion='no-preference')
   load(fixtures['explore']);page.screenshot(path=str(shots/'explore.png'));assert page.get_by_role('button',name='Wait',exact=True).count()==0
   journal=json.loads(json.dumps(fixtures['explore']));journal['log']=['Zombie takes 12 poison damage. You gain 5 HP and 3 mana.','Gained 20 EXP.'];journal['logSerial']=2;load(journal)
+  feed=page.locator('.play-map .chronicle-feed');expect(feed).to_be_visible()
+  expect(feed).to_contain_text('Zombie takes 12 poison damage.')
+  assert feed.locator('header').bounding_box()['height']<=34
+  assert feed.locator('header button').last.bounding_box()['x']+feed.locator('header button').last.bounding_box()['width']<=feed.bounding_box()['x']+feed.bounding_box()['width']
+  assert page.locator('.play-toast,.chronicle-peek').count()==0
+  expect(feed.locator('.chronicle-status')).to_have_text('poison')
+  before=saved()['revision'];feed.locator('.chronicle-feed-scroll').focus();page.keyboard.press('ArrowDown');assert saved()['revision']==before
+  page.wait_for_timeout(6700);expect(feed).to_contain_text('Gained 20 EXP.')
+  page.get_by_role('button',name='Hide recent chronicle entries').click();expect(feed.locator('ol')).to_have_count(0)
+  page.get_by_role('button',name='Show recent chronicle entries').click();expect(feed.locator('li')).to_have_count(2)
+  (root/'work').mkdir(exist_ok=True);page.screenshot(path=str(root/'work/live-chronicle.png'))
   page.get_by_role('button',name='Open journey chronicle',exact=True).click()
   expect(page.get_by_role('dialog',name='Journey chronicle')).to_be_visible()
-  expect(page.locator('.chronicle-name').first).to_have_text('Zombie')
-  expect(page.locator('.chronicle-status').first).to_have_text('poison')
-  expect(page.locator('.chronicle-hp').first).to_have_text('HP')
+  expect(page.locator('.chronicle-entries .chronicle-name').first).to_have_text('Zombie')
+  expect(page.locator('.chronicle-entries .chronicle-status').first).to_have_text('poison')
+  expect(page.locator('.chronicle-entries .chronicle-hp').first).to_have_text('HP')
   assert float(page.locator('.chronicle-entries p').first.evaluate('e=>parseFloat(getComputedStyle(e).fontSize)'))>=17
   page.get_by_role('button',name='Combat',exact=True).click();expect(page.locator('.chronicle-entries li')).to_have_count(1)
   page.get_by_role('button',name='Discoveries',exact=True).click();expect(page.locator('.chronicle-entries')).to_contain_text('Gained 20 EXP.')
@@ -52,9 +63,12 @@ try:
   expect(page.locator('.magic-ribbon')).to_be_visible();expect(page.locator('.spell-card.unavailable').first).to_be_visible();page.locator('.spell-card').first.click();expect(page.locator('.spell-inspection')).to_be_visible();expect(page.locator('.spell-inspection .primary')).to_be_disabled();page.screenshot(path=str(shots/'spell-inspection.png'));page.get_by_role('button',name='Close spell').click()
   before=saved()['revision'];canvas=page.locator('canvas').bounding_box();x=canvas['x']+canvas['width']/2;y=canvas['y']+canvas['height']/2;page.mouse.move(x,y);page.mouse.down();page.mouse.move(x+60,y,steps=6);page.mouse.up();page.wait_for_timeout(150);assert saved()['revision']==before
   load(fixtures['combat']);page.screenshot(path=str(shots/'encounter.png'))
-  page.keyboard.press('Space');page.wait_for_timeout(100);assert saved()['revision']==fixtures['combat']['revision']
+  page.get_by_role('button',name='Hide recent chronicle entries').click();page.get_by_role('button',name='Attack',exact=True).click()
+  expect(page.locator('.chronicle-feed ol')).to_be_visible();expect(page.locator('.chronicle-feed li').first).to_contain_text(saved()['log'][-1])
+  page.reload();page.wait_for_selector('canvas');expect(page.locator('.chronicle-feed li').first).to_contain_text(saved()['log'][-1])
+  before=saved()['revision'];page.keyboard.press('Space');page.wait_for_timeout(100);assert saved()['revision']==before
   load(fixtures['fullBag']);expect(page.locator('.inventory-ribbon')).to_contain_text('FULL');page.screenshot(path=str(shots/'bag.png'))
-  load(fixtures['market']);page.get_by_role('button',name='Talk / trade',exact=True).click();page.get_by_role('button',name='Sell items',exact=True).click();expect(page.locator('.market-offer').first).to_be_visible();review=page.get_by_role('button',name='Review sale').first;review.click();expect(page.get_by_role('button',name='Sell for',exact=False)).to_be_visible();page.screenshot(path=str(shots/'market.png'))
+  load(fixtures['market']);assert page.locator('.chief-speech').bounding_box()['y']+page.locator('.chief-speech').bounding_box()['height']<=page.locator('.chronicle-feed').bounding_box()['y'];page.get_by_role('button',name='Talk / trade',exact=True).click();page.get_by_role('button',name='Sell items',exact=True).click();expect(page.locator('.market-offer').first).to_be_visible();review=page.get_by_role('button',name='Review sale').first;review.click();expect(page.get_by_role('button',name='Sell for',exact=False)).to_be_visible();page.screenshot(path=str(shots/'market.png'))
   load(fixtures['floorBoon']);page.get_by_role('button',name='Attack',exact=True).click()
   expect(page.locator('.boon-notice')).to_be_visible();expect(page.locator('.boon-notice')).to_contain_text('Three health pods')
   assert len([pod for pod in saved()['pods'] if pod.get('healthOnly')])==3

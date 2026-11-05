@@ -401,38 +401,6 @@ body.playing-game {
   line-height: 1.4;
   pointer-events: none;
 }
-.play-toast {
-  position: absolute;
-  bottom: 5px;
-  left: 5px;
-  right: 5px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 9px;
-  background: #162f3df0;
-  border-left: 3px solid #d9c083;
-  box-shadow: 0 2px 8px #0007;
-  font-size: 11px;
-  line-height: 1.35;
-  z-index: 4;
-}
-.play-toast > span {
-  flex: 1;
-  max-height: 58px;
-  overflow: auto;
-}
-.play-toast button {
-  background: transparent;
-  border: 0;
-  min-height: 28px;
-  min-width: 28px;
-  font-size: 20px;
-}
-.play-toast.toast-error {
-  border-color: #eea082;
-  color: #ffd8bd;
-}
 .poison-flash {
   position: fixed;
   inset: 0;
@@ -1657,9 +1625,6 @@ body.playing-game {
 .victory-screen button { display:block; width:100%; margin-top:14px; min-height:46px; }
 
 /* A readable field journal, with redundant word labels alongside semantic color. */
-.play-shell .chronicle-peek { display:flex; align-items:center; gap:10px; width:100%; margin:6px 0; padding:10px 12px; border:1px solid #9d8857; background:#243440; color:#edddb2; text-align:left; font:15px Georgia,serif; }
-.chronicle-peek strong,.chronicle-peek b { flex-shrink:0; }
-.chronicle-peek span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; color:#e4d9bf; }
 .play-modal:has(.chronicle) { background:#ede1c2; color:#302b25; border-color:#ac9057; }
 .chronicle { padding:8px 4px; font:17px/1.65 Georgia,"Times New Roman",serif; }
 .chronicle h2 { font-size:28px; line-height:1.2; margin:4px 0 12px; color:#3d3025; }
@@ -1689,3 +1654,23 @@ body.playing-game {
 .boon-notice strong,.boon-notice span { display:block; }
 .boon-notice strong { margin-bottom:5px; font-size:19px; color:#ffe49a; }
 .play-shell .boon-notice button { position:absolute; right:7px; top:7px; width:30px; height:30px; font-size:22px; padding:0; color:#fff1c8; }
+
+/* The live Chronicle occupies the former notification area inside the dungeon. */
+.chronicle-feed { position:absolute; left:5px; right:5px; bottom:5px; z-index:4; display:flex; flex-direction:column; max-height:max(32px,min(170px,40%)); overflow:hidden; border:1px solid #a68c55; border-left:3px solid #c6a85f; border-radius:4px; box-shadow:0 3px 12px #0006; background:#ede1c2f5; color:#302b25; font:16px/1.4 Georgia,serif; }
+.chronicle-feed header { height:32px; box-sizing:border-box; flex:none; display:flex; align-items:center; gap:6px; padding:0 6px 0 9px; min-height:30px; border-bottom:1px solid #c7b995; }
+.chronicle-feed header > strong { flex:1; font-size:17px; color:#5c4526; }
+.play-shell .chronicle-feed header button { min-height:28px; padding:3px 6px; border:0; background:transparent; color:#594526; font:13px Georgia,serif; }
+.chronicle-feed-scroll { min-height:0; overflow:auto; overscroll-behavior:contain; padding:0 9px; scrollbar-width:thin; }
+.chronicle-feed ol { margin:0; padding:0; list-style:none; }
+.chronicle-feed li { display:flex; gap:8px; padding:5px 0; border-bottom:1px solid #c7b995; }
+.chronicle-feed li:last-child { border-bottom:0; }
+.chronicle-feed p { margin:0; font:inherit; overflow-wrap:anywhere; }
+.chronicle-feed .chronicle-number { flex:0 0 24px; font-size:10px; }
+.chronicle-feedback { display:flex; align-items:center; gap:6px; padding:6px 0; border-bottom:1px solid #bba575; }
+.chronicle-feedback p { flex:1; }
+.chronicle-feedback-error { color:#913b2b; }
+.play-shell .chronicle-feedback button { min-height:28px; min-width:28px; border:0; padding:0; font-size:20px; background:transparent; color:#6b4a30; }
+
+/* Keep conversations clear of the live journal. */
+.play-map:has(.chief-speech) .chronicle-feed { max-height:max(32px,min(110px,30%)); }
+.play-map .chief-speech { bottom:max(42px,min(120px,calc(30% + 10px))); max-height:max(24px,calc(70% - 54px)); }
