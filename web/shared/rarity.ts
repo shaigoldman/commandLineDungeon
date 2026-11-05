@@ -3,7 +3,7 @@ export const lootRarities = ["common", "uncommon", "rare", "ultrarare"] as const
 export type Rarity = typeof lootRarities[number] | "legendary";
 /** Numeric values are accepted only when reading journeys saved before the four-tier system. */
 export function normalizeRarity(value: Rarity | number): Rarity {
-  return typeof value === "string" ? value : value > 10 ? "legendary" : value >= 9 ? "ultrarare" : value >= 6 ? "rare" : value >= 3 ? "uncommon" : "common";
+  return typeof value === "string" ? value : value >= 9 ? "ultrarare" : value >= 6 ? "rare" : value >= 3 ? "uncommon" : "common";
 }
 export function rarityRank(value: Rarity | number) {
   return [...lootRarities, "legendary"].indexOf(normalizeRarity(value));
