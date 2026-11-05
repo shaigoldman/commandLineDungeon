@@ -831,7 +831,7 @@ export function PlayScreen({
                 }
               />
             ) : (
-              <Portrait type={enemy.className === "Dark Hero" ? enemy.heroClass || "Warrior" : enemy.className} className={enemy.className === "Dark Hero" ? "dark-hero-portrait" : enemy.name.startsWith("Ergathon") ? "ergathon-portrait" : enemy.className === "Dragon" && !enemy.boss ? "green-dragon-portrait" : ""} />
+              <Portrait type={enemy.name.startsWith("Ergathon") ? "Ergathon" : enemy.className === "Dark Hero" ? enemy.heroClass || "Warrior" : enemy.className} className={enemy.className === "Dark Hero" ? "dark-hero-portrait"  : enemy.className === "Dragon" && !enemy.boss ? "green-dragon-portrait" : ""} />
             )}
             <span>
               <strong>
