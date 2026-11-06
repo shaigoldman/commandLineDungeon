@@ -70,8 +70,15 @@ describe("new relic and trap playthroughs", () => {
     expect([g.player.hp, g.player.gold]).toEqual([90, 5]);
     g = act(g, { type: "use", id: worse.id });
     expect([g.player.hp, g.player.gold]).toEqual([1, 25]);
+    expect(g.inventory.find(i=>i.id===worse.id)?.uses).toBe(1);
+    expect(()=>act(g,{type:"use",id:worse.id})).toThrow("health");
+    expect(g.inventory.find(i=>i.id===worse.id)?.uses).toBe(1);
     g = act(g, { type: "use", id: channel.id });
     expect([g.player.stats.Mana, g.player.gold]).toEqual([0, 35]);
+    g.player.hp=30;g=act(g,{type:"use",id:worse.id});
+    expect([g.player.hp,g.player.gold]).toEqual([1,55]);
+    expect(g.inventory.some(i=>i.id===worse.id)).toBe(false);
+    expect(g.inventory.some(i=>i.id===greedy.id)).toBe(true);
   });
 
   it("alchemy book and wand make higher rarity or trash, chalice makes rare loot, and magic wand makes a chosen staff", () => {
