@@ -39,6 +39,12 @@ combat.encounter = {
   exchanges: 0,
 };
 combat.inventory.push(makeItem(combat, "Throwing Knife"));
+const attackChoices=structuredClone(combat);
+attackChoices.inventory=[];attackChoices.loot=[];attackChoices.pods=[];attackChoices.traps=[];attackChoices.player.effects={};
+Object.assign(attackChoices.player.stats,{Power:12,Magic:20,Mana:10,Luck:0,Accuracy:1000,Speed:100});
+Object.assign(attackChoices.monsters[0],{hp:500});Object.assign(attackChoices.monsters[0].stats,{Health:500,Power:0,Armor:0,Speed:0,Luck:0});
+const bladeAttackChoices=structuredClone(attackChoices);const attackBlade=makeItem(bladeAttackChoices,"Iron Sword");attackBlade.uses=7;attackBlade.luck=0;bladeAttackChoices.player.weapons=[attackBlade];
+const pairAttackChoices=structuredClone(bladeAttackChoices);pairAttackChoices.hands=2;pairAttackChoices.player.weapons.push(makeItem(pairAttackChoices,"Wind Staff"));
 const enemyInitiated = structuredClone(combat);
 enemyInitiated.encounter!.origin = "enemy";
 const equipment = structuredClone(explore);
@@ -606,6 +612,9 @@ console.log(
     equipment,
     floorKnife,
     combat,
+    attackChoices,
+    bladeAttackChoices,
+    pairAttackChoices,
     loot,
     fullBag,
     level,

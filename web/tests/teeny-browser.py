@@ -81,6 +81,15 @@ try:
   page.get_by_role('button',name='Discoveries',exact=True).click();expect(page.locator('.chronicle-entries')).to_contain_text('Gained 20 EXP.')
   page.get_by_role('button',name='All',exact=True).click();page.screenshot(path=str(shots/'chronicle.png'))
   page.get_by_role('button',name='Close details',exact=True).click()
+  load(fixtures['attackChoices']);expect(page.get_by_role('button',name='Attack with Wind Staff',exact=True)).to_contain_text('20 damage');expect(page.get_by_role('button',name='Attack unarmed',exact=True)).to_contain_text('12 damage')
+  before=saved();page.get_by_role('button',name='Attack unarmed',exact=True).click();assert saved()['player']['stats']['Mana']==10 and saved()['monsters'][0]['hp']==before['monsters'][0]['hp']-12
+  load(fixtures['attackChoices']);page.get_by_role('button',name='Attack with Wind Staff',exact=True).click();assert saved()['player']['stats']['Mana']==8 and saved()['monsters'][0]['hp']==480
+  load(fixtures['bladeAttackChoices']);page.get_by_role('button',name='Attack unarmed',exact=True).click();assert saved()['player']['weapons'][0]['uses']==7
+  load(fixtures['bladeAttackChoices']);page.get_by_role('button',name='Attack with Iron Sword',exact=True).click();assert saved()['player']['weapons'][0]['uses']==6
+  low=json.loads(json.dumps(fixtures['attackChoices']));low['player']['stats']['Mana']=0;load(low)
+  expect(page.get_by_role('button',name='Attack with Wind Staff',exact=True)).to_be_disabled();expect(page.get_by_role('button',name='Attack unarmed',exact=True)).to_be_enabled()
+  load(fixtures['pairAttackChoices']);expect(page.get_by_role('button',name='Attack with Iron Sword + Wind Staff',exact=True)).to_be_visible();expect(page.get_by_role('button',name='Attack unarmed',exact=True)).to_be_visible();page.screenshot(path=str(root/'work/encounter-attack-choices.png'))
+  print('PASS: armed/unarmed named buttons, separate damage previews, staff mana and blade durability costs, low mana and multiple equipped items',flush=True)
   g=json.loads(json.dumps(fixtures['combat']));g['player']['stats']['Mana']=0;load(g)
   expect(page.locator('.magic-ribbon')).to_be_visible();expect(page.locator('.spell-card.unavailable').first).to_be_visible();page.locator('.spell-card').first.click();expect(page.locator('.spell-inspection')).to_be_visible();expect(page.locator('.spell-inspection .primary')).to_be_disabled();page.screenshot(path=str(shots/'spell-inspection.png'));page.get_by_role('button',name='Close spell').click()
   load(fixtures['combat'])
@@ -92,7 +101,7 @@ try:
   load(fixtures['combat']);page.screenshot(path=str(shots/'encounter.png'))
   expect(page.locator('.chronicle-feed')).to_have_count(0);expect(page.locator('.enemy-panel')).to_be_visible()
   page.get_by_role('button',name='Leave encounter',exact=True).click();expect(feed).to_be_visible();expect(page.locator('.enemy-panel')).to_have_count(0)
-  load(fixtures['combat']);page.get_by_role('button',name='Attack',exact=True).click()
+  load(fixtures['combat']);page.get_by_role('button',name='Attack with Wind Staff',exact=True).click()
   expect(page.locator('.chronicle-feed')).to_have_count(0)
   latest=saved()['log'][-1];page.get_by_role('button',name='Open journey chronicle',exact=True).click();expect(page.locator('.chronicle-entries')).to_contain_text(latest);page.get_by_role('button',name='Close details',exact=True).click()
   page.reload();page.wait_for_selector('canvas');expect(page.locator('.chronicle-feed')).to_have_count(0)
@@ -166,7 +175,7 @@ try:
   dead=fixtures['dead'];dead['death']['critical']=True;dead['achievements']=[{'name':'First Blood','points':25}];load(dead);expect(page.get_by_test_id('death-screen')).to_contain_text('CRITICAL HIT');page.wait_for_timeout(3800);page.screenshot(path=str(shots/'death.png'));assert float(page.get_by_test_id('death-screen').evaluate('e=>getComputedStyle(e).opacity'))==1
   for width,height in [(320,480),(360,560),(390,760),(430,915),(844,390)]:
    page.set_viewport_size({'width':width,'height':height})
-   for scene in ['explore','combat','fullBag','level','won','market','trapUi','floorSwap']:
+   for scene in ['explore','combat','fullBag','level','won','market','trapUi','floorSwap','pairAttackChoices']:
     load(fixtures[scene]);assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),(scene,width,height)
     assert page.evaluate('document.documentElement.scrollHeight<=innerHeight+1'),(scene,width,height)
     expect(page.locator('.inventory-ribbon')).to_be_attached()

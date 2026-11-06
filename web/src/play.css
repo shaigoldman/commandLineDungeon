@@ -1686,3 +1686,8 @@ body.playing-game {
 .item-drop-action { margin-top:14px; padding-top:10px; border-top:1px solid #52636b; }
 .play-shell .item-drop-action button { width:100%; min-height:40px; border-color:#ca9879; background:#49343a; color:#ffe0c2; font-weight:700; }
 .bag-overflow-count { color:#f0d17b; font-weight:700; }
+
+.play-shell .encounter-attack-choice { display:flex; flex-direction:column; justify-content:center; gap:4px; min-width:0; overflow-wrap:anywhere; }
+.encounter-attack-choice small { display:block; font-size:9px; line-height:1.25; opacity:.85; }
+
+.context-actions:has(.encounter-attack-choice) { align-items:stretch; }

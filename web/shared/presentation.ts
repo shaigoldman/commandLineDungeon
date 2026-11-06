@@ -137,11 +137,11 @@ export function criticalChance(luck: number) {
   const threshold = 1 - Math.min(0.7, Math.max(0, luck) * 0.01);
   return (1 - threshold + threshold * Math.log(threshold)) * 100;
 }
-export function outgoingDamage(player: Actor, enemy: Actor) {
+export function outgoingDamage(player: Actor, enemy: Actor, unarmed = false) {
   const actor = structuredClone(player),
     defender = structuredClone(enemy);
-  const s = combatAttackStats(actor, true),
-    physical = actor.weapons.some((w) => w.kind === "weapon");
+  const s = combatAttackStats(actor, true, unarmed),
+    physical = !unarmed && actor.weapons.some((w) => w.kind === "weapon");
   const h = attackStats(actor, true, physical, false),
     e = attackStats(defender, true, defender.weapons.length > 0, false);
   const normal = Math.max(

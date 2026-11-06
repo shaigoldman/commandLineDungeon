@@ -135,6 +135,8 @@ export function PlayScreen({
       ? "Swipe to leave this loot and move. Items stay on the floor."
       : undefined;
   const forecast = enemy ? outgoingDamage(p, enemy) : undefined;
+  const unarmedForecast = enemy && p.weapons.length ? outgoingDamage(p,enemy,true) : undefined;
+  const staffAttackUnavailable = p.weapons.length>0 && p.weapons.every(w=>w.kind==="tome") && p.stats.Mana<2;
   const risk = enemy ? retaliationRisk(p, enemy) : undefined;
   const staffInactive =
     p.weapons.some((i) => i.kind === "tome") && p.stats.Mana < 2;
@@ -901,7 +903,7 @@ export function PlayScreen({
                     className="damage-forecast"
                     aria-label="Your damage forecast"
                   >
-                    <b>Your hit: {forecast?.normal} damage</b>
+                    <b>{p.weapons.length ? staffAttackUnavailable ? "Unarmed hit" : "Equipped hit" : "Your hit"}: {forecast?.normal} damage</b>
                     <span>
                       Crit {chancePercent(forecast?.critChance || 0)} ·{" "}
                       {forecast?.critical} damage · Hit{" "}
@@ -923,7 +925,7 @@ export function PlayScreen({
                   </div>
                   {risk?.safeKill && (
                     <p className="safe-strike">
-                      Guaranteed normal hit defeats this enemy before
+                      {p.weapons.length && !staffAttackUnavailable ? "Equipped attack: " : ""}Guaranteed normal hit defeats this enemy before
                       retaliation.
                     </p>
                   )}
@@ -946,15 +948,17 @@ export function PlayScreen({
                         Talk / trade
                       </button>
                     )}
-                    {actButton(
-                      enemy.merchant
-                        ? "Attack villager"
-                        : enemy.npc
-                          ? "Attack chief"
-                          : "Attack",
-                      { type: "attack" },
-                      false,
-                      enemy.npc || enemy.merchant ? "" : "primary",
+                    {p.weapons.length ? <>
+                      <button className={"encounter-attack-choice"+(!enemy.npc&&!enemy.merchant?" primary":"")} aria-label={"Attack with "+equipped} disabled={busy || staffAttackUnavailable} onClick={()=>void send({type:"attack"})}>
+                        <span>Attack with {equipped}</span>
+                        <small>{staffAttackUnavailable ? "Needs 2 MP" : `${n(forecast?.normal || 0)} damage${p.weapons.some(w=>w.kind==="tome") && p.stats.Mana>=2 ? " · 2 MP" : ""}`}</small>
+                      </button>
+                      <button className="encounter-attack-choice" aria-label="Attack unarmed" disabled={busy} onClick={()=>void send({type:"attack",unarmed:true})}>
+                        <span>Attack unarmed</span><small>{n(unarmedForecast?.normal || 0)} damage · 0 MP</small>
+                      </button>
+                    </> : actButton(
+                      enemy.merchant ? "Attack villager" : enemy.npc ? "Attack chief" : "Attack",
+                      {type:"attack"},false,enemy.npc || enemy.merchant ? "" : "primary",
                     )}
                     {actButton(
                       encounterExit.type === "flee" ? `Flee · ${Math.round(fleeChance(p, enemy) * 100)}% chance` : "Leave encounter",
