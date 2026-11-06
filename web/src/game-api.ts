@@ -2,10 +2,11 @@ import { Capacitor } from "@capacitor/core";
 import { Preferences } from "@capacitor/preferences";
 import { LocalGameAPI, type GameResponse } from "../shared/local-api";
 import { repairSecretRoomLighting } from "../shared/expansion";
-import { syncPassiveStats } from "../shared/engine";
+import { syncPassiveStats, migrateGuardians } from "../shared/engine";
 function prepareResponse(response: GameResponse): GameResponse {
   if (response.data.game) {
     repairSecretRoomLighting(response.data.game);
+    migrateGuardians(response.data.game);
     syncPassiveStats(response.data.game);
   }
   return response;
