@@ -1,7 +1,9 @@
+import { mageCanvas } from "./mage-art";
 /** Original tactical-RPG map units: shaped cloaks, four-tone faces and hand-authored poses. */
 export type HeroPose = "idle" | "left-step" | "right-step" | "attack";
 export function heroCanvas(type: string, pose: HeroPose = "idle", scale = 2) {
   type = type === "D" ? "Scout" : type === "Over9000" ? "Warrior" : type;
+  if (type === "Mage") return mageCanvas(pose,scale);
   const c = document.createElement("canvas");
   c.width = 24 * scale;
   c.height = 32 * scale;
@@ -19,7 +21,6 @@ export function heroCanvas(type: string, pose: HeroPose = "idle", scale = 2) {
     Warrior: ["#223957", "#3b6793", "#86afc2", "#2f6975", "#634336"],
     Knight: ["#414e67", "#8aabbb", "#e0e9db", "#a33b53", "#ded6bd"],
     Scout: ["#243d35", "#4f7851", "#a6b875", "#34583f", "#934b36"],
-    Mage: ["#362c51", "#75548c", "#b895bc", "#594372", "#363451"],
   };
   const [dark, mid, light, cape, hair] = pal[type] || pal.Warrior;
   const attacking = pose === "attack",
@@ -41,24 +42,15 @@ export function heroCanvas(type: string, pose: HeroPose = "idle", scale = 2) {
   r(18, 23, 1, 3, mid);
   r(10, 16, 6, 8, dark);
   // Boots and knee highlights use distinct step silhouettes.
-  if (type === "Mage") {
-    r(7, 24, 12, 5, o);
-    r(8, 24, 10, 4, mid);
-    r(9, 25, 2, 2, light);
-    r(15, 25, 2, 2, dark);
-    r(8 - step, 28, 5, 3, o);
-    r(14 + step, 28, 5, 3, o);
-    r(9 - step, 28, 2, 1, "#b69f85");
-  } else {
-    r(8, 23, 4, 5, o);
-    r(14, 23, 4, 5, o);
-    r(9, 24, 2, 3, type === "Knight" ? mid : "#766044");
-    r(15, 24, 2, 3, type === "Knight" ? mid : "#766044");
-    r(7 + (step < 0 ? -1 : 0), 28 + (step > 0 ? -1 : 0), 6, 3, o);
-    r(14 + (step > 0 ? 1 : 0), 28 + (step < 0 ? -1 : 0), 6, 3, o);
-    r(8 + (step < 0 ? -1 : 0), 28 + (step > 0 ? -1 : 0), 3, 1, "#697b87");
-    r(15 + (step > 0 ? 1 : 0), 28 + (step < 0 ? -1 : 0), 3, 1, "#697b87");
-  }
+  r(8, 23, 4, 5, o);
+  r(14, 23, 4, 5, o);
+  r(9, 24, 2, 3, type === "Knight" ? mid : "#766044");
+  r(15, 24, 2, 3, type === "Knight" ? mid : "#766044");
+  r(7 + (step < 0 ? -1 : 0), 28 + (step > 0 ? -1 : 0), 6, 3, o);
+  r(14 + (step > 0 ? 1 : 0), 28 + (step < 0 ? -1 : 0), 6, 3, o);
+  r(8 + (step < 0 ? -1 : 0), 28 + (step > 0 ? -1 : 0), 3, 1, "#697b87");
+  r(15 + (step > 0 ? 1 : 0), 28 + (step < 0 ? -1 : 0), 3, 1, "#697b87");
+
   // Sculpted torso, asymmetric shoulders, diagonal leather harness and clasp.
   r(8, 13, 10, 11, o);
   r(9, 14, 8, 9, mid);
@@ -104,71 +96,46 @@ export function heroCanvas(type: string, pose: HeroPose = "idle", scale = 2) {
   r(10, 8, 2, 1, "#50413c");
   r(14, 8, 2, 1, "#50413c");
   r(10, 9, 1, 1, type === "Scout" ? "#648248" : "#243748");
-  r(14, 9, 1, 1, type === "Mage" ? "#8d6796" : "#243748");
+  r(14, 9, 1, 1, "#243748");
   r(13, 9, 1, 2, skinShade);
   r(12, 12, 3, 1, skinShade);
-  if (type === "Mage") {
-    r(7, 8, 2, 8, hair);
-    r(17, 7, 3, 13, hair);
-    r(6, 10, 2, 10, hair);
-    r(8, 10, 1, 2, "#e5bc62");
-    r(17, 10, 1, 3, "#e5bc62");
-    r(11, 11, 1, 1, "#d69b95");
-    r(14, 11, 1, 1, "#d69b95");
-    r(8, 11, 1, 5, "#64618a");
-    r(17, 10, 1, 6, "#64618a");
-    r(3, 6, 18, 3, o);
-    r(4, 6, 18, 2, dark);
-    r(7, 3, 12, 4, o);
-    r(8, 3, 10, 3, mid);
-    r(10, 0, 7, 4, o);
-    r(11, 0, 5, 4, mid);
-    r(12, 1, 2, 2, light);
-    r(7, 6, 12, 1, "#b89562");
-    r(11, 4, 3, 2, "#ecd080");
-    r(12, 3, 2, 2, "#ecd080");
-    r(13, 3, 1, 2, mid);
-    r(12, 15, 3, 4, "#d8ba78");
-    r(13, 16, 2, 2, "#7dd3d7");
-    r(12, 24, 3, 1, "#d3b57d");
+  r(8, 3, 10, 4, hair);
+  r(7, 4, 3, 4, hair);
+  r(16, 4, 3, 5, hair);
+  r(10, 1, 5, 3, hair);
+  r(14, 2, 5, 2, hair);
+  r(9, 2, 3, 2, hair);
+  const hairLight =
+    type === "Knight" ? "#fff0d5" : type === "Scout" ? "#c07e4d" : "#a67550";
+  r(10, 3, 4, 1, hairLight);
+  r(9, 4, 3, 1, hairLight);
+  r(14, 3, 2, 1, hairLight);
+  r(9, 6, 2, 1, hair);
+  if (type === "Scout") {
+    r(6, 7, 3, 2, skin);
+    r(17, 7, 3, 2, skin);
+    r(7, 13, 11, 3, cape);
+    r(8, 13, 8, 1, "#a7b77b");
+    r(17, 9, 3, 11, "#704636");
+    r(19, 5, 1, 8, "#e1d5b3");
+    r(21, 6, 1, 7, "#c7c2a3");
+    r(9, 15, 2, 5, "#a57c4e");
+  } else if (type === "Warrior") {
+    r(7, 13, 12, 3, cape);
+    r(8, 13, 9, 1, "#6dabb0");
+    r(14, 14, 2, 2, "#dfbd71");
+    r(17, 14, 4, 3, "#b6c9cf");
+    r(18, 14, 2, 1, "#f1efda");
+    r(16, 1, 3, 2, hair);
+    r(18, 0, 2, 2, hair);
   } else {
-    r(8, 3, 10, 4, hair);
-    r(7, 4, 3, 4, hair);
-    r(16, 4, 3, 5, hair);
-    r(10, 1, 5, 3, hair);
-    r(14, 2, 5, 2, hair);
-    r(9, 2, 3, 2, hair);
-    const hairLight =
-      type === "Knight" ? "#fff0d5" : type === "Scout" ? "#c07e4d" : "#a67550";
-    r(10, 3, 4, 1, hairLight);
-    r(9, 4, 3, 1, hairLight);
-    r(14, 3, 2, 1, hairLight);
-    r(9, 6, 2, 1, hair);
-    if (type === "Scout") {
-      r(6, 7, 3, 2, skin);
-      r(17, 7, 3, 2, skin);
-      r(7, 13, 11, 3, cape);
-      r(8, 13, 8, 1, "#a7b77b");
-      r(17, 9, 3, 11, "#704636");
-      r(19, 5, 1, 8, "#e1d5b3");
-      r(21, 6, 1, 7, "#c7c2a3");
-      r(9, 15, 2, 5, "#a57c4e");
-    } else if (type === "Warrior") {
-      r(7, 13, 12, 3, cape);
-      r(8, 13, 9, 1, "#6dabb0");
-      r(14, 14, 2, 2, "#dfbd71");
-      r(17, 14, 4, 3, "#b6c9cf");
-      r(18, 14, 2, 1, "#f1efda");
-      r(16, 1, 3, 2, hair);
-      r(18, 0, 2, 2, hair);
-    } else {
-      r(7, 13, 4, 4, cape);
-      r(17, 13, 5, 5, cape);
-      r(18, 14, 3, 1, "#d9787a");
-      r(15, 14, 2, 2, "#e9c473");
-      r(11, 3, 5, 1, "#e7d4b7");
-    }
+    r(7, 13, 4, 4, cape);
+    r(17, 13, 5, 5, cape);
+    r(18, 14, 3, 1, "#d9787a");
+    r(15, 14, 2, 2, "#e9c473");
+    r(11, 3, 5, 1, "#e7d4b7");
   }
+
   // A small cloth shift keeps the walking frames lively without redrawing identities.
   if (walking) {
     r(step < 0 ? 4 : 19, 25, 2, 3, cape);
