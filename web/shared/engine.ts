@@ -510,10 +510,28 @@ function position(g: Game) {
 export function balanceGuardian(g: Game, boss: Actor) {
   const depth = Math.max(0, g.floor - 1), hard = 1.3 ** g.difficulty;
   boss.className = "Golem";
-  boss.level = 3 + depth * 2;
+  boss.level = 8 + depth * 2;
+  boss.guardianBalanceVersion = 2;
   boss.stats = { Health: Math.round((58 + depth * 12) * hard), Power: Math.round((11 + depth * 3) * hard),
     Armor: 4 + depth * 2, Accuracy: 70, Speed: 2 + depth, Luck: 0, Magic: 5, Mana: 10 };
   boss.hp = boss.stats.Health;
+}
+export function migrateGuardians(g: Game) {
+  // Upgrade saved guardians once, preserving damage already dealt.
+  for (const enemy of g.monsters.filter(m => m.name.startsWith("Ergathon") && m.guardianBalanceVersion !== 2)) {
+    const depth = Math.max(0,g.floor-1), hard = 1.3 ** g.difficulty;
+    const legacy = enemy.level === 1 + g.floor + 3 + (g.floor + 2) * g.floor;
+    const previous = enemy.stats.Health === Math.round((44+depth*12)*hard)
+      && enemy.stats.Power === Math.round((9+depth*3)*hard);
+    if (legacy || previous) {
+      const fraction = Math.max(0, enemy.hp / enemy.stats.Health);
+      balanceGuardian(g, enemy); enemy.hp = Math.ceil(enemy.stats.Health * fraction);
+    } else {
+      // Relabel the tuned level-three guardian, preserving wounds and debuffs.
+      if (enemy.level === 3 + depth * 2) enemy.level = 8 + depth * 2;
+      enemy.guardianBalanceVersion = 2;
+    }
+  }
 }
 export function generateFloor(g: Game) {
   g.floorEnemyKills = 0;
@@ -2048,16 +2066,7 @@ export function act(input: Game, a: Action): Game {
     p = g.player;
   migrateItemRarities(g);
   repairSecretRoomLighting(g);
-  // Upgrade saved guardians once, preserving damage already dealt.
-  for (const enemy of g.monsters.filter(m => m.name.startsWith("Ergathon"))) {
-    const depth = Math.max(0,g.floor-1), hard = 1.3 ** g.difficulty;
-    const legacy = enemy.level === 1 + g.floor + 3 + (g.floor + 2) * g.floor;
-    const previous = enemy.stats.Health === Math.round((44+depth*12)*hard)
-      && enemy.stats.Power === Math.round((9+depth*3)*hard);
-    if (!legacy && !previous) continue;
-    const fraction = Math.max(0, enemy.hp / enemy.stats.Health);
-    balanceGuardian(g, enemy); enemy.hp = Math.ceil(enemy.stats.Health * fraction);
-  }
+  migrateGuardians(g);
   syncPassiveStats(g);
   if (g.status === "playing" && g.inventory.length+Number(p.weapons.length>0)>capacityOf(g) && !["drop","use","level"].includes(a.type))
     throw Error("Bag over capacity. Use or drop an item first.");

@@ -1,5 +1,5 @@
 import {it,expect} from "vitest";
-import {act,newGame,makeItem,makeMonster,syncPassiveStats,manaCap,availableSpells,spellCost,spellMenu,balanceGuardian} from "../shared/engine";
+import {act,newGame,makeItem,makeMonster,syncPassiveStats,manaCap,availableSpells,spellCost,spellMenu,balanceGuardian,experience,migrateGuardians} from "../shared/engine";
 it("orders spell menus by castability, effective cost, then name without hiding unavailable spells",()=>{
  const g=newGame("Mage","Mage","Water",0,17);g.player.stats.Magic=40;g.player.stats.Mana=3;g.inventory=[makeItem(g,"Elemental Staff"),makeItem(g,"Mana Diamond")];
  const before=structuredClone(g),menu=spellMenu(g),usable=new Set(availableSpells(g).map(s=>s.name));
@@ -19,4 +19,16 @@ it("updates an existing half-wounded guardian without healing it again on later 
  let g=newGame("Guardian","Warrior","Wind",0,21);g.floor=1;const boss=makeMonster(g,"Golem",3);boss.name="Ergathon, Ruthagor’s chosen";boss.level=3;boss.boss=true;boss.stats={Health:44,Power:9,Armor:3,Accuracy:68,Speed:2,Luck:0,Magic:5,Mana:10};boss.hp=22;g.monsters=[boss];g.pendingLoot=undefined;
  const battery=makeItem(g,"Mana Battery");g.inventory=[battery];g=act(g,{type:"drop",id:battery.id});expect(g.monsters[0].hp).toBe(29);expect(g.monsters[0].stats.Health).toBe(58);
  const hp=g.monsters[0].hp;g.inventory=[makeItem(g,"Sand")];g=act(g,{type:"drop",id:g.inventory[0].id});expect(g.monsters[0].hp).toBe(hp);
+});
+
+it("updates a tuned saved guardian to level eight, preserving HP and permanent debuffs",()=>{
+ let g=newGame("Boss level","Warrior","Wind",0,18);g.floor=1;g.pendingLoot=undefined;
+ const boss=makeMonster(g,"Golem",3);boss.name="Ergathon, Ruthagor’s chosen";boss.boss=true;balanceGuardian(g,boss);delete boss.guardianBalanceVersion;boss.level=3;boss.hp=17;boss.stats.Accuracy=35;g.monsters=[boss];
+ const revision=g.revision;migrateGuardians(g);expect(g.revision).toBe(revision);
+ g.inventory=[makeItem(g,"Sand")];g=act(g,{type:"drop",id:g.inventory[0].id});
+ expect(g.monsters[0]).toMatchObject({level:8,hp:17,stats:{Health:58,Power:11,Armor:4,Accuracy:35}});
+ expect(experience(g.monsters[0].level,3)).toBe(120);
+ g.inventory=[makeItem(g,"Sand")];g.monsters[0].level=3;g.monsters[0].stats.Power=5;
+ g=act(g,{type:"drop",id:g.inventory[0].id});
+ expect(g.monsters[0]).toMatchObject({level:3,hp:17,stats:{Power:5,Accuracy:35}});
 });

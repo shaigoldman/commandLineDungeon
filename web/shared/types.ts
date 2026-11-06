@@ -50,6 +50,7 @@ export interface Actor {
   merchant?: Merchant;
   drain?: boolean;
   boss?: boolean;
+  guardianBalanceVersion?: number;
   key?: boolean;
   npc?: {
     tribe: string;

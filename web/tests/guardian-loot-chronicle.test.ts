@@ -16,7 +16,7 @@ describe("the second-floor guardian",()=>{
     for(let seed=1;seed<=30;seed++) {
       const g=arena(seed);g.floor=1;generateFloor(g);
       const boss=g.monsters.find(m=>m.name.startsWith("Ergathon"))!;
-      expect(boss.className).toBe("Golem");expect(boss.level).toBe(3);
+      expect(boss.className).toBe("Golem");expect(boss.level).toBe(8);
       expect(boss.stats).toMatchObject({Health:58,Power:11,Armor:4,Speed:2});
       expect(combatAttackStats(g.player).Attack-boss.stats.Armor).toBeGreaterThan(0);
     }
