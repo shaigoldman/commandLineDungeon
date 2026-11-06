@@ -321,7 +321,7 @@ export const itemDefinitions: [string, string, Rarity, number, string?][] = [
   ["Escape Rope", "rope", "uncommon", 0],
   ["Throwing Knife", "projectile", "common", 5],
   ["Javelin", "projectile", "uncommon", 10],
-  ["Bomb", "projectile", "ultrarare", 20],
+  ["Bomb", "projectile", "uncommon", 20],
   ["Ballistic Missile", "projectile", "ultrarare", 100],
   ["Armor", "armor", "uncommon", 1],
   ["Nuke", "nuke", "ultrarare", 0],

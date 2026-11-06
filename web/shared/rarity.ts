@@ -12,5 +12,5 @@ export function migrateItemRarities(g: Game) {
   const actors = [g.player, ...g.monsters];
   const items: Item[] = [...g.inventory, ...g.loot.map(l => l.item), ...(g.pendingLoot ? [g.pendingLoot] : []), ...(g.chests || []).map(c => c.reward),
     ...actors.flatMap(a => [...a.weapons, ...(a.inventory || []), ...(a.merchant?.stock.map(s => s.item) || [])])];
-  for (const item of items) item.rarity = ["Awathons Broadsword", "EXP Pill", "Mystery Staff"].includes(item.name) ? "legendary" : normalizeRarity(item.rarity);
+  for (const item of items) item.rarity = item.name === "Bomb" ? "uncommon" : ["Awathons Broadsword", "EXP Pill", "Mystery Staff"].includes(item.name) ? "legendary" : normalizeRarity(item.rarity);
 }
