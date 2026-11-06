@@ -11,6 +11,7 @@ function arena() {
   g.chests = [];
   g.secretDoors = [];
   g.player.gold = 0;
+  g.inventory=[];g.player.weapons=[];
   g.capacity = 0;
   return g;
 }
@@ -49,6 +50,7 @@ it("collects gold chest rewards immediately without an inspection or extra turn"
 it("moves straight away from an active chest prompt without opening or consuming a key", () => {
   let g = arena();
   const c = addChest(g, 11, 7);
+  g.capacity=1;
   g.inventory = [makeItem(g, "Standard Key")];
   g = act(g, { type: "move", dx: 1, dy: 0 });
   expect(g.pendingChest).toBe(c.id);
@@ -77,6 +79,7 @@ it("does not reveal villager death consequences in the Seismic Shocker descripti
 it("requires a Stair Key to ascend; Standard and Rare Keys remain separate inventory items", () => {
   let g = arena();
   Object.assign(g.stairs, { x: 10, y: 7, locked: true });
+  g.capacity=2;
   g.inventory = [makeItem(g, "Standard Key"), makeItem(g, "Rare Key")];
   for (const item of g.inventory)
     expect(item.description).toContain("not stairs");
@@ -98,6 +101,7 @@ it("a Stair Key cannot open a chest or be spent as a chest key", () => {
     "Standard Key or Rare Key",
   );
   expect(g.keys).toBe(1);
+  g.capacity=1;
   g.inventory = [makeItem(g, "Standard Key")];
   g = act(g, { type: "open-chest", id: chest.id });
   expect(g.keys).toBe(1);

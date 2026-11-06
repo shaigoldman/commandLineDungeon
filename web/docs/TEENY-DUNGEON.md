@@ -61,3 +61,5 @@ The live Chronicle appears in the top actor display when no enemy is selected. E
 Loot balance: within each rarity tier, weapons have twice an ordinary item family’s weight (reduced from three times). Restorative health, mana, and energy potions have 1.25 times ordinary weight. Gold and rarity-tier chances remain unchanged.
 
 Throwing Knives and Javelins also receive a small family and variant weight boost. Ergathon now has 58 HP, 11 Attack, 4 Armor, 70 Accuracy, and 2 Speed on normal floor two; existing guardians preserve their remaining health percentage when updated. Spell menus put castable spells first, then sort each group by effective mana cost (including discounts). Losing a Mana Battery clamps current mana to the remaining capacity.
+
+Bag item inspections include a visible **Drop item on floor** button, including equipped gear. Anvil, Blade Shard, and Magic Scabbard target lists include eligible equipped gear and label it clearly. Equipping from the floor works with a full bag: displaced gear moves into the bag, then a required bag-management menu lets you choose what to use or drop before moving on. This pending choice survives reloads.

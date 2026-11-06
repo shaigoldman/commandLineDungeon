@@ -2,6 +2,7 @@
 import {
   newGame,
   manaCap,
+  capacityOf,
   act,
   availableSpells,
   makeItem,
@@ -53,7 +54,7 @@ export function violations(g: Game): string[] {
   ];
   if (new Set(owned.map((i) => i.id)).size !== owned.length)
     errors.push("duplicated-item-ownership");
-  if (g.inventory.length + Number(p.weapons.length > 0) > g.capacity)
+  if (g.inventory.length + Number(p.weapons.length > 0) > capacityOf(g) && !g.pendingBagCleanup)
     errors.push("inventory-over-capacity");
   if (g.combat && !g.monsters.some((m) => m.id === g.combat))
     errors.push("dangling-combat");
@@ -229,6 +230,7 @@ export function simulate(
           let a: Action | undefined;
           if (g.pendingLevels)
             a = { type: "level", stat: rng() < 0.65 ? "Power" : "Health" };
+          else if (g.pendingBagCleanup) a = {type:"drop",id:g.inventory[0]?.id || p.weapons[0].id};
           else if (g.pendingLoot && !m) {
             const i = g.pendingLoot;
             if (

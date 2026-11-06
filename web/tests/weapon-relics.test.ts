@@ -25,7 +25,7 @@ describe("weapon relic playthroughs", () => {
     expect(nextWeaponName(makeItem(g, "Obsidian Sword"))).toBeUndefined();
   });
 
-  it("uses Blade Shard only on a worn unequipped bag weapon", () => {
+  it("uses Blade Shard on worn carried and equipped weapons", () => {
     let g = base();
     const sword = makeItem(g, "Steel Sword"), shard = makeItem(g, "Blade Shard");
     sword.uses = 2; g.inventory.push(sword, shard);
@@ -35,6 +35,9 @@ describe("weapon relic playthroughs", () => {
     expect(g.inventory.some((i) => i.id === shard.id)).toBe(false);
     const more = makeItem(g, "Blade Shard"); g.inventory.push(more);
     expect(itemUseProblem(g, more)).toMatch(/worn/);
+    const equipped=makeItem(g,"Iron Shield");equipped.uses=1;g.player.weapons=[equipped];
+    expect(itemUseProblem(g,more)).toBeUndefined();g=act(g,{type:"use",id:more.id,target:equipped.id});
+    expect(g.player.weapons[0]).toMatchObject({id:equipped.id,uses:equipped.maxUses});
   });
 
   it("doubles the weapon bonus and removes weight penalties while passives are carried", () => {
@@ -81,4 +84,14 @@ describe("weapon relic playthroughs", () => {
     expect(g.player.weapons).toHaveLength(0);
     expect(g.log.some((line) => line.includes("WEAPON BROKE: Fragile Sword"))).toBe(true);
   });
+});
+
+for(const [name,next] of [["Iron Sword","Steel Sword"],["Iron Shield","Steel Shield"],["Water Staff","Sapphire Staff"]])it("Anvil upgrades equipped "+name+" in place",()=>{
+ let g=base();const gear=makeItem(g,name),anvil=makeItem(g,"Anvil");g.player.weapons=[gear];g.inventory=[anvil];
+ expect(itemUseProblem(g,anvil)).toBeUndefined();g=act(g,{type:"use",id:anvil.id,target:gear.id});
+ expect(g.player.weapons[0]).toMatchObject({id:gear.id,name:next});expect(g.inventory).toEqual([]);
+});
+it("Magic Scabbard doubles durability on equipped gear",()=>{
+ let g=base();const gear=makeItem(g,"Iron Sword"),relic=makeItem(g,"Magic Scabbard");gear.uses=3;g.player.weapons=[gear];g.inventory=[relic];
+ g=act(g,{type:"use",id:relic.id,target:gear.id});expect(g.player.weapons[0]).toMatchObject({id:gear.id,uses:6});
 });

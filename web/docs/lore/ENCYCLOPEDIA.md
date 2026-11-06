@@ -302,7 +302,7 @@ Fenwick once refused to polish that notch away. The owner complained it made the
 
 ### The economical workshop
 
-Gentle Grips preserve durability through learned economical touch. Sharpening Stones enhance a carried weapon's contribution; Skill Books relieve weight penalties through practiced movement. Anvils upgrade an unequipped bag weapon, Blade Shards repair one, and Magic Scabbards double a selected charged item's remaining service. These are distinct functions, not interchangeable universal restoration.
+Gentle Grips preserve durability through learned economical touch. Sharpening Stones enhance a carried weapon's contribution; Skill Books relieve weight penalties through practiced movement. Anvils upgrade carried or equipped weapons, shields, and eligible staves; Blade Shards repair carried or equipped weapons and shields, and Magic Scabbards double a selected charged item's remaining service. These are distinct functions, not interchangeable universal restoration.
 
 Tansy caught a merchant selling one scabbard under three descriptions. She made him demonstrate all three. He completed the first, explained the second at length, and offered her lunch before reaching the third. She accepted lunch and corrected his sign.
 

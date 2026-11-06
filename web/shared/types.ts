@@ -126,6 +126,7 @@ export interface Game {
     result?: string;
   };
   pendingLoot?: Item;
+  pendingBagCleanup?: boolean;
   pendingLevels: number;
   status: "playing" | "dead" | "won";
   achievements?: { name: string; points: number }[];

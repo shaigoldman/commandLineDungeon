@@ -80,6 +80,27 @@ try:
   page.evaluate('document.activeElement.blur()');before=saved()['revision'];page.keyboard.press('Space');page.wait_for_timeout(100);assert saved()['revision']==before
   load(fixtures['fullBag']);expect(page.locator('.inventory-ribbon')).to_contain_text('FULL');page.screenshot(path=str(shots/'bag.png'))
   load(fixtures['market']);expect(page.locator('.chronicle-feed')).to_have_count(0);page.get_by_role('button',name='Talk / trade',exact=True).click();page.get_by_role('button',name='Sell items',exact=True).click();expect(page.locator('.market-offer').first).to_be_visible();review=page.get_by_role('button',name='Review sale').first;review.click();expect(page.get_by_role('button',name='Sell for',exact=False)).to_be_visible();page.screenshot(path=str(shots/'market.png'))
+  load(fixtures['gearTools']);page.get_by_role('button',name='Item: Escape Rope',exact=True).click()
+  drop=page.get_by_role('button',name='↓ Drop item on floor',exact=True);expect(drop).to_be_visible();drop.click()
+  assert not any(i['name']=='Escape Rope' for i in saved()['inventory'])
+  assert any(l['item']['name']=='Escape Rope' for l in saved()['loot'])
+  for tool,choice,uses in [('Blade Shard','Restore Iron Sword',10),('Magic Scabbard','Double Iron Sword',20),('Anvil','Upgrade Iron Sword',20)]:
+   page.get_by_role('button',name='Item: '+tool,exact=True).click();target=page.locator('.upgrade-choice').filter(has_text=choice);expect(target).to_contain_text('Equipped');target.click()
+   assert saved()['player']['weapons'][0]['uses']==uses
+  assert saved()['player']['weapons'][0]['name']=='Steel Sword'
+  page.get_by_role('button',name='Equipped: Steel Sword',exact=True).click();expect(page.get_by_role('button',name='↓ Drop item on floor',exact=True)).to_be_visible();page.screenshot(path=str(root/'work/visible-item-drop.png'));page.get_by_role('button',name='Close details',exact=True).click()
+  load(fixtures['floorSwap']);page.get_by_role('button',name='Equip, then make bag space',exact=True).click()
+  expect(page.get_by_role('dialog',name='Bag over capacity',exact=True)).to_be_visible()
+  assert saved()['player']['weapons'][0]['name']=='Steel Sword' and saved()['pendingBagCleanup']
+  assert any(i['name']=='Iron Axe' for i in saved()['inventory'])
+  page.reload();page.wait_for_selector('canvas');expect(page.get_by_role('dialog',name='Bag over capacity',exact=True)).to_be_visible()
+  before=saved()['revision'];page.keyboard.press('ArrowRight');page.wait_for_timeout(100);assert saved()['revision']==before
+  page.screenshot(path=str(root/'work/equip-bag-cleanup.png'));page.get_by_role('button',name='Drop: Iron Axe',exact=True).click()
+  expect(page.get_by_role('dialog')).to_have_count(0);assert not saved()['pendingBagCleanup'];assert any(l['item']['name']=='Iron Axe' for l in saved()['loot'])
+  load(fixtures['floorFullUnarmed']);page.get_by_role('button',name='Equip, then make bag space',exact=True).click();expect(page.get_by_role('dialog',name='Bag over capacity',exact=True)).to_be_visible()
+  page.get_by_role('button',name='Use Small Health Potion',exact=True).first.click();page.get_by_role('button',name='Use item',exact=True).click()
+  expect(page.get_by_role('dialog')).to_have_count(0);assert not saved()['pendingBagCleanup'];assert len(saved()['inventory'])==saved()['capacity']-1
+  print('PASS: visible drop on items and gear, equipped repair/double/upgrade, floor equip with full bag, cleanup choice, reload and use-to-free-space',flush=True)
   load(fixtures['floorBoon']);page.get_by_role('button',name='Attack',exact=True).click()
   expect(page.locator('.boon-notice')).to_be_visible();expect(page.locator('.boon-notice')).to_contain_text('Three health pods')
   assert len([pod for pod in saved()['pods'] if pod.get('healthOnly')])==3
@@ -126,7 +147,7 @@ try:
   dead=fixtures['dead'];dead['death']['critical']=True;dead['achievements']=[{'name':'First Blood','points':25}];load(dead);expect(page.get_by_test_id('death-screen')).to_contain_text('CRITICAL HIT');page.wait_for_timeout(3800);page.screenshot(path=str(shots/'death.png'));assert float(page.get_by_test_id('death-screen').evaluate('e=>getComputedStyle(e).opacity'))==1
   for width,height in [(320,480),(360,560),(390,760),(430,915),(844,390)]:
    page.set_viewport_size({'width':width,'height':height})
-   for scene in ['explore','combat','fullBag','level','won','market','trapUi']:
+   for scene in ['explore','combat','fullBag','level','won','market','trapUi','floorSwap']:
     load(fixtures[scene]);assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),(scene,width,height)
     assert page.evaluate('document.documentElement.scrollHeight<=innerHeight+1'),(scene,width,height)
     expect(page.locator('.inventory-ribbon')).to_be_attached()

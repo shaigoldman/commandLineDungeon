@@ -1682,3 +1682,7 @@ body.playing-game {
 
 /* Keep accuracy warnings on their own row before encounter controls. */
 .play-context .encounter-hit-warning { flex:0 0 100%; width:100%; box-sizing:border-box; }
+
+.item-drop-action { margin-top:14px; padding-top:10px; border-top:1px solid #52636b; }
+.play-shell .item-drop-action button { width:100%; min-height:40px; border-color:#ca9879; background:#49343a; color:#ffe0c2; font-weight:700; }
+.bag-overflow-count { color:#f0d17b; font-weight:700; }

@@ -130,6 +130,13 @@ oldAxe.name = "Iron Axe";
 floorSwap.player.weapons = [oldAxe];
 while (floorSwap.inventory.length < floorSwap.capacity - 1)
   floorSwap.inventory.push(makeItem(floorSwap, "Small Health Potion"));
+const floorFullUnarmed=structuredClone(floorWeapon);
+floorFullUnarmed.inventory=[];floorFullUnarmed.player.weapons=[];floorFullUnarmed.player.hp=5;
+while(floorFullUnarmed.inventory.length<floorFullUnarmed.capacity)floorFullUnarmed.inventory.push(makeItem(floorFullUnarmed,"Small Health Potion"));
+const gearTools=structuredClone(floorWeapon);
+gearTools.pendingLoot=undefined;gearTools.loot=[];gearTools.monsters=[];gearTools.traps=[];gearTools.pods=[];gearTools.chests=[];
+gearTools.capacity=8;gearTools.inventory=["Anvil","Blade Shard","Magic Scabbard","Escape Rope"].map(name=>makeItem(gearTools,name));
+const toolSword=makeItem(gearTools,"Iron Sword");toolSword.uses=1;gearTools.player.weapons=[toolSword];
 const floorWeak = structuredClone(floorWeapon);
 floorWeak.player.stats.Power = 1;
 const armory = structuredClone(explore);
@@ -587,6 +594,8 @@ console.log(
     ember,
     floorWeapon,
     floorSwap,
+    floorFullUnarmed,
+    gearTools,
     floorWeak,
     armory,
     combatLowHealth,
