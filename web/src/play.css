@@ -1656,7 +1656,7 @@ body.playing-game {
 .play-shell .boon-notice button { position:absolute; right:7px; top:7px; width:30px; height:30px; font-size:22px; padding:0; color:#fff1c8; }
 
 /* The live Chronicle shares the dungeon panels' slate and muted gold palette. */
-.chronicle-feed { position:absolute; left:5px; right:5px; bottom:5px; z-index:4; display:flex; flex-direction:column; height:84px; max-height:calc(100% - 10px); box-sizing:border-box; overflow:hidden; border:1px solid #5b6b67; border-left:2px solid #bfa35e; border-radius:4px; background:#203644f2; color:#e8e2cc; font:14px/1.4 Arial,sans-serif; }
+.chronicle-feed { position:absolute; left:5%; right:5%; bottom:5px; z-index:4; display:flex; flex-direction:column; height:84px; max-height:calc(100% - 10px); box-sizing:border-box; overflow:hidden; border:1px solid #5b6b67; border-left:2px solid #bfa35e; border-radius:4px; background:#203644f2; color:#e8e2cc; font:14px/1.4 Arial,sans-serif; }
 .chronicle-feed header { height:28px; box-sizing:border-box; flex:none; display:flex; align-items:center; gap:6px; padding:0 5px 0 8px; min-height:28px; border-bottom:1px solid #52636b; }
 .chronicle-feed header > strong { flex:1; font:600 10px/1.2 Arial,sans-serif; letter-spacing:.08em; text-transform:uppercase; color:#b8b9a5; }
 .play-shell .chronicle-feed header button { min-height:28px; padding:3px 6px; border:0; background:transparent; color:#d4c393; font:11px Arial,sans-serif; }
