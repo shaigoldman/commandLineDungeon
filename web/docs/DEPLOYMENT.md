@@ -29,7 +29,7 @@ If GitHub's default branch has been renamed, substitute the actual default branc
 5. Review the Node web service and PostgreSQL database plans and their current charges. The Blueprint requests a paid Starter service and basic PostgreSQL so durable server-side saves do not depend on an ephemeral filesystem. Adjust plans in the YAML if desired before creation.
 6. Create the Blueprint. Render supplies `DATABASE_URL` from the managed database. Build is `npm ci && npm run build`; start is `npm start`; root directory is `web`.
 7. The server applies the idempotent initial schema before listening. `/api/health` checks database connectivity; Render only routes traffic after the service is healthy.
-8. Copy the actual HTTPS URL from the Render service dashboard. Create a character, make a move, reload, and verify its recovery key in another browser. Trigger a service restart and verify that the saved journey still loads.
+8. Copy the actual HTTPS URL from the Render service dashboard. Create a character, make a move, reload, and verify it appears by hero name and start date in the saved-adventures menu. Trigger a service restart and verify that the saved journey still loads.
 
 The assigned `onrender.com` hostname is chosen by Render and is not guessed here. To update the deployed game, merge/push changes to the configured deploy branch; Render rebuilds that commit.
 
@@ -52,7 +52,7 @@ The assigned `onrender.com` hostname is chosen by Render and is not guessed here
 
 The service handles SIGTERM by closing its listener and database pool. Revision-checked PostgreSQL updates prevent two devices from overwriting one another's saves; stale clients receive the current state with HTTP 409. Failed actions do not save partial state. API payloads are limited to 16 KB and keys have 256 bits of entropy. Client-provided stats, damage, and save state are never accepted.
 
-Use Render's database backup and restore facilities for durable backups. A player's recovery key only locates a save; it cannot reconstruct a lost database. Keep the database when replacing/redeploying the web service. Deleting the Blueprint/database deletes saved games. There is no email/password account system; losing the recovery key and browser storage loses access to that journey.
+Use Render's database backup and restore facilities for durable backups. The saved-adventures menu remembers access to this browser’s saves; it cannot reconstruct a lost database. Keep the database when replacing/redeploying the web service. Deleting the Blueprint/database deletes saved games. There is no email/password account system; clearing browser storage removes this browser’s saved-adventure list and access credentials.
 
 ## Verification boundary
 

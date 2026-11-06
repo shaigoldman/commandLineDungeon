@@ -88,7 +88,7 @@ try:
   load(page,'npcTalk');expect(page.get_by_label('Chieftain speech bubble')).to_contain_text('Curious traveler');visible(page,'Talk / trade').tap();expect(page.get_by_role('dialog',name='Chieftain dialogue')).to_contain_text('Health Gain');page.screenshot(path=str(root/'work/chieftain-v6.png'));visible(page,'Accept deal: Health Gain').tap();expect(page.locator('.enemy-panel')).to_have_count(0);assert saved(page)['player']['hp']>5
   load(page,'armory');row=page.locator('.item-carousel');assert row.evaluate('e=>e.scrollWidth>e.clientWidth');assert len(set(row.locator('img').evaluate_all('els=>els.map(e=>e.src)')))==9;page.screenshot(path=str(root/'work/item-ribbon-v6.png'))
   for scene in ['moss','ice','ember']:load(page,scene);page.screenshot(path=str(root/f'work/{scene}-v6.png'));fits(page)
-  visible(page,'Saved on phone ●').tap();expect(page.get_by_role('dialog',name='Saved journey')).to_contain_text('saved on this phone');assert len(page.get_by_label('Device journey code').input_value())==64;visible(page,'Close details').tap()
+  visible(page,'Saved on phone ●').tap();expect(page.get_by_role('dialog',name='Saved journey')).to_contain_text('saved on this phone');assert page.get_by_label('Device journey code').count()==0;visible(page,'Close details').tap()
   page.emulate_media(reduced_motion='reduce');load(page,'poisonMove');swipe_map(page,60,0);page.wait_for_timeout(100);assert saved(page)['player']['hp']==9
   assert not errors,errors
   assert not api,api

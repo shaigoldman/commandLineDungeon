@@ -1,5 +1,5 @@
 import { act, newGame } from "./engine";
-import type { Game, Action } from "./types";
+import type { Game, Action, SavedAdventure } from "./types";
 export interface DeviceStorage {
   get(key: string): Promise<string | null>;
   set(key: string, value: string): Promise<void>;
@@ -7,7 +7,7 @@ export interface DeviceStorage {
 export interface GameResponse {
   ok: boolean;
   status: number;
-  data: { game?: Game; recoveryKey?: string; score?: number; error?: string };
+  data: { game?: Game; recoveryKey?: string; score?: number; adventures?: SavedAdventure[]; error?: string };
 }
 interface DeviceSaves {
   version: 1;
@@ -61,13 +61,14 @@ export class LocalGameAPI {
     const data =
       body && typeof body === "object" ? (body as Record<string, unknown>) : {};
     if (path === "high-score") return result(200, { score: saves.highScore });
+    if (path === "saved-adventures") return result(200, {adventures:Object.entries(saves.games).map(([id,game])=>({id,heroName:game.player.name || "Adventurer",startedAt:game.startedAt})).sort((a,b)=>(Date.parse(b.startedAt || "") || 0)-(Date.parse(a.startedAt || "") || 0))});
     if (path === "game") {
       const game =
         key && /^[a-f0-9]{64}$/.test(key) ? saves.games[key] : undefined;
       return game
         ? result(200, { game })
         : result(404, {
-            error: "No journey with that code is saved on this phone.",
+            error: "That adventure is not saved on this phone.",
           });
     }
     let game: Game,
@@ -90,6 +91,7 @@ export class LocalGameAPI {
         data.element as string,
         data.difficulty as number,
       );
+      game.startedAt = new Date().toISOString();
     } else if (path === "action") {
       const current =
         key && /^[a-f0-9]{64}$/.test(key) ? saves.games[key] : undefined;

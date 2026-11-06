@@ -98,7 +98,13 @@ export interface Trap {
   kind: "poison" | "curse" | "rust" | "trip" | "fairy" | "sap" | "monster";
   revealed: boolean;
 }
+export interface SavedAdventure {
+  id: string;
+  heroName: string;
+  startedAt?: string;
+}
 export interface Game {
+  startedAt?: string;
   version: 1;
   seed: number;
   floor: number;

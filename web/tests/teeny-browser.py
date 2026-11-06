@@ -19,6 +19,25 @@ try:
    page.evaluate('''game=>{const k=Object.keys(localStorage).find(k=>k.endsWith('dungeon.android.saves.v1'));const all=JSON.parse(localStorage.getItem(k));all.games[localStorage.getItem('dungeon-key')]=game;localStorage.setItem(k,JSON.stringify(all));}''',g)
    page.reload();page.wait_for_selector('canvas');page.wait_for_timeout(350)
   def saved():return page.evaluate('''()=>{const k=Object.keys(localStorage).find(k=>k.endsWith('dungeon.android.saves.v1'));return JSON.parse(localStorage.getItem(k)).games[localStorage.getItem('dungeon-key')];}''')
+  original_id=page.evaluate("localStorage.getItem('dungeon-key')");started=saved()['startedAt']
+  page.get_by_role('button',name='Saved on phone ●',exact=True).click();assert page.get_by_role('textbox',name='Device journey code',exact=True).count()==0
+  page.get_by_role('button',name='Saved adventures',exact=True).click();expect(page.get_by_role('dialog',name='Saved adventures')).to_be_visible();expect(page.get_by_role('button',name='Resume Elara',exact=True)).to_contain_text('Started ')
+  assert original_id not in page.content()
+  page.get_by_role('button',name='Close saved adventures',exact=True).click();page.get_by_role('button',name='Start another journey',exact=True).click()
+  page.get_by_placeholder('Adventurer').fill('Bran');page.get_by_role('button',name='Warrior',exact=False).click();page.get_by_role('button',name='Enter the dungeon').click();page.wait_for_selector('canvas')
+  assert saved()['player']['name']=='Bran' and saved()['startedAt']
+  page.get_by_role('button',name='Saved on phone ●',exact=True).click();page.get_by_role('button',name='Start another journey',exact=True).click()
+  page.get_by_role('button',name='Recover a saved adventure',exact=True).click();expect(page.get_by_role('button',name='Resume Elara',exact=True)).to_be_visible();expect(page.get_by_role('button',name='Resume Bran',exact=True)).to_be_visible()
+  for width,height in [(320,480),(844,390),(390,844)]:
+   page.set_viewport_size({'width':width,'height':height});assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+  page.screenshot(path=str(root/'work/saved-adventures-menu.png'))
+  page.get_by_role('button',name='Resume Elara',exact=True).click();page.wait_for_selector('canvas');assert saved()['startedAt']==started and saved()['player']['name']=='Elara'
+  page.reload();page.wait_for_selector('canvas');expect(page.locator('.player-panel')).to_contain_text('Elara')
+  legacy=json.loads(json.dumps(saved()));legacy['player']['name']='Older hero';legacy.pop('startedAt',None)
+  page.evaluate("game=>{const k=Object.keys(localStorage).find(k=>k.endsWith('dungeon.android.saves.v1'));const all=JSON.parse(localStorage.getItem(k));all.games['c'.repeat(64)]=game;localStorage.setItem(k,JSON.stringify(all));}",legacy)
+  page.get_by_role('button',name='Saved on phone ●',exact=True).click();page.get_by_role('button',name='Saved adventures',exact=True).click();expect(page.get_by_role('button',name='Resume Older hero',exact=True)).to_contain_text('Start date unavailable')
+  page.get_by_role('button',name='Close saved adventures',exact=True).click();page.get_by_role('button',name='Close details',exact=True).click()
+  print('PASS: named/date save menu, multiple device heroes, startup recovery, switching/reload, hidden credentials and legacy saves',flush=True)
   page.emulate_media(reduced_motion='reduce')
   def mapshot(game):
    load(game);page.get_by_role('button',name='Overview',exact=True).click();page.wait_for_timeout(150)

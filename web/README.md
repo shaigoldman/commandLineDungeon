@@ -34,7 +34,7 @@ Choose Warrior, Knight, Scout, or Mage and a staff element for the Mage. The hid
 
 Defeat the guardian on each floor to reach the stairs. Floor two has a key carrier and locked stairs. Ruthagor guards floor three. Winning grants 1,000 points and lets you continue to higher floors. Collect gear, items, pods, and spells, gain EXP, choose level-up bonuses, trade with chiefs, or fight them. Combat resolves one exchange per click, allowing the same between-exchange item/spell decisions without a blocking terminal loop.
 
-The **Saved journey** panel provides a private recovery key. Paste it into **Restore a saved journey** on another browser or device. Possession of that key grants control of the save. The browser stores it locally and the server stores only its SHA-256 digest. HTTPS is required in production. Dead journeys remain readable as tombstones; begin another journey to play again. Other journeys from this build remain available through their keys. Older test-release save versions are unsupported.
+Choose **Recover a saved adventure** on the start screen to see saved heroes by name and start date. The in-game **Saved adventures** button opens the same menu. Android lists adventures stored on that installation; the web version remembers adventures in the current browser. Progress is saved after every action. Older adventures without a recorded start date are labeled accordingly. Dead adventures remain available as tombstones. No copying or pasting codes is required.
 
 ## Verify
 
@@ -49,7 +49,7 @@ npm run build:android:web
 npm run test:android:browser
 ```
 
-The suite executes the unchanged Python methods, compares 80 Python-generated class/equipment/hit fixtures, tests 100 generated maps for connectivity and spawn uniqueness, covers the campaign, items, spells, NPCs, server save recovery, stale-write rejection, and actual PostgreSQL SQL through PGlite. The browser smoke test starts an isolated production server, creates a Mage, casts a spell, uses keyboard and touch controls, reloads the save, restores it in a separate browser context, and checks mobile overflow and browser exceptions. It uses system Chromium when available or Playwright's installed Chromium. `CHROMIUM_PATH` overrides the executable.
+The suite executes the unchanged Python methods, compares 80 Python-generated class/equipment/hit fixtures, tests 100 generated maps for connectivity and spawn uniqueness, covers the campaign, items, spells, NPCs, server save recovery, stale-write rejection, and actual PostgreSQL SQL through PGlite. The browser smoke test starts an isolated production server, creates a Mage, casts a spell, uses keyboard and touch controls, reloads the save, switches between named adventures and verifies that another browser has an empty private save list, and checks mobile overflow and browser exceptions. It uses system Chromium when available or Playwright's installed Chromium. `CHROMIUM_PATH` overrides the executable.
 
 `npm run simulate` runs reproducible bot games and edge probes. See [simulation findings and fixed bugs](docs/SIMULATION.md) for the 840-game report, limitations, and stress-run commands.
 
