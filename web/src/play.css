@@ -1027,7 +1027,7 @@ body.playing-game {
   background: #42323a;
 }
 @media (min-width: 750px) {
-  .actor-panels.has-enemy {
+  .actor-panels.has-secondary {
     grid-template-columns: 1fr 1fr;
   }
   .play-shell {
@@ -1219,7 +1219,7 @@ body.playing-game {
 @media (max-height: 500px) and (orientation: portrait) {
 }
 @media (max-height: 500px) and (orientation: landscape) {
-  .actor-panels.has-enemy {
+  .actor-panels.has-secondary {
     grid-template-columns: 1fr 1fr;
   }
   .play-header {
@@ -1656,7 +1656,7 @@ body.playing-game {
 .play-shell .boon-notice button { position:absolute; right:7px; top:7px; width:30px; height:30px; font-size:22px; padding:0; color:#fff1c8; }
 
 /* The live Chronicle shares the dungeon panels' slate and muted gold palette. */
-.chronicle-feed { position:absolute; left:5px; right:5px; bottom:5px; z-index:4; display:flex; flex-direction:column; height:72px; max-height:calc(100% - 10px); box-sizing:border-box; overflow:hidden; border:1px solid #5b6b67; border-left:2px solid #bfa35e; border-radius:4px; background:#203644f2; color:#e8e2cc; font:14px/1.4 Arial,sans-serif; }
+.chronicle-feed { min-width:0; width:100%; display:flex; flex-direction:column; height:72px; box-sizing:border-box; overflow:hidden; border:1px solid #5b6b67; border-left:2px solid #bfa35e; border-radius:4px; background:#203644f2; color:#e8e2cc; font:14px/1.4 Arial,sans-serif; }
 .chronicle-feed header { height:24px; box-sizing:border-box; flex:none; display:flex; align-items:center; gap:6px; padding:0 5px 0 8px; min-height:24px; border-bottom:1px solid #52636b; }
 .chronicle-feed header > strong { flex:1; font:600 10px/1.2 Arial,sans-serif; letter-spacing:.08em; text-transform:uppercase; color:#b8b9a5; }
 .play-shell .chronicle-feed header button { min-height:24px; padding:3px 6px; border:0; background:transparent; color:#d4c393; font:11px Arial,sans-serif; }
@@ -1677,9 +1677,8 @@ body.playing-game {
 .chronicle-feedback-error { color:#ffb59a; }
 .play-shell .chronicle-feedback button { min-height:28px; min-width:28px; border:0; padding:0; font-size:20px; background:transparent; color:#d4c393; }
 
-/* Keep conversations clear of the live journal. */
+/* Collapsing the journal is an explicit user choice. */
 .chronicle-feed:has(button[aria-expanded="false"]) { height:26px; }
-.play-map .chief-speech { bottom:82px; max-height:max(24px,calc(100% - 126px)); }
 
 /* Keep accuracy warnings on their own row before encounter controls. */
 .play-context .encounter-hit-warning { flex:0 0 100%; width:100%; box-sizing:border-box; }
