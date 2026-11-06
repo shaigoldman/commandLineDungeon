@@ -114,3 +114,21 @@ describe("offline Android game saves", () => {
     );
   });
 });
+
+it("lists every device adventure by hero and original start date, including legacy saves without dates",async()=>{
+ const storage=memory(),keys=["a".repeat(64),"b".repeat(64)],app=new LocalGameAPI(storage,()=>keys.shift()!);
+ expect((await app.request("saved-adventures")).data.adventures).toEqual([]);
+ const first=await app.request("games",{...options,name:"Liora"});
+ const started=first.data.game!.startedAt!;expect(Number.isFinite(Date.parse(started))).toBe(true);
+ const key=first.data.recoveryKey!;
+ await app.request("action",{revision:0,action:{type:"cast",spell:"Teleport"}},key);
+ expect((await app.request("game",undefined,key)).data.game!.startedAt).toBe(started);
+ await app.request("games",{...options,name:"Elara"});
+ const storeKey=[...storage.map.keys()][0],data=JSON.parse(storage.map.get(storeKey)!);delete data.games[key].startedAt;
+ storage.map.set(storeKey,JSON.stringify(data));const before=storage.map.get(storeKey);
+ const listed=await new LocalGameAPI(storage).request("saved-adventures");
+ expect(listed.data.adventures).toHaveLength(2);expect(listed.data.adventures![0].heroName).toBe("Elara");
+ expect(listed.data.adventures![1]).toMatchObject({id:key,heroName:"Liora"});expect(listed.data.adventures![1].startedAt).toBeUndefined();
+ expect(storage.map.get(storeKey)).toBe(before);
+ expect((await app.request("game",undefined,listed.data.adventures![1].id)).data.game!.player.name).toBe("Liora");
+});

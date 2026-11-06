@@ -1,5 +1,5 @@
 import "./style.css";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { App as NativeApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
@@ -8,6 +8,8 @@ import { classes } from "../shared/catalog";
 import { Portrait } from "./Portrait";
 import { PlayScreen } from "./PlayScreen";
 import { requestGame, isDeviceGame } from "./game-api";
+import { SavedAdventuresMenu } from "./SavedAdventuresMenu";
+import { rememberAdventure } from "./saved-adventures";
 function App() {
   const [game, setGame] = useState<Game>(),
     [loading, setLoading] = useState(true),
@@ -18,8 +20,8 @@ function App() {
     [cls, setCls] = useState("Warrior"),
     [element, setElement] = useState("Wind"),
     [difficulty, setDifficulty] = useState(0),
-    [recover, setRecover] = useState(""),
-    [recovery, setRecovery] = useState(
+    [showSavedAdventures,setShowSavedAdventures] = useState(false),
+    [journeyId, setJourneyId] = useState(
       localStorage.getItem("dungeon-key") || "",
     ),
     [lastAction, setLastAction] = useState<{
@@ -27,9 +29,19 @@ function App() {
       revision: number;
     }>();
   const lock = useRef(false);
+  const closeSavedAdventures=useCallback(()=>{setShowSavedAdventures(false);setError("");},[]);
   async function api(path: string, body?: unknown, key?: string) {
     const { ok, data } = await requestGame(path, body, key);
-    if (data.game) setGame(data.game);
+    if (data.game) {
+      setGame(data.game);
+      const id=data.recoveryKey || key;
+      if (id) {
+        setJourneyId(id);localStorage.setItem("dungeon-key",id);
+        if (!isDeviceGame) {
+          try {rememberAdventure(id,data.game);} catch(e) {setError((e as Error).message);}
+        }
+      }
+    }
     if (!ok) throw Error(data.error || "Request failed");
     return data;
   }
@@ -48,14 +60,14 @@ function App() {
       .catch(() => {});
   }, [game?.status]);
   useEffect(() => {
-    if (game || !Capacitor.isNativePlatform()) return;
+    if (game || showSavedAdventures || !Capacitor.isNativePlatform()) return;
     const h = NativeApp.addListener("backButton", () => {
       void NativeApp.exitApp();
     });
     return () => {
       void h.then((v) => v.remove());
     };
-  }, [!!game]);
+  }, [!!game,showSavedAdventures]);
   async function act(action: Action) {
     if (!game || lock.current) return;
     lock.current = true;
@@ -65,7 +77,7 @@ function App() {
       const result = await api(
         "action",
         { action, revision: game.revision },
-        recovery || undefined,
+        journeyId || undefined,
       );
       if (result.game)
         setLastAction({ type: action.type, revision: result.game.revision });
@@ -79,7 +91,7 @@ function App() {
   }
   async function start(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
+    setError("");setLastAction(undefined);setBusy(true);
     try {
       const d = await api("games", {
         name: name || "Adventurer",
@@ -88,19 +100,24 @@ function App() {
         difficulty,
       });
       if (!d.recoveryKey) throw Error("Journey could not be created");
-      localStorage.setItem("dungeon-key", d.recoveryKey);
-      setRecovery(d.recoveryKey);
-      setError("");
+
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setBusy(false);
     }
   }
+  async function resume(id:string) {
+    if (busy) return;
+    setBusy(true);setError("");setLastAction(undefined);
+    try {await api("game",undefined,id);setShowSavedAdventures(false);} catch(e) {setError((e as Error).message);} finally {setBusy(false);}
+  }
+  const savedMenu=showSavedAdventures && <SavedAdventuresMenu busy={busy} error={error} onResume={resume} onClose={closeSavedAdventures}/>;
   if (loading) return <main className="loading">Lighting the torches…</main>;
   if (!game)
     return (
-      <div className="landing">
+      <>
+      <div className="landing" inert={showSavedAdventures} aria-hidden={showSavedAdventures || undefined}>
         <div className="landing-art">
           <div className="sigil">✦</div>
           <p className="eyebrow">A TURN-BASED DUNGEON RPG</p>
@@ -194,51 +211,35 @@ function App() {
               {error}
             </p>
           )}
-          <details>
-            <summary>
-              {isDeviceGame
-                ? "Reopen a journey on this phone"
-                : "Restore a saved journey"}
-            </summary>
-            <input
-              aria-label={isDeviceGame ? "Device journey code" : "Recovery key"}
-              placeholder="Paste your recovery key"
-              value={recover}
-              onChange={(e) => setRecover(e.target.value)}
-            />
-            <button
-              type="button"
-              onClick={() => {
-                void api("game", undefined, recover)
-                  .then(() => {
-                    setRecovery(recover);
-                    localStorage.setItem("dungeon-key", recover);
-                  })
-                  .catch((e) => setError(e.message));
-              }}
-            >
-              Restore
-            </button>
-          </details>
+          <button type="button" className="recover-adventure-button" onClick={()=>{setError("");setShowSavedAdventures(true);}}>Recover a saved adventure</button>
         </form>
       </div>
+      {savedMenu}
+      </>
     );
   return (
+    <>
+    <div inert={showSavedAdventures} aria-hidden={showSavedAdventures || undefined}>
     <PlayScreen
+      key={journeyId}
       game={game}
       busy={busy}
       error={error}
-      recovery={recovery}
       highScore={highScore}
       lastAction={lastAction}
       onAction={act}
       clearError={() => setError("")}
+      onSavedAdventures={()=>{setError("");setShowSavedAdventures(true);}}
       onNew={() => {
-        setGame(undefined);
+        setShowSavedAdventures(false);
+        setGame(undefined);setLastAction(undefined);
         localStorage.removeItem("dungeon-key");
         setError("");
       }}
     />
+    </div>
+    {savedMenu}
+    </>
   );
 }
 createRoot(document.getElementById("root")!).render(<App />);

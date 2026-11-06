@@ -1,3 +1,5 @@
+import { readSavedAdventures } from "./saved-adventures";
+import type { SavedAdventure } from "../shared/types";
 import { Capacitor } from "@capacitor/core";
 import { Preferences } from "@capacitor/preferences";
 import { LocalGameAPI, type GameResponse } from "../shared/local-api";
@@ -34,4 +36,11 @@ export async function requestGame(
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
   return prepareResponse({ ok: r.ok, status: r.status, data: await r.json() });
+}
+
+export async function listSavedAdventures(): Promise<SavedAdventure[]> {
+  if (!isDeviceGame) return readSavedAdventures();
+  const response=await requestGame("saved-adventures");
+  if (!response.ok) throw Error(response.data.error || "Saved adventures could not be read.");
+  return response.data.adventures || [];
 }

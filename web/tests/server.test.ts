@@ -21,8 +21,11 @@ describe("saved games API", () => {
         difficulty: 0,
       });
       expect(created.status).toBe(201);
+      expect(Number.isFinite(Date.parse(created.body.game.startedAt))).toBe(true);
       const key = created.body.recoveryKey;
       expect(key).toHaveLength(64);
+      const cookieResume=await request(app).get("/api/game").set("Cookie",created.headers["set-cookie"]);
+      expect(cookieResume.body.recoveryKey).toBe(key);expect(cookieResume.body.game.startedAt).toBe(created.body.game.startedAt);
       const headers = { Authorization: "Bearer " + key };
       const unearned = await request(app)
         .post("/api/action")

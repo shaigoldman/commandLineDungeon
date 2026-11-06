@@ -757,11 +757,12 @@ select {
 }
 .class-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 7px;
   margin-top: 10px;
 }
 .class {
+  min-width:0;
   padding: 8px 3px;
   background: #14222d;
   border-color: #384c58;
@@ -1312,3 +1313,22 @@ button {
     min-height: 44px;
   }
 }
+
+/* Saved adventures are selected by hero and start date. */
+.recover-adventure-button { width:100%; margin-top:20px; background:transparent; border-color:#a88e5b; color:#ead9ac; }
+.saved-adventures-backdrop { position:fixed; inset:0; z-index:250; display:grid; place-items:center; padding:16px; box-sizing:border-box; background:#071019cf; backdrop-filter:blur(4px); }
+.saved-adventures-menu { position:relative; width:min(100%,480px); max-height:calc(100dvh - 32px); overflow:auto; overscroll-behavior:contain; box-sizing:border-box; padding:24px 20px; border:1px solid #b49b61; border-radius:7px; background:#203644; color:#e8e2cc; box-shadow:0 10px 40px #0008; font:14px/1.45 Arial,sans-serif; }
+.saved-adventures-menu h2 { margin:6px 30px 10px 0; color:#eeddb1; font:700 26px Georgia,serif; }
+.saved-adventures-menu .eyebrow { margin-right:24px; font-size:10px; color:#c9b57f; }
+.saved-adventures-close { position:absolute; right:10px; top:10px; width:32px; height:32px; padding:0; font-size:22px; }
+.saved-adventure-list { list-style:none; margin:18px 0 0; padding:0; display:grid; gap:9px; }
+.saved-adventure-list button { position:relative; width:100%; text-align:left; min-height:72px; padding:12px 30px 12px 14px; background:#182d3c; border:1px solid #64766f; color:#e8e2cc; }
+.saved-adventure-list strong,.saved-adventure-list span { display:block; overflow-wrap:anywhere; }
+.saved-adventure-list strong { color:#f0d796; font:700 19px Georgia,serif; }
+.saved-adventure-list span { margin-top:5px; color:#bdc9c6; font-size:12px; }
+.saved-adventure-list b { position:absolute; right:12px; top:20px; font-size:22px; color:#d8bd7d; }
+.saved-adventures-empty { padding:18px 0; color:#bbc8c4; }
+.saved-adventure-current strong,.saved-adventure-current span { display:block; }
+.saved-adventure-current span { margin-top:5px; color:#c0cbc6; font-size:12px; }
+
+.class .portrait-art { max-width:100%; height:auto; aspect-ratio:1; }

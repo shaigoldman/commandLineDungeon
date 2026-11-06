@@ -81,6 +81,7 @@ export function createApp(store: Store) {
       }
       const key = token(),
         game = newGame(name, className, element, difficulty);
+      game.startedAt = new Date().toISOString();
       await store.put(key, game);
       res.cookie("dungeon", key, {
         httpOnly: true,
@@ -102,7 +103,7 @@ export function createApp(store: Store) {
         res.status(404).json({ error: "No saved journey" });
         return;
       }
-      res.json({ game });
+      res.json({ game, recoveryKey: key });
     } catch (e) {
       next(e);
     }

@@ -1,3 +1,4 @@
+import { adventureStartLabel } from "./saved-adventures";
 import { gauntletBonus, isCarriedPassive } from "../shared/passive-items";
 import { rarityRank } from "../shared/rarity";
 import { Chronicle, ChronicleFeed } from "./Chronicle";
@@ -56,11 +57,11 @@ type Props = {
   game: Game;
   busy: boolean;
   error: string;
-  recovery: string;
   highScore?: number;
   lastAction?: { type: string; revision: number };
   onAction: (a: Action) => Promise<Game | undefined>;
   onNew: () => void;
+  onSavedAdventures: () => void;
   clearError: () => void;
 };
 type Selection = { item: Item; ground?: boolean };
@@ -68,11 +69,11 @@ export function PlayScreen({
   game: g,
   busy,
   error,
-  recovery,
   highScore = 0,
   lastAction,
   onAction,
   onNew,
+  onSavedAdventures,
   clearError,
 }: Props) {
   const bagOverflow = g.status === "playing" && !g.pendingLevels && g.inventory.length+Number(g.player.weapons.length>0)>capacityOf(g);
@@ -1825,30 +1826,9 @@ export function PlayScreen({
             ) : panel === "save" ? (
               <>
                 <h2>Saved after every action</h2>
-                <p>
-                  {isDeviceGame
-                    ? "Progress is saved on this phone, including offline. This code works only on this installation. Uninstalling clears local saves."
-                    : "Your journey is stored on the server. Keep this private recovery key to restore on another device."}
-                </p>
-                <textarea
-                  readOnly
-                  aria-label={
-                    isDeviceGame
-                      ? "Device journey code"
-                      : "Private recovery key"
-                  }
-                  value={recovery}
-                />
-                <button
-                  onClick={() =>
-                    void navigator.clipboard
-                      ?.writeText(recovery)
-                      .then(() => announce("Code copied."))
-                      .catch(() => announce("Select and copy the code."))
-                  }
-                >
-                  Copy code
-                </button>
+                <p>{isDeviceGame ? "Progress is saved on this phone, including offline." : "Progress is saved automatically. Your saved adventures are available in this browser."}</p>
+                <p className="saved-adventure-current"><strong>{p.name}</strong><span>{adventureStartLabel(g.startedAt)}</span></p>
+                <button onClick={onSavedAdventures}>Saved adventures</button>
                 {isDeviceGame && (
                   <button onClick={() => void NativeApp.exitApp()}>
                     Close game
