@@ -823,24 +823,18 @@ export function PlayScreen({
           </button>
 
         </div>
-        {(enemy?.npc || enemy?.merchant) && (
+        {enemy?.npc && !enemy.merchant && (
           <div className="chief-speech" aria-label="Chieftain speech bubble">
             <img
-              alt={
-                enemy.merchant ? "Villager" : enemy.npc!.tribe + " chieftain"
-              }
-              src={(enemy.merchant
-                ? worldArt(enemy.className, 3, enemy.name)
-                : enemy.npc!.tribe === "Emperor"
-                  ? worldArt("Emperor", 3)
-                  : sprite("Chieftan", 3, enemy.npc!.tribe)
+              alt={enemy.npc.tribe + " chieftain"}
+              src={(enemy.npc.tribe === "Emperor"
+                ? worldArt("Emperor",3)
+                : sprite("Chieftan",3,enemy.npc.tribe)
               ).toDataURL()}
             />
             <div>
-              <strong>
-                {enemy.name} · {enemy.merchant ? "Villager" : enemy.npc!.tribe}
-              </strong>
-              <p>“{enemy.merchant?.line || enemy.npc!.line}”</p>
+              <strong>{enemy.name} · {enemy.npc.tribe}</strong>
+              <p>“{enemy.npc.line}”</p>
               <button onClick={() => setPanel("npc")}>Discuss trade</button>
             </div>
           </div>
