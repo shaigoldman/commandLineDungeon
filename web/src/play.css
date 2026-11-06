@@ -1656,11 +1656,11 @@ body.playing-game {
 .play-shell .boon-notice button { position:absolute; right:7px; top:7px; width:30px; height:30px; font-size:22px; padding:0; color:#fff1c8; }
 
 /* The live Chronicle shares the dungeon panels' slate and muted gold palette. */
-.chronicle-feed { position:absolute; left:5px; right:5px; bottom:5px; z-index:4; display:flex; flex-direction:column; max-height:max(32px,min(170px,40%)); overflow:hidden; border:1px solid #5b6b67; border-left:2px solid #bfa35e; border-radius:4px; background:#203644f2; color:#e8e2cc; font:14px/1.4 Arial,sans-serif; }
+.chronicle-feed { position:absolute; left:5px; right:5px; bottom:5px; z-index:4; display:flex; flex-direction:column; height:84px; max-height:calc(100% - 10px); box-sizing:border-box; overflow:hidden; border:1px solid #5b6b67; border-left:2px solid #bfa35e; border-radius:4px; background:#203644f2; color:#e8e2cc; font:14px/1.4 Arial,sans-serif; }
 .chronicle-feed header { height:28px; box-sizing:border-box; flex:none; display:flex; align-items:center; gap:6px; padding:0 5px 0 8px; min-height:28px; border-bottom:1px solid #52636b; }
 .chronicle-feed header > strong { flex:1; font:600 10px/1.2 Arial,sans-serif; letter-spacing:.08em; text-transform:uppercase; color:#b8b9a5; }
 .play-shell .chronicle-feed header button { min-height:28px; padding:3px 6px; border:0; background:transparent; color:#d4c393; font:11px Arial,sans-serif; }
-.chronicle-feed-scroll { min-height:0; overflow:auto; overscroll-behavior:contain; padding:0 8px; scrollbar-width:thin; }
+.chronicle-feed-scroll { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; padding:0 8px; scrollbar-width:thin; }
 .chronicle-feed ol { margin:0; padding:0; list-style:none; }
 .chronicle-feed li { display:flex; gap:6px; padding:6px 0; }
 .chronicle-feed p { margin:0; font:inherit; overflow-wrap:anywhere; }
@@ -1678,8 +1678,8 @@ body.playing-game {
 .play-shell .chronicle-feedback button { min-height:28px; min-width:28px; border:0; padding:0; font-size:20px; background:transparent; color:#d4c393; }
 
 /* Keep conversations clear of the live journal. */
-.play-map:has(.chief-speech) .chronicle-feed { max-height:max(32px,min(110px,30%)); }
-.play-map .chief-speech { bottom:max(42px,min(120px,calc(30% + 10px))); max-height:max(24px,calc(70% - 54px)); }
+.chronicle-feed:has(button[aria-expanded="false"]) { height:30px; }
+.play-map .chief-speech { bottom:94px; max-height:max(24px,calc(100% - 138px)); }
 
 /* Keep accuracy warnings on their own row before encounter controls. */
 .play-context .encounter-hit-warning { flex:0 0 100%; width:100%; box-sizing:border-box; }
