@@ -348,9 +348,12 @@ export const itemDefinitions: [string, string, Rarity, number, string?][] = [
   ["Shield", "weapon", "uncommon", 0],
   ["Magic Staff", "tome", "uncommon", 0],
 ];
+export function weaponSpecialEffect(i: Item) {
+  return i.name === "Bloodthirsty Dagger" ? "Bloodthirst: +100 Luck while equipped below 10 HP." : undefined;
+}
 export function describe(i: Item) {
   if (i.kind === "weapon")
-    return `${i.poison ? "Poison on hit: 2 damage for 5 actions · " : ""}Attack +${i.attack} · Luck +${i.luck} · Weight ${i.weight} · Power required ${(i.weight || 0) * 2} · ${i.uses}/${i.maxUses} uses`;
+    return [weaponSpecialEffect(i), `${i.poison ? "Poison on hit: 2 damage for 5 actions · " : ""}Attack +${i.attack} · Luck +${i.luck} · Weight ${i.weight} · Power required ${(i.weight || 0) * 2} · ${i.uses}/${i.maxUses} uses`].filter(Boolean).join(" ");
   if (i.kind === "tome")
     return `${i.element} magic${i.value > 0 ? ` · +${i.value} Magic while carried or equipped` : ""} · Attack +${i.attack} · Luck +${i.luck} · Basic attack costs 2 mana`;
   return gauntletDescriptions[i.kind] || i.description;

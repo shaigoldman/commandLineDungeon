@@ -44,7 +44,7 @@ import {
   retaliationRisk,
   swipeDirection,
 } from "../shared/presentation";
-import { describe, spells as spellDefinitions } from "../shared/catalog";
+import { describe, weaponSpecialEffect, spells as spellDefinitions } from "../shared/catalog";
 import { DungeonView } from "./DungeonView";
 import { Portrait } from "./Portrait";
 import { ItemIcon } from "./ItemIcon";
@@ -1386,6 +1386,7 @@ export function PlayScreen({
                 <p className="item-lore">
                   <i>{itemLore(picked)}</i>
                 </p>
+                {weaponSpecialEffect(picked) && <p className="passive-status" role="status"><b>{p.weapons.some(w=>w.id===picked.id) && p.hp<10 ? "ACTIVE" : "INACTIVE"}</b> · {weaponSpecialEffect(picked)}</p>}
                 {!selection.ground && <div className="item-drop-action">{actButton("↓ Drop item on floor", {type:"drop",id:picked.id},busy)}</div>}
                 {picked.uses !== undefined &&
                   picked.kind === "summon-stone" && (
