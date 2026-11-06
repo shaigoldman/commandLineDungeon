@@ -79,6 +79,7 @@ export function makeItem(g: Game, name: string): Item {
     i.uses = i.maxUses = 1 + roll(g, 5);
   if (name === "Boomerang") i.uses = i.maxUses = 1 + roll(g, 10);
   if (i.kind === "mana-star") i.uses = i.maxUses = i.value;
+  if (name === "Really Greedy Amulet") i.uses = i.maxUses = 2;
   if (i.kind === "charm") {
     i.stat = pick(g, ["Power", "Luck", "Health", "Speed", "Magic", "Accuracy", "Armor"]);
     i.value = 1 + roll(g, 5);
@@ -113,7 +114,7 @@ export function makeItem(g: Game, name: string): Item {
     "Hard Candy": "The next five EXP gains are doubled.",
     "Handcuffs": "Throw at an enemy to reduce its Strength by 10.",
     "Greedy Amulet": "Trade 10 HP for 5 gold. Never breaks.",
-    "Really Greedy Amulet": "Trade all but 1 HP for 20 gold. Never breaks.",
+    "Really Greedy Amulet": "Trade all but 1 HP for 20 gold. 2 uses remaining.",
     "Alchemy Book": "Spend 5 gold to transform a chosen bag item into a rarer random item; rarely misfires.",
     "Alchemy Wand": "Spend 5 gold per bag item to transform them all into rarer items; rarely misfires.",
     "Mana Channel": "Turn all your current mana into an equal amount of gold.",
@@ -1588,6 +1589,12 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       p.hp -= cost;
       p.gold = (p.gold || 0) + i.value;
       log(g, `Traded ${cost} HP for ${i.value} gold.`);
+      if (i.name === "Really Greedy Amulet") {
+        i.uses!--;
+        if (i.uses! <= 0) { log(g, "Really Greedy Amulet broke after its second use."); break; }
+        i.description = "Trade all but 1 HP for 20 gold. 1 use remaining.";
+        log(g, "Really Greedy Amulet: 1 use remaining.");
+      }
       return;
     }
     case "alchemy-book": {
