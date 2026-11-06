@@ -33,17 +33,22 @@ describe("ground equipment", () => {
     expect(r.inventory).toEqual([old]);
     expect(r.loot).toEqual([]);
   });
-  it("safely swaps on the floor when the bag is full, conserving every item", () => {
+  it("equips immediately and lets the player choose which item frees bag space", () => {
     const g = fixture(),
       old = makeItem(g, "Axe");
     g.player.weapons = [old];
     while (g.inventory.length < g.capacity - 1)
       g.inventory.push(makeItem(g, "Small Health Potion"));
-    expect(floorEquipPlan(g, g.pendingLoot!).leaveOnFloor).toBe(true);
+    expect(floorEquipPlan(g, g.pendingLoot!).requiresCleanup).toBe(true);
     const r = act(g, { type: "equip-floor" });
-    expect(r.inventory).toEqual(g.inventory);
+    expect(r.inventory).toEqual([...g.inventory,old]);
+    expect(r.pendingBagCleanup).toBe(true);
+    expect(()=>act(r,{type:"move",dx:1,dy:0})).toThrow("over capacity");
+    const resolved=act(r,{type:"drop",id:g.inventory[0].id});
+    expect(resolved.pendingBagCleanup).toBe(false);
+    expect(resolved.inventory.some(i=>i.id===old.id)).toBe(true);
     expect(r.player.weapons[0].id).toBe(g.pendingLoot!.id);
-    expect(r.loot).toEqual([{ x: g.player.x, y: g.player.y, item: old }]);
+    expect(r.loot).toEqual([]);
     expect(r.pendingLoot).toBeUndefined();
   });
   it("rejects weak, remote, and non-equipment attempts atomically", () => {
@@ -58,14 +63,18 @@ describe("ground equipment", () => {
     expect(() => act(g, { type: "equip-floor" })).toThrow("cannot be equipped");
     expect(g.player.weapons).toEqual([]);
   });
-  it("requires a gear slot in a bag filled without equipped weapons", () => {
+  it("equips into an unarmed full bag, persists cleanup, and allows using a potion to resolve it", () => {
     const g = fixture();
     while (g.inventory.length < g.capacity)
       g.inventory.push(makeItem(g, "Small Health Potion"));
-    expect(floorEquipPlan(g, g.pendingLoot!).problem).toContain(
-      "Free one bag slot",
-    );
-    expect(() => act(g, { type: "equip-floor" })).toThrow("bag slot");
+    expect(floorEquipPlan(g,g.pendingLoot!).problem).toBeUndefined();
+    let result=act(g,{type:"equip-floor"});
+    expect(result.player.weapons[0].id).toBe(g.pendingLoot!.id);
+    expect(result.inventory).toEqual(g.inventory);expect(result.pendingBagCleanup).toBe(true);
+    result=JSON.parse(JSON.stringify(result));result.player.hp=1;
+    result=act(result,{type:"use",id:result.inventory[0].id});
+    expect(result.pendingBagCleanup).toBe(false);expect(result.inventory).toHaveLength(g.capacity-1);
+    expect(result.player.weapons[0].id).toBe(g.pendingLoot!.id);
   });
   it("preserves dual-hand and staff equip rules", () => {
     const g = fixture(),
@@ -89,4 +98,9 @@ describe("ground equipment", () => {
       "axe:obsidian",
     );
   });
+});
+
+it("lets bag management drop equipped gear without deleting other equipment",()=>{
+ const g=fixture(),sword=makeItem(g,"Iron Sword"),shield=makeItem(g,"Iron Shield");g.player.weapons=[sword,shield];g.hands=2;
+ const after=act(g,{type:"drop",id:sword.id});expect(after.player.weapons).toEqual([shield]);expect(after.loot.some(l=>l.item.id===sword.id)).toBe(true);
 });

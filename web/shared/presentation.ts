@@ -80,7 +80,7 @@ export function equipmentComparison(g: Game, item: Item, ground = false) {
     replaced,
     problem,
     alreadyEquipped,
-    leaveOnFloor: ground && floorEquipPlan(g, item).leaveOnFloor,
+    requiresCleanup: ground && floorEquipPlan(g, item).requiresCleanup,
     attackType:
       after.weapons.some((w) => w.kind === "tome") && after.stats.Mana >= 2
         ? "Magic"

@@ -108,7 +108,7 @@ export function makeItem(g: Game, name: string): Item {
     "Really Gentle Grip": "While carried, 80% chance a weapon attack spends no durability.",
     "Sharpening Stone": "While carried, equipped weapons deal twice their normal attack bonus.",
     "Anvil": "Upgrade a carried or equipped weapon, shield, or staff.",
-    "Blade Shard": "Restore all uses to one unequipped bag weapon.",
+    "Blade Shard": "Restore all uses to one carried or equipped weapon or shield.",
     "Skill Book": "While carried, ignore equipped weapon weight penalties to Speed and Accuracy.",
     "Magic Scabbard": "Double a chosen item's remaining uses, even beyond its usual limit.",
     "Hard Candy": "The next five EXP gains are doubled.",
@@ -848,20 +848,12 @@ export function nextWeaponName(item: Item) {
   const next = weaponMaterials.indexOf(match[1]) + 1;
   return next < weaponMaterials.length ? `${weaponMaterials[next]} ${match[2]}` : undefined;
 }
-/** Floor equipment never disappears: a displaced weapon stays here if the bag is full. */
+/** Equip immediately; resolve any extra occupied slot through bag management. */
 export function floorEquipPlan(g: Game, item: Item) {
-  const replaced =
-    ["weapon", "tome"].includes(item.kind) && g.player.weapons.length >= g.hands
-      ? g.player.weapons[0]
-      : undefined;
-  const leaveOnFloor = !!replaced && g.inventory.length + 2 > capacityOf(g);
-  const problem = !["weapon", "tome"].includes(item.kind)
-    ? "This item cannot be equipped."
-    : itemUseProblem(g, item) ||
-      (g.inventory.length + 1 > capacityOf(g)
-        ? "Free one bag slot for equipped gear first."
-        : undefined);
-  return { replaced, leaveOnFloor, problem };
+  const displaced = Math.max(0,g.player.weapons.length-g.hands+1);
+  const replaced = displaced ? g.player.weapons[0] : undefined;
+  const problem = !["weapon","tome"].includes(item.kind) ? "This item cannot be equipped." : itemUseProblem(g,item);
+  return {replaced,requiresCleanup:g.inventory.length+displaced+1>capacityOf(g),problem};
 }
 /** Read-only availability shared by item menus; use() remains authoritative. */
 export function itemUseProblem(g: Game, i: Item): string | undefined {
@@ -901,8 +893,8 @@ export function itemUseProblem(g: Game, i: Item): string | undefined {
     return "Stand beside an energy pod to use this.";
   if (i.kind === "anvil" && ![...g.inventory, ...g.player.weapons].some((weapon) => nextWeaponName(weapon)))
     return "Keep an upgradeable weapon, shield, or staff first.";
-  if (i.kind === "blade-shard" && !g.inventory.some((weapon) => weapon.kind === "weapon" && (weapon.uses || 0) < (weapon.maxUses || 0)))
-    return "Keep a worn, unequipped weapon in your bag first.";
+  if (i.kind === "blade-shard" && ![...g.inventory,...g.player.weapons].some((weapon) => weapon.kind === "weapon" && (weapon.uses || 0) < (weapon.maxUses || 0)))
+    return "Keep a worn carried or equipped weapon first.";
   if (["cleanser", "bad-candy"].includes(i.kind) && !g.combat)
     return "Choose an enemy encounter first.";
   if (i.kind === "cleanser" && g.monsters.find((m) => m.id === g.combat)?.boss)
@@ -1514,13 +1506,7 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
     const displaced: Item[] = [];
     while (p.weapons.length >= g.hands) displaced.push(p.weapons.shift()!);
     p.weapons.push(i);
-    for (const old of displaced) {
-      if (g.inventory.length + 1 < capacityOf(g)) g.inventory.push(old);
-      else {
-        g.loot.push({ x: p.x, y: p.y, item: old });
-        log(g, old.name + " left on the floor because your bag is full.");
-      }
-    }
+    g.inventory.push(...displaced);
     log(g, "Equipped " + i.name);
     return;
   }
@@ -1655,15 +1641,15 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
     case "anvil": {
       const target = [...g.inventory, ...p.weapons].find((weapon) => weapon.id === targetId);
       const nextName = target && nextWeaponName(target);
-      if (!target || !nextName) throw Error("Choose an upgradeable weapon in your bag.");
+      if (!target || !nextName) throw Error("Choose an upgradeable carried or equipped weapon.");
       const upgraded = makeItem(g, nextName);
       Object.assign(target, upgraded, { id: target.id, uses: upgraded.maxUses });
       log(g, `Anvil upgraded your weapon to ${target.name} (${target.uses} uses).`);
       break;
     }
     case "blade-shard": {
-      const target = g.inventory.find((weapon) => weapon.id === targetId && weapon.kind === "weapon");
-      if (!target || (target.uses || 0) >= (target.maxUses || 0)) throw Error("Choose a worn weapon in your bag.");
+      const target = [...g.inventory,...p.weapons].find((weapon) => weapon.id === targetId && weapon.kind === "weapon");
+      if (!target || (target.uses || 0) >= (target.maxUses || 0)) throw Error("Choose a worn carried or equipped weapon.");
       target.uses = target.maxUses;
       log(g, `Blade Shard restored ${target.name} to ${target.uses} uses.`);
       break;
@@ -2073,6 +2059,8 @@ export function act(input: Game, a: Action): Game {
     balanceGuardian(g, enemy); enemy.hp = Math.ceil(enemy.stats.Health * fraction);
   }
   syncPassiveStats(g);
+  if (g.status === "playing" && g.inventory.length+Number(p.weapons.length>0)>capacityOf(g) && !["drop","use","level"].includes(a.type))
+    throw Error("Bag over capacity. Use or drop an item first.");
   g.revision++;
   if (g.status === "dead") throw Error("This journey has ended.");
   if (g.status === "won" && a.type !== "continue")
@@ -2280,18 +2268,6 @@ export function act(input: Game, a: Action): Game {
       const plan = floorEquipPlan(g, i);
       if (plan.problem) throw Error(plan.problem);
       use(g, i);
-      if (
-        plan.leaveOnFloor &&
-        plan.replaced &&
-        !g.loot.some((l) => l.item.id === plan.replaced!.id)
-      ) {
-        g.inventory = g.inventory.filter((a) => a.id !== plan.replaced!.id);
-        g.loot.push({ x: p.x, y: p.y, item: plan.replaced });
-        log(
-          g,
-          `Equipped ${i.name}. ${plan.replaced.name} was left on the floor because your bag is full.`,
-        );
-      }
       g.loot = g.loot.filter((l) => l.item.id !== i.id);
       g.pendingLoot = undefined;
       break;
@@ -2433,8 +2409,9 @@ export function act(input: Game, a: Action): Game {
       break;
     }
     case "drop": {
-      const i = g.inventory.find((i) => i.id === a.id);
+      const i = [...g.inventory,...p.weapons].find((i) => i.id === a.id);
       if (!i) throw Error("Item not found");
+      p.weapons = p.weapons.filter(w=>w.id!==i.id);
       if (i.kind === "infinite-bag") { g.inventory = []; p.weapons = []; log(g, "Losing the Infinite Bag destroyed all your items!"); }
       g.inventory = g.inventory.filter((i) => i.id !== a.id);
       g.loot.push({ x: p.x, y: p.y, item: i });
@@ -2629,5 +2606,6 @@ export function act(input: Game, a: Action): Game {
   if (input.inventory.some(i=>i.kind==="ghost-boots") && !g.inventory.some(i=>i.kind==="ghost-boots") && g.tiles[p.y]?.[p.x]!==0 && p.hp>0) hurt(g,p,p.hp,"Entombed");
   syncPassiveStats(g);
   grantFloorBoon(g);
+  g.pendingBagCleanup = g.inventory.length+Number(p.weapons.length>0)>capacityOf(g);
   return g;
 }

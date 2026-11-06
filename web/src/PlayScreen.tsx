@@ -75,6 +75,7 @@ export function PlayScreen({
   onNew,
   clearError,
 }: Props) {
+  const bagOverflow = g.status === "playing" && !g.pendingLevels && g.inventory.length+Number(g.player.weapons.length>0)>capacityOf(g);
   const p = g.player,
     enemy = g.monsters.find((m) => m.id === g.combat),
     danger = enemy ? incomingDamage(enemy, p) : undefined,
@@ -120,7 +121,7 @@ export function PlayScreen({
     !panel &&
     !selection &&
     !inspectedSpell &&
-    !swapPickup;
+    !swapPickup && !bagOverflow;
   const canSwipeEncounter = false;
   const encounterExit: Action =
     g.encounter?.engaged || g.encounter?.origin === "enemy"
@@ -219,6 +220,7 @@ export function PlayScreen({
     );
   }
   function closeDetails() {
+    if (bagOverflow && !selection) return;
     setInspectedSpell(null);
     setPanel(null);
     setSwapPickup(null);
@@ -305,7 +307,7 @@ export function PlayScreen({
         moveFromLoot(d[0], d[1]);
         return;
       }
-      if (panel || selection || swapPickup || inspectedSpell) return;
+      if (panel || selection || swapPickup || inspectedSpell || bagOverflow) return;
       const dirs: Record<string, [number, number]> = {
         ArrowUp: [0, -1],
         ArrowDown: [0, 1],
@@ -354,10 +356,11 @@ export function PlayScreen({
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
-  }, [g, canMove, canSwipeEncounter, panel, selection, busy, lootMovementHint, swapPickup, inspectedSpell]);
+  }, [g, canMove, canSwipeEncounter, panel, selection, busy, lootMovementHint, swapPickup, inspectedSpell, bagOverflow]);
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     const h = NativeApp.addListener("backButton", () => {
+      if (bagOverflow) { if (selection) closeDetails(); return; }
       if (selection || swapPickup || inspectedSpell) closeDetails();
       else if (panel) setPanel(null);
       else setPanel("save");
@@ -365,12 +368,12 @@ export function PlayScreen({
     return () => {
       void h.then((v) => v.remove());
     };
-  }, [panel, selection, swapPickup, inspectedSpell]);
+  }, [panel, selection, swapPickup, inspectedSpell, bagOverflow]);
   useEffect(() => {
-    if (!panel && !selection && !swapPickup && !inspectedSpell) return;
+    if (!panel && !selection && !swapPickup && !inspectedSpell && !bagOverflow) return;
     const old = document.activeElement as HTMLElement;
     const box = modal.current;
-    box?.querySelector<HTMLElement>(".modal-close")?.focus();
+    box?.querySelector<HTMLElement>(".modal-close,button:not(:disabled)")?.focus();
     const trap = (e: KeyboardEvent) => {
       if (e.key !== "Tab" || !box) return;
       const els = Array.from(
@@ -393,7 +396,7 @@ export function PlayScreen({
       document.removeEventListener("keydown", trap);
       if (old?.isConnected) old.focus();
     };
-  }, [panel, !!selection, swapPickup, inspectedSpell]);
+  }, [panel, !!selection, swapPickup, inspectedSpell, bagOverflow]);
   async function send(a: Action) {
     if (busy) return;
     clearError();
@@ -883,7 +886,7 @@ export function PlayScreen({
       {context && (
         <section
           className="play-context"
-          aria-hidden={!!selection || !!swapPickup || !!panel}
+          aria-hidden={!!selection || !!swapPickup || !!panel || bagOverflow}
         >
           {g.status === "won" ? (
             <>
@@ -1201,13 +1204,13 @@ export function PlayScreen({
         <p>{spellCost(g,inspectedSpell)} mana · Requires {inspectedSpell.req} Magic · You have {n(p.stats.Mana)} mana and {n(p.stats.Magic)} Magic</p>
         <button className="primary" disabled={busy || !availableSpells(g).some(s=>s.name===inspectedSpell.name)} onClick={()=>{void send({type:"cast",spell:inspectedSpell.name});setInspectedSpell(null);}}>Cast {inspectedSpell.name}</button>
       </section></div>}
-      {(panel || selection || swapPickup) && (
+      {(panel || selection || swapPickup || bagOverflow) && (
         <div
           className="play-backdrop"
           onPointerDown={(e) => {
             swipedLoot.current = false;
             if (
-              !(selection?.ground || (enemy && (panel === "npc" || panel === "enemy"))) ||
+              bagOverflow || !(selection?.ground || (enemy && (panel === "npc" || panel === "enemy"))) ||
               (panel && panel !== "npc" && panel !== "enemy") ||
               swapPickup ||
               !e.isPrimary ||
@@ -1251,7 +1254,7 @@ export function PlayScreen({
             role="dialog"
             aria-modal="true"
             aria-label={
-              swapPickup
+              bagOverflow && !selection ? "Bag over capacity" : swapPickup
                 ? "Bag is full"
                 : selection
                   ? isGear
@@ -1273,7 +1276,7 @@ export function PlayScreen({
             }
             onClick={(e) => e.stopPropagation()}
           >
-            <button
+            {!(bagOverflow && !selection) && <button
               className="modal-close"
               aria-label="Close details"
               onClick={() => {
@@ -1281,13 +1284,21 @@ export function PlayScreen({
               }}
             >
               ×
-            </button>
+            </button>}
             {error && (
               <p className="action-problem" role="alert">
                 {error}
               </p>
             )}
-            {swapPickup ? (
+            {bagOverflow && !selection ? (
+              <>
+                <h2>Make room in your bag</h2>
+                <p>Your new gear is equipped. Use or drop an item before continuing.</p>
+                <p className="bag-overflow-count">BAG {g.inventory.length+Number(p.weapons.length>0)}/{capacityOf(g)} · {g.inventory.length+Number(p.weapons.length>0)-capacityOf(g)} over capacity</p>
+                <div className="swap-use-items">{g.inventory.filter(item=>!isCarriedPassive(item) && !["weapon","tome"].includes(item.kind) && !itemUseProblem(g,item)).map(item=><button key={item.id} onClick={()=>setSelection({item,ground:false})}>Use {item.name}</button>)}</div>
+                <div className="swap-items">{[...g.inventory,...p.weapons].map(item=><button key={item.id} aria-label={(p.weapons.some(w=>w.id===item.id)?"Drop equipped: ":"Drop: ")+item.name} onClick={()=>void send({type:"drop",id:item.id})}><ItemIcon item={item}/>{p.weapons.some(w=>w.id===item.id)?"Drop equipped: ":"Drop: "}{item.name}</button>)}</div>
+              </>
+            ) : swapPickup ? (
               <>
                 <h2>Bag is full</h2>
                 <p>
@@ -1375,6 +1386,7 @@ export function PlayScreen({
                 <p className="item-lore">
                   <i>{itemLore(picked)}</i>
                 </p>
+                {!selection.ground && <div className="item-drop-action">{actButton("↓ Drop item on floor", {type:"drop",id:picked.id},busy)}</div>}
                 {picked.uses !== undefined &&
                   picked.kind === "summon-stone" && (
                     <p>
@@ -1422,8 +1434,8 @@ export function PlayScreen({
                     {comparison.replaced && (
                       <p className="swap-explanation">
                         Replaces {comparison.replaced.name}.{" "}
-                        {comparison.leaveOnFloor
-                          ? "Bag full: old gear stays on this floor."
+                        {comparison.requiresCleanup
+                          ? "Old gear moves into your bag; choose an item to use or drop after equipping."
                           : "Old gear moves into your bag."}
                       </p>
                     )}
@@ -1442,8 +1454,8 @@ export function PlayScreen({
                           )
                         : actButton(
                             selection.ground
-                              ? comparison.leaveOnFloor
-                                ? "Equip & leave old gear here"
+                              ? comparison.requiresCleanup
+                                ? "Equip, then make bag space"
                                 : "Confirm equip from ground"
                               : "Confirm equip",
                             {
@@ -1531,16 +1543,16 @@ export function PlayScreen({
                           const next = makeItem(structuredClone(g), nextWeaponName(weapon)!);
                           return <button key={weapon.id} className="upgrade-choice" disabled={busy || !!itemUseProblem(g, picked)} onClick={() => void send({ type: "use", id: picked.id, target: weapon.id })}>
                             <ItemIcon item={weapon} />
-                            <span><b>Upgrade {weapon.name} → {next.name}</b><small>Attack {weapon.attack} → {next.attack} · Weight {weapon.weight} → {next.weight} · Uses {weapon.uses}/{weapon.maxUses} → {next.maxUses}/{next.maxUses}</small></span>
+                            <span><b>Upgrade {weapon.name} → {next.name}</b><small>{p.weapons.some(w=>w.id===weapon.id) ? "★ Equipped · " : "In bag · "}Attack {weapon.attack} → {next.attack} · Weight {weapon.weight} → {next.weight} · Uses {weapon.uses}/{weapon.maxUses} → {next.maxUses}/{next.maxUses}</small></span>
                           </button>;
                         })}
-                        {picked.kind === "blade-shard" && g.inventory.filter((weapon) => weapon.kind === "weapon" && (weapon.uses || 0) < (weapon.maxUses || 0)).map((weapon) =>
+                        {picked.kind === "blade-shard" && [...g.inventory,...p.weapons].filter((weapon) => weapon.kind === "weapon" && (weapon.uses || 0) < (weapon.maxUses || 0)).map((weapon) =>
                           <button key={weapon.id} className="upgrade-choice" disabled={busy || !!itemUseProblem(g, picked)} onClick={() => void send({ type: "use", id: picked.id, target: weapon.id })}>
-                            <ItemIcon item={weapon} /><span><b>Restore {weapon.name}</b><small>{weapon.uses}/{weapon.maxUses} → {weapon.maxUses}/{weapon.maxUses} uses</small></span>
+                            <ItemIcon item={weapon} /><span><b>Restore {weapon.name}</b><small>{p.weapons.some(w=>w.id===weapon.id) ? "★ Equipped · " : "In bag · "}{weapon.uses}/{weapon.maxUses} → {weapon.maxUses}/{weapon.maxUses} uses</small></span>
                           </button>)}
                         {picked.kind === "magic-scabbard" && [...g.inventory, ...p.weapons].filter((item) => item.id !== picked.id && (item.uses || 0) > 0).map((item) =>
                           <button key={item.id} className="upgrade-choice" disabled={busy} onClick={() => void send({ type: "use", id: picked.id, target: item.id })}>
-                            <ItemIcon item={item} /><span><b>Double {item.name}</b><small>{item.uses} → {(item.uses || 0) * 2} uses · usual max {item.maxUses}</small></span>
+                            <ItemIcon item={item} /><span><b>Double {item.name}</b><small>{p.weapons.some(w=>w.id===item.id) ? "★ Equipped · " : "In bag · "}{item.uses} → {(item.uses || 0) * 2} uses · usual max {item.maxUses}</small></span>
                           </button>)}
                         {picked.kind === "alchemy-book" && g.inventory.filter((item) => item.id !== picked.id && rarityRank(item.rarity) < 3).map((item) =>
                           <button key={item.id} className="upgrade-choice" disabled={busy || !!itemUseProblem(g, picked)} onClick={() => void send({ type: "use", id: picked.id, target: item.id })}>
@@ -1566,7 +1578,7 @@ export function PlayScreen({
                           !!itemUseProblem(g, picked),
                           "primary",
                         )}
-                        <button className="primary" onClick={closeDetails}>{isCarriedPassive(picked) ? "Close" : "Done using"}</button><details><summary>Discard item…</summary>{actButton("Drop item on floor", { type: "drop", id: picked.id })}</details>
+                        <button className="primary" onClick={closeDetails}>{isCarriedPassive(picked) ? "Close" : "Done using"}</button>
                       </>
                     )}
                   </>

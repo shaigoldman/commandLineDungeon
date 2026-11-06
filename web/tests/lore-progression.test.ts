@@ -89,7 +89,7 @@ it("one hand applies to staves too; preview matches replacement, Extra Hand perm
   g = act(g, { type: "use", id: sword.id });
   expect(g.player.weapons).toHaveLength(2);
 });
-it("floor staff replacement with a full bag leaves displaced gear, not duplicated ownership", () => {
+it("floor staff replacement keeps displaced gear for the bag cleanup choice", () => {
   let g = base();
   g.capacity = 1;
   const a = makeItem(g, "Wind Staff"),
@@ -97,10 +97,11 @@ it("floor staff replacement with a full bag leaves displaced gear, not duplicate
   g.player.weapons = [a];
   g.pendingLoot = b;
   g.loot = [{ x: 15, y: 7, item: b }];
-  expect(floorEquipPlan(g, b).leaveOnFloor).toBe(true);
+  expect(floorEquipPlan(g, b).requiresCleanup).toBe(true);
   g = act(g, { type: "equip-floor" });
   expect(g.player.weapons[0].id).toBe(b.id);
-  expect(g.loot.map((l) => l.item.id)).toEqual([a.id]);
+  expect(g.inventory.map(i=>i.id)).toEqual([a.id]);
+  expect(g.loot).toEqual([]);expect(g.pendingBagCleanup).toBe(true);
 });
 it("summoner stones roll all charge counts, summon monsters, preserve charges across reload and break exactly on zero", () => {
   const observed = new Set<number>();
