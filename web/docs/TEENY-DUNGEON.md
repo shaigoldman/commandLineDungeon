@@ -56,7 +56,7 @@ Floor-clearing boon: defeat every non-boss hostile while the boss is still alive
 
 Dark Hero mages always spawn with one staff equipped: they use a staff from their rolled loot when available, or receive a basic Fire, Water, or Wind staff. Their random bag still contains at most five items. Equipped staves remain eligible for the normal 25% item-use attempt even when the bag is empty, and are dropped once on death.
 
-The live Chronicle replaces temporary toasts at the bottom of the dungeon view. Only the latest event appears on the dungeon screen, with colored names, conditions, damage and stats. Errors and movement hints temporarily replace that event. The full history remains available through **Read all**. Collapse the feed to see more of the map, or choose **Read all** for the full journey journal.
+The live Chronicle appears in the top actor display when no enemy is selected. Enemy inspection and encounters replace it with enemy stats; the header’s **Log** button still opens the full history. Only the latest event appears on the dungeon screen, with colored names, conditions, damage and stats. Errors and movement hints temporarily replace that event. The full history remains available through **Read all**. Collapse the feed to see more of the map, or choose **Read all** for the full journey journal.
 
 Loot balance: within each rarity tier, weapons have twice an ordinary item family’s weight (reduced from three times). Restorative health, mana, and energy potions have 1.25 times ordinary weight. Gold and rarity-tier chances remain unchanged.
 

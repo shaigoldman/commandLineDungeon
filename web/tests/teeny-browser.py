@@ -38,7 +38,9 @@ try:
   page.emulate_media(reduced_motion='no-preference')
   load(fixtures['explore']);page.screenshot(path=str(shots/'explore.png'));assert page.get_by_role('button',name='Wait',exact=True).count()==0
   journal=json.loads(json.dumps(fixtures['explore']));journal['log']=['Zombie takes 12 poison damage. You gain 5 HP and 3 mana.','Gained 20 EXP.'];journal['logSerial']=2;load(journal)
-  feed=page.locator('.play-map .chronicle-feed');expect(feed).to_be_visible()
+  feed=page.locator('.actor-panels .chronicle-feed');expect(feed).to_be_visible()
+  assert page.locator('.play-map .chronicle-feed').count()==0
+  assert feed.bounding_box()['y']+feed.bounding_box()['height']<=page.locator('.play-map').bounding_box()['y']
   expect(feed.locator('li')).to_have_count(1)
   expect(feed).to_contain_text('Gained 20 EXP.')
   expect(feed).not_to_contain_text('Zombie takes 12 poison damage.')
@@ -69,12 +71,15 @@ try:
   g=json.loads(json.dumps(fixtures['combat']));g['player']['stats']['Mana']=0;load(g)
   before=saved()['revision'];canvas=page.locator('canvas').bounding_box();x=canvas['x']+canvas['width']/2;y=canvas['y']+canvas['height']/2;page.mouse.move(x,y);page.mouse.down();page.mouse.move(x+60,y,steps=6);page.mouse.up();page.wait_for_timeout(150);assert saved()['revision']==before
   load(fixtures['combat']);page.screenshot(path=str(shots/'encounter.png'))
-  page.get_by_role('button',name='Hide recent chronicle entries').click();page.get_by_role('button',name='Attack',exact=True).click()
-  expect(page.locator('.chronicle-feed ol')).to_be_visible();expect(page.locator('.chronicle-feed li').first).to_contain_text(saved()['log'][-1])
-  page.reload();page.wait_for_selector('canvas');expect(page.locator('.chronicle-feed li').first).to_contain_text(saved()['log'][-1])
+  expect(page.locator('.chronicle-feed')).to_have_count(0);expect(page.locator('.enemy-panel')).to_be_visible()
+  page.get_by_role('button',name='Leave encounter',exact=True).click();expect(feed).to_be_visible();expect(page.locator('.enemy-panel')).to_have_count(0)
+  load(fixtures['combat']);page.get_by_role('button',name='Attack',exact=True).click()
+  expect(page.locator('.chronicle-feed')).to_have_count(0)
+  latest=saved()['log'][-1];page.get_by_role('button',name='Open journey chronicle',exact=True).click();expect(page.locator('.chronicle-entries')).to_contain_text(latest);page.get_by_role('button',name='Close details',exact=True).click()
+  page.reload();page.wait_for_selector('canvas');expect(page.locator('.chronicle-feed')).to_have_count(0)
   page.evaluate('document.activeElement.blur()');before=saved()['revision'];page.keyboard.press('Space');page.wait_for_timeout(100);assert saved()['revision']==before
   load(fixtures['fullBag']);expect(page.locator('.inventory-ribbon')).to_contain_text('FULL');page.screenshot(path=str(shots/'bag.png'))
-  load(fixtures['market']);assert page.locator('.chief-speech').bounding_box()['y']+page.locator('.chief-speech').bounding_box()['height']<=page.locator('.chronicle-feed').bounding_box()['y'];page.get_by_role('button',name='Talk / trade',exact=True).click();page.get_by_role('button',name='Sell items',exact=True).click();expect(page.locator('.market-offer').first).to_be_visible();review=page.get_by_role('button',name='Review sale').first;review.click();expect(page.get_by_role('button',name='Sell for',exact=False)).to_be_visible();page.screenshot(path=str(shots/'market.png'))
+  load(fixtures['market']);expect(page.locator('.chronicle-feed')).to_have_count(0);page.get_by_role('button',name='Talk / trade',exact=True).click();page.get_by_role('button',name='Sell items',exact=True).click();expect(page.locator('.market-offer').first).to_be_visible();review=page.get_by_role('button',name='Review sale').first;review.click();expect(page.get_by_role('button',name='Sell for',exact=False)).to_be_visible();page.screenshot(path=str(shots/'market.png'))
   load(fixtures['floorBoon']);page.get_by_role('button',name='Attack',exact=True).click()
   expect(page.locator('.boon-notice')).to_be_visible();expect(page.locator('.boon-notice')).to_contain_text('Three health pods')
   assert len([pod for pod in saved()['pods'] if pod.get('healthOnly')])==3

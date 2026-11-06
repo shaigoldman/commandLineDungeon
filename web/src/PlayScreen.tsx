@@ -616,12 +616,13 @@ export function PlayScreen({
         <button onClick={() => setPanel("save")}>
           {isDeviceGame ? "Saved on phone" : "Saved journey"} ●
         </button>
+        {enemy && <button aria-label="Open journey chronicle" onClick={()=>setPanel("chronicle")}>Log</button>}
         <button aria-label="How to play" onClick={() => setPanel("help")}>
           ?
         </button>
       </header>
       <section
-        className={"actor-panels" + (enemy ? " has-enemy" : "")}
+        className={"actor-panels has-secondary" + (enemy ? " has-enemy" : "")}
         aria-label="Player and enemy panels"
       >
         <section className="player-panel">
@@ -729,6 +730,7 @@ export function PlayScreen({
             <label className="xp-label">EXP <b>{n(g.xp)}/100</b></label><progress className="xp-meter" max={100} value={g.xp} />
           </div>
         </section>
+        {!enemy && <ChronicleFeed game={g} notice={chronicleNotice} isError={!!error} onRead={()=>setPanel("chronicle")} onDismiss={()=>{setChronicleNotice("");clearError();}} />}
         {enemy && (
           <button
             className={
@@ -846,7 +848,6 @@ export function PlayScreen({
           </div>
         )}
         {breakNotice && <div className="break-notice" role="alert">⚠ {breakNotice}</div>}
-        <ChronicleFeed game={g} notice={chronicleNotice} isError={!!error} onRead={()=>setPanel("chronicle")} onDismiss={()=>{setChronicleNotice("");clearError();}} />
         {!!poisonFlash && (
           <div
             key={poisonFlash}
