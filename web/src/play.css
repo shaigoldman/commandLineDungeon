@@ -1655,21 +1655,27 @@ body.playing-game {
 .boon-notice strong { margin-bottom:5px; font-size:19px; color:#ffe49a; }
 .play-shell .boon-notice button { position:absolute; right:7px; top:7px; width:30px; height:30px; font-size:22px; padding:0; color:#fff1c8; }
 
-/* The live Chronicle occupies the former notification area inside the dungeon. */
-.chronicle-feed { position:absolute; left:5px; right:5px; bottom:5px; z-index:4; display:flex; flex-direction:column; max-height:max(32px,min(170px,40%)); overflow:hidden; border:1px solid #a68c55; border-left:3px solid #c6a85f; border-radius:4px; box-shadow:0 3px 12px #0006; background:#ede1c2f5; color:#302b25; font:16px/1.4 Georgia,serif; }
-.chronicle-feed header { height:32px; box-sizing:border-box; flex:none; display:flex; align-items:center; gap:6px; padding:0 6px 0 9px; min-height:30px; border-bottom:1px solid #c7b995; }
-.chronicle-feed header > strong { flex:1; font-size:17px; color:#5c4526; }
-.play-shell .chronicle-feed header button { min-height:28px; padding:3px 6px; border:0; background:transparent; color:#594526; font:13px Georgia,serif; }
-.chronicle-feed-scroll { min-height:0; overflow:auto; overscroll-behavior:contain; padding:0 9px; scrollbar-width:thin; }
+/* The live Chronicle shares the dungeon panels' slate and muted gold palette. */
+.chronicle-feed { position:absolute; left:5px; right:5px; bottom:5px; z-index:4; display:flex; flex-direction:column; max-height:max(32px,min(170px,40%)); overflow:hidden; border:1px solid #5b6b67; border-left:2px solid #bfa35e; border-radius:4px; background:#203644f2; color:#e8e2cc; font:14px/1.4 Arial,sans-serif; }
+.chronicle-feed header { height:28px; box-sizing:border-box; flex:none; display:flex; align-items:center; gap:6px; padding:0 5px 0 8px; min-height:28px; border-bottom:1px solid #52636b; }
+.chronicle-feed header > strong { flex:1; font:600 10px/1.2 Arial,sans-serif; letter-spacing:.08em; text-transform:uppercase; color:#b8b9a5; }
+.play-shell .chronicle-feed header button { min-height:28px; padding:3px 6px; border:0; background:transparent; color:#d4c393; font:11px Arial,sans-serif; }
+.chronicle-feed-scroll { min-height:0; overflow:auto; overscroll-behavior:contain; padding:0 8px; scrollbar-width:thin; }
 .chronicle-feed ol { margin:0; padding:0; list-style:none; }
-.chronicle-feed li { display:flex; gap:8px; padding:5px 0; border-bottom:1px solid #c7b995; }
-.chronicle-feed li:last-child { border-bottom:0; }
+.chronicle-feed li { display:flex; gap:6px; padding:6px 0; }
 .chronicle-feed p { margin:0; font:inherit; overflow-wrap:anywhere; }
-.chronicle-feed .chronicle-number { flex:0 0 24px; font-size:10px; }
-.chronicle-feedback { display:flex; align-items:center; gap:6px; padding:6px 0; border-bottom:1px solid #bba575; }
+.chronicle-feed .chronicle-number { flex:0 0 20px; font-size:10px; color:#9cabaf; }
+.chronicle-feed .chronicle-name { color:#a6c6eb; }
+.chronicle-feed .chronicle-status { color:#d5b2e8; }
+.chronicle-feed .chronicle-combat { color:#ffb59a; }
+.chronicle-feed .chronicle-hp { color:#acd5a6; }
+.chronicle-feed .chronicle-mana { color:#a4d4ef; }
+.chronicle-feed .chronicle-reward { color:#f0d17b; }
+.chronicle-feed .chronicle-stat { color:#eee0bb; }
+.chronicle-feedback { display:flex; align-items:center; gap:6px; padding:6px 0; }
 .chronicle-feedback p { flex:1; }
-.chronicle-feedback-error { color:#913b2b; }
-.play-shell .chronicle-feedback button { min-height:28px; min-width:28px; border:0; padding:0; font-size:20px; background:transparent; color:#6b4a30; }
+.chronicle-feedback-error { color:#ffb59a; }
+.play-shell .chronicle-feedback button { min-height:28px; min-width:28px; border:0; padding:0; font-size:20px; background:transparent; color:#d4c393; }
 
 /* Keep conversations clear of the live journal. */
 .play-map:has(.chief-speech) .chronicle-feed { max-height:max(32px,min(110px,30%)); }
