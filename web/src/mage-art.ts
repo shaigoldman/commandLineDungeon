@@ -12,9 +12,9 @@ export function mageCanvas(pose: HeroPose = "idle", scale = 2) {
     ctx.fillStyle=color;ctx.fillRect(x,y,w,h);
   };
   const ink="#152031", shade="#342b50", robe="#70508e", lit="#a783b3";
-  const hair="#30324f", hairLight="#52577d", gold="#c5a25f", goldLight="#f0d38a";
+  const hair="#583c32", hairLight="#8c6050", gold="#c5a25f", goldLight="#f0d38a";
   const skin="#e5b18d", skinLight="#ffdab0", skinShade="#b97967";
-  const wood="#795740", woodLight="#ad8152", gem="#65d2cf", gemLight="#c5f5d9";
+  const wood="#795740", woodLight="#ad8152", gem="#65d2cf";
   const attack=pose==="attack", step=pose==="left-step"?-1:pose==="right-step"?1:0;
 
   // Separate boots and a split, tapered robe rather than a square skirt.
@@ -38,20 +38,11 @@ export function mageCanvas(pose: HeroPose = "idle", scale = 2) {
   r(8,21,8,2,wood);r(11,21,3,2,gold);r(12,21,1,1,ink);
   r(7,20,2,3,wood);r(7,20,2,1,woodLight);
 
-  // The staff has a readable crystal head and a distinctly raised casting pose.
-  const staffX=attack?21:20, staffTop=attack?5:10;
-  r(staffX-1,staffTop,3,20,ink);r(staffX,staffTop,1,20,wood);
-  r(staffX,staffTop+1,1,8,woodLight);
-  r(staffX-1,staffTop-4,3,4,ink);
-  r(staffX,staffTop-4,1,1,gem);r(staffX-1,staffTop-3,3,2,gem);
-  r(staffX,staffTop-1,1,1,gem);r(staffX,staffTop-3,1,1,gemLight);
-  r(staffX-2,staffTop-2,1,3,wood);r(staffX+2,staffTop-2,1,3,wood);
-  r(staffX-1,staffTop,3,1,gold);
+  // Equipment is rendered by DungeonView: keep every pose free of baked-in weapons.
   if(attack) {
     r(15,14,4,4,ink);r(16,14,3,2,robe);r(18,13,3,3,ink);
     r(19,13,2,2,skin);r(19,13,1,1,skinLight);
     r(4,16,4,4,ink);r(5,16,3,2,robe);r(3,18,4,2,skin);r(3,18,2,1,skinLight);
-    r(17,2,1,2,gem);r(18,3,1,1,gemLight);r(23,1,1,2,gem);
   } else {
     r(5,15,4,6,ink);r(6,15,3,4,robe);r(6,19,3,1,gold);
     r(6,20+(step<0?1:0),2,2,skin);r(6,20+(step<0?1:0),1,1,skinLight);
@@ -59,12 +50,16 @@ export function mageCanvas(pose: HeroPose = "idle", scale = 2) {
     r(18,19,3,2,skin);r(19,19,1,1,skinLight);
   }
 
-  // Long indigo hair frames a face kept entirely below the short hat brim.
-  r(8,6,9,8,ink);r(7,9,3,8,hair);r(15,8,3,10,hair);
-  r(7,12,1,5,hairLight);r(16,11,1,6,hairLight);
+  // A warm, swept fringe and compact shoulder-length locks frame the face.
+  // Keep hair clear of the eyes, collar and equipment hand.
+  r(8,6,9,8,ink);r(7,8,3,7,ink);r(15,8,3,7,ink);
+  r(8,8,2,6,hair);r(15,8,2,6,hair);
+  r(8,9,1,3,hairLight);r(16,10,1,3,hairLight);
+  r(9,13,1,2,hair);r(15,13,1,2,hair);
   r(10,12,4,2,skinShade);r(10,12,3,1,skin);
   r(9,7,7,5,skin);r(10,7,5,4,skinLight);r(14,9,2,3,skin);
-  r(8,7,2,3,hair);r(9,7,3,1,hair);r(15,7,2,3,hair);
+  r(9,7,6,1,hair);r(9,8,2,1,hair);r(15,7,1,2,hair);
+  r(10,7,3,1,hairLight);
   r(10,9,1,1,ink);r(14,9,1,1,ink);r(12,10,1,1,skinShade);
   r(11,12,2,1,skinShade);r(8,10,1,1,goldLight);
   // One sloping cap and a thin gold band, with no brim over the eyes.
