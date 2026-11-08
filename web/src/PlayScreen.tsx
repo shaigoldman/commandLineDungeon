@@ -603,7 +603,7 @@ export function PlayScreen({
   return (
     <main
       className={
-        "play-shell" +
+        "play-shell" + (!isDeviceGame ? " browser-game" : "") +
         (p.effects.Poison ? " is-poisoned" : "") +
         (p.hp / p.stats.Health <= 0.1 ? " critical-hp" : "")
       }
@@ -817,6 +817,7 @@ export function PlayScreen({
           }}
           onHint={announce}
         />
+        {!isDeviceGame && <div className="browser-controls-hint" aria-label="Keyboard controls"><kbd>↑ ↓ ← →</kbd> Move <span>·</span> Click a tile <span>·</span> <kbd>V</kbd> Saves <span>·</span> <kbd>H</kbd> Help</div>}
         <div className="map-corner-controls">
           <button
             onClick={() => setOverview((v) => !v)}

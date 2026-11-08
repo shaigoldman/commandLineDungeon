@@ -1691,3 +1691,69 @@ body.playing-game {
 .encounter-attack-choice small { display:block; font-size:9px; line-height:1.25; opacity:.85; }
 
 .context-actions:has(.encounter-attack-choice) { align-items:stretch; }
+
+/* A desktop workspace for the browser edition; compact/touch layouts keep their map-first stack. */
+.browser-controls-hint { display:none; }
+@media (min-width:1100px) and (min-height:650px) {
+  .play-shell.browser-game {
+    max-width:1600px; padding:12px 20px; gap:10px;
+    display:grid; grid-template-columns:minmax(0,1fr) 320px;
+    grid-template-rows:auto auto minmax(0,1.3fr) minmax(0,.7fr) auto;
+  }
+  .browser-game .play-header { grid-column:1 / -1; grid-row:1; height:36px; min-height:36px; font-size:12px; gap:12px; }
+  .browser-game .play-header b { font-size:13px; }
+  .browser-game .play-header button { min-height:32px; font-size:12px; padding:6px 10px; }
+  .browser-game .actor-panels { grid-column:1 / -1; grid-row:2; gap:10px; }
+  .browser-game .player-panel { min-height:100px; }
+  .browser-game .player-expand { padding:10px; }
+  .browser-game .player-expand strong { font-size:22px; }
+  .browser-game .player-expand small, .browser-game .held-line, .browser-game .gold-purse { font-size:12px; }
+  .browser-game .hero-vitals { flex-basis:150px; gap:3px; }
+  .browser-game .hero-vitals label, .browser-game .hero-vitals b { font-size:12px; line-height:14px; }
+  .browser-game .hero-vitals meter, .browser-game .xp-meter { height:8px; }
+  .browser-game .chronicle-feed { height:100px; }
+  .browser-game .chronicle-feed:has(button[aria-expanded="false"]) { height:26px; }
+  .browser-game .enemy-panel { min-height:100px; }
+  .browser-game .enemy-panel strong { font-size:22px; }
+  .browser-game .enemy-panel span, .browser-game .enemy-reward { font-size:12px; }
+  .browser-game .play-map { grid-column:1; grid-row:3 / 5; min-height:0; }
+  .browser-game .play-context { grid-column:1 / -1; grid-row:5; max-width:none; padding:10px 12px; }
+  .browser-game .context-actions { gap:8px; }
+  .browser-game .context-actions > button { min-height:48px; font-size:14px; }
+  .browser-game .encounter-attack-choice small { font-size:11px; }
+  .browser-game .damage-forecast, .browser-game .turn-order { font-size:13px; line-height:1.5; }
+  .browser-game .turn-order small { font-size:11px; }
+  .browser-game .inventory-ribbon, .browser-game .magic-ribbon {
+    grid-column:2; display:flex; flex-direction:column; min-height:0;
+    padding:14px; border:1px solid #60716b; border-radius:5px; background:#1b2d39;
+    gap:12px; overflow:hidden;
+  }
+  .browser-game .inventory-ribbon { grid-row:3; }
+  .browser-game .magic-ribbon { grid-row:4; }
+  .browser-game:not(:has(.magic-ribbon)) .inventory-ribbon { grid-row:3 / 5; }
+  .browser-game .ribbon-label { position:static; flex:none; font-size:12px; line-height:1.4; letter-spacing:.08em; }
+  .browser-game .item-carousel, .browser-game .spell-carousel {
+    display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;
+    align-content:start; overflow-y:auto; overflow-x:hidden; min-height:0;
+    padding:2px 3px 6px; scroll-snap-type:none; touch-action:pan-y;
+  }
+  .browser-game .item-card, .browser-game .spell-card { width:auto; min-width:0; margin:0; }
+  .browser-game .item-card { height:116px; padding:10px; grid-template-rows:40px 14px 28px; }
+  .browser-game .item-card strong { font-size:12px; line-height:1.35; max-height:40px; }
+  .browser-game .item-card small, .browser-game .item-card em { font-size:10px; line-height:1.4; }
+  .browser-game .item-card em { white-space:normal; }
+  .browser-game .spell-card { height:86px; min-height:86px; padding:10px; grid-template-rows:36px 16px; }
+  .browser-game .spell-card strong { font-size:12px; line-height:1.35; }
+  .browser-game .spell-card small { font-size:10px; }
+  .browser-game .browser-controls-hint {
+    display:flex; align-items:center; gap:8px; position:absolute; bottom:12px; left:12px;
+    border:1px solid #61716d; border-radius:4px; background:#12232ee8; color:#d4d4bb;
+    padding:7px 10px; font-size:11px; pointer-events:none;
+  }
+  .browser-controls-hint kbd { font:inherit; color:#f0d28c; }
+  .browser-controls-hint span { color:#718681; }
+  .browser-game .play-modal { max-width:640px; }
+}
+@media (hover:hover) {
+  .browser-game .item-card:hover, .browser-game .spell-card:hover { border-color:#dec380; background:#2d424c; }
+}
