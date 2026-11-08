@@ -30,10 +30,14 @@ Requires Node.js 24 and npm.
 cd web
 npm ci
 npm run build
-npm start
+npm run preview
 ```
 
-Open <http://localhost:3000>. The [web and Android guide](web/README.md) covers development, offline builds, saves, and deployment.
+Open the URL printed by Vite (normally <http://localhost:4173>). The [web and Android guide](web/README.md) covers development, offline builds, saves, and deployment.
+
+## Host it for free
+
+The web edition saves adventures in each player’s browser and needs no backend or database. A GitHub Pages workflow is included. Follow the [free hosting setup guide](web/docs/STATIC-HOSTING.md) to enable it; saves can be exported and imported from the Saved adventures menu.
 
 ## Built for the small screen
 

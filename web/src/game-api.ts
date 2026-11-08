@@ -15,6 +15,7 @@ function prepareResponse(response: GameResponse): GameResponse {
 }
 export const isDeviceGame =
   import.meta.env.MODE === "android" || Capacitor.isNativePlatform();
+export const isLocalGame = isDeviceGame || import.meta.env.MODE !== "server";
 const device = new LocalGameAPI({
   get: async (key) => (await Preferences.get({ key })).value,
   set: async (key, value) => {
@@ -26,7 +27,11 @@ export async function requestGame(
   body?: unknown,
   key?: string,
 ): Promise<GameResponse> {
-  if (isDeviceGame) return prepareResponse(await device.request(path, body, key));
+  if (isLocalGame) {
+    const request = () => device.request(path, body, key);
+    // Serialize read/modify/write across tabs as well as within this app instance.
+    return prepareResponse(await (navigator.locks ? navigator.locks.request("teeny-dungeon-saves", request) : request()));
+  }
   const r = await fetch("/api/" + path, {
     method: body ? "POST" : "GET",
     headers: {
@@ -39,7 +44,7 @@ export async function requestGame(
 }
 
 export async function listSavedAdventures(): Promise<SavedAdventure[]> {
-  if (!isDeviceGame) return readSavedAdventures();
+  if (!isLocalGame) return readSavedAdventures();
   const response=await requestGame("saved-adventures");
   if (!response.ok) throw Error(response.data.error || "Saved adventures could not be read.");
   return response.data.adventures || [];

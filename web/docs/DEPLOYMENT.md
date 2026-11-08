@@ -1,4 +1,8 @@
-# Render deployment and GitHub handoff
+# Optional server-backed deployment
+
+**For the default free browser-save edition, follow [STATIC-HOSTING.md](STATIC-HOSTING.md).** This document applies only to the optional server-backed build. Its build command is `npm ci && npm run build:server`; do not use the default static build for server saves.
+
+## Render deployment and GitHub handoff
 
 ## Current access
 
@@ -27,7 +31,7 @@ If GitHub's default branch has been renamed, substitute the actual default branc
 3. Choose **New → Blueprint**, select `shaigoldman/commandLineDungeon`, and select the branch containing this change.
 4. Set **Blueprint Path** to **`web/render.yaml`**. Render defaults to a root `render.yaml`, so this path matters.
 5. Review the Node web service and PostgreSQL database plans and their current charges. The Blueprint requests a paid Starter service and basic PostgreSQL so durable server-side saves do not depend on an ephemeral filesystem. Adjust plans in the YAML if desired before creation.
-6. Create the Blueprint. Render supplies `DATABASE_URL` from the managed database. Build is `npm ci && npm run build`; start is `npm start`; root directory is `web`.
+6. Create the Blueprint. Render supplies `DATABASE_URL` from the managed database. Build is `npm ci && npm run build:server`; start is `npm start`; root directory is `web`.
 7. The server applies the idempotent initial schema before listening. `/api/health` checks database connectivity; Render only routes traffic after the service is healthy.
 8. Copy the actual HTTPS URL from the Render service dashboard. Create a character, make a move, reload, and verify it appears by hero name and start date in the saved-adventures menu. Trigger a service restart and verify that the saved journey still loads.
 

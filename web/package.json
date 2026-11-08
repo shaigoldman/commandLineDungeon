@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch server/index.ts",
-    "build": "tsc --noEmit && vite build && esbuild server/index.ts --bundle --platform=node --packages=external --format=esm --outfile=dist/server.js",
+    "build": "tsc --noEmit && vite build",
     "start": "node dist/server.js",
     "test": "vitest run",
     "test:python": "python3 tests/original_mechanics.py",
@@ -22,7 +22,10 @@
     "test:refinement:browser": "python3 tests/refinement-browser.py",
     "test:keys:browser": "python3 tests/key-browser.py",
     "test:market:browser": "python3 tests/market-browser.py",
-    "test:rare:browser": "python3 tests/rare-browser.py"
+    "test:rare:browser": "python3 tests/rare-browser.py",
+    "build:server": "tsc --noEmit && vite build --mode server && esbuild server/index.ts --bundle --platform=node --packages=external --format=esm --outfile=dist/server.js",
+    "preview": "vite preview --host 0.0.0.0",
+    "test:static:browser": "python3 tests/static-browser.py"
   },
   "dependencies": {
     "@capacitor/android": "^7.6.9",

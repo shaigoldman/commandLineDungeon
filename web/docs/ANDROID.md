@@ -32,7 +32,7 @@ That command type-checks and builds the Android-mode frontend into `dist/android
 
 For Android Studio, run `npm run android:sync` followed by `npm run android:open`. Generated web assets, Gradle caches, SDK paths, and signing keys are ignored. The checked-in Gradle wrapper verifies the Gradle 8.11.1 distribution checksum. In a restricted network environment, configure your supported HTTP proxy and Java CA trust; no proxy credentials or machine-specific settings are committed.
 
-`capacitor.config.ts` points at bundled assets and never at a remote development server. The `android` Vite mode chooses device storage; ordinary production Vite builds keep server storage. No backend secrets or server credentials are embedded in the APK.
+`capacitor.config.ts` points at bundled assets and never at a remote development server. The `android` Vite mode chooses device storage; ordinary production Vite builds also save locally in the browser; only explicit `server` mode uses server storage. No backend secrets or server credentials are embedded in the APK.
 
 The **Android test APK** GitHub Actions workflow rebuilds the APK and uploads a `dungeon-android-test-apk` artifact. Its debug key is cached for repeat test builds. The directly downloadable APK in `web/downloads/` is the verified package produced in this session, not an automatically moving CI artifact.
 

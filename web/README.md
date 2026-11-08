@@ -12,7 +12,7 @@ Discover themed treasure chests, rescue villagers, upgrade equipped weapons and 
 
 <p><img src="docs/screenshots/level-up.png" alt="Review every level-up gain" width="260" /> <img src="docs/screenshots/death.png" alt="Your final story and achievements" width="260" /></p>
 
-The browser uses server-backed saves. The Android edition runs the shared TypeScript rules locally and works offline. The original Python game is preserved in `../python/`.
+The browser runs the game locally and saves adventures in this browser on this device. Export/import backups from Saved adventures. [Host it free with GitHub Pages](docs/STATIC-HOSTING.md); no backend or database is needed. The Android edition runs the shared TypeScript rules locally and works offline. The original Python game is preserved in `../python/`.
 
 ## Run
 
@@ -22,19 +22,19 @@ Requires Node 24 and npm. Python 3 with NumPy is needed only for source-parity t
 cd web
 npm ci
 npm run build
-npm start
-# Open http://localhost:3000
+npm run preview
+# Open the printed URL (normally http://localhost:4173)
 ```
 
-Local saves are atomically written to `web/data/`. No database setup is needed locally. Keep this directory across restarts. For development, run `npm run dev` and `npm run dev:client` in separate terminals; open Vite's printed URL (normally port 5173). Vite proxies `/api` to port 3000.
+For development, run `npm run dev:client` and open the printed URL. For the optional server-backed edition, use `npm run build:server && npm start`; see [server deployment](docs/DEPLOYMENT.md).
 
 ## Play
 
-Choose Warrior, Knight, Scout, or Mage and a staff element for the Mage. The hidden `Over9000` name and `D` API class retain the original debug characters. Swipe on the map, use arrow keys, or tap an adjacent tile to move. Walk into enemies to inspect them safely, then choose Attack. Space waits; I focuses inventory, M spells, S expands stats, H opens help, and V your saved journey. Every successful action is saved on the server before the response.
+Choose Warrior, Knight, Scout, or Mage and a staff element for the Mage. The hidden `Over9000` name and `D` API class retain the original debug characters. Swipe on the map, use arrow keys, or tap an adjacent tile to move. Walk into enemies to inspect them safely, then choose Attack. Waiting is disabled; I focuses inventory, M spells, S expands stats, H opens help, and V your saved journey. Every successful action is saved locally before it is reported as successful.
 
 Defeat the guardian on each floor to reach the stairs. Floor two has a key carrier and locked stairs. Ruthagor guards floor three. Winning grants 1,000 points and lets you continue to higher floors. Collect gear, items, pods, and spells, gain EXP, choose level-up bonuses, trade with chiefs, or fight them. Combat resolves one exchange per click, allowing the same between-exchange item/spell decisions without a blocking terminal loop.
 
-Choose **Recover a saved adventure** on the start screen to see saved heroes by name and start date. The in-game **Saved adventures** button opens the same menu. Android lists adventures stored on that installation; the web version remembers adventures in the current browser. Progress is saved after every action. Older adventures without a recorded start date are labeled accordingly. Dead adventures remain available as tombstones. No copying or pasting codes is required.
+Choose **Recover a saved adventure** on the start screen to see saved heroes by name and start date. The in-game **Saved adventures** button opens the same menu. Android lists adventures stored on that installation; the web version remembers adventures in the current browser. Progress is saved after every action. Export saves for a backup or import them on another browser/device. Older adventures without a recorded start date are labeled accordingly. Dead adventures remain available as tombstones. No copying or pasting codes is required.
 
 ## Verify
 
@@ -53,7 +53,7 @@ The suite executes the unchanged Python methods, compares 80 Python-generated cl
 
 `npm run simulate` runs reproducible bot games and edge probes. See [simulation findings and fixed bugs](docs/SIMULATION.md) for the 840-game report, limitations, and stress-run commands.
 
-GitHub Actions runs these checks on pushes and PRs. `npm run build` performs strict TypeScript checking, Vite frontend compilation, and backend bundling. See [source review and compatibility notes](docs/PORTING.md) for formula details and intentional fixes.
+GitHub Actions runs these checks on pushes and PRs. `npm run build` typechecks and compiles the static browser edition. `npm run build:server` also bundles the optional backend. See [source review and compatibility notes](docs/PORTING.md) for formula details and intentional fixes.
 
 See the [complete v0.6 feature checklist](docs/FEATURES-V0.6.md) for the swipe interface, equipment comparisons, original animated class sprites, combat forecasts, themed floors, poison/mana warnings and direct ground actions.
 
