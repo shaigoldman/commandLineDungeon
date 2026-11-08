@@ -117,7 +117,7 @@ function App() {
   if (!game)
     return (
       <>
-      <div className="landing" inert={showSavedAdventures} aria-hidden={showSavedAdventures || undefined}>
+      <div className={"landing"+(!isDeviceGame?" browser-welcome":"")} inert={showSavedAdventures} aria-hidden={showSavedAdventures || undefined}>
         <div className="landing-art">
           <div className="sigil">✦</div>
           <p className="eyebrow">A TURN-BASED DUNGEON RPG</p>
@@ -212,6 +212,7 @@ function App() {
             </p>
           )}
           <button type="button" className="recover-adventure-button" onClick={()=>{setError("");setShowSavedAdventures(true);}}>Recover a saved adventure</button>
+          {!isDeviceGame && isLocalGame && <p className="browser-save-note">Saved automatically in this browser. Export a backup from Saved adventures to take your hero with you.</p>}
         </form>
       </div>
       {savedMenu}
