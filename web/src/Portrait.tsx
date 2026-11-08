@@ -26,7 +26,7 @@ export function Portrait({
       style={
         position
           ? {
-              backgroundImage: "url(/assets/portraits.png)",
+              backgroundImage: `url(${import.meta.env.BASE_URL}assets/portraits.png)`,
               backgroundSize: "200% 200%",
               backgroundPosition: position,
             }

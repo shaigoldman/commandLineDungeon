@@ -1,3 +1,4 @@
+import { decodeBackup, encodeBackup } from "./save-backup";
 import { act, newGame } from "./engine";
 import type { Game, Action, SavedAdventure } from "./types";
 export interface DeviceStorage {
@@ -7,7 +8,7 @@ export interface DeviceStorage {
 export interface GameResponse {
   ok: boolean;
   status: number;
-  data: { game?: Game; recoveryKey?: string; score?: number; adventures?: SavedAdventure[]; error?: string };
+  data: { game?: Game; recoveryKey?: string; score?: number; adventures?: SavedAdventure[]; error?: string; backup?: string; imported?: number };
 }
 interface DeviceSaves {
   version: 1;
@@ -20,7 +21,7 @@ const result = (status: number, data: GameResponse["data"]): GameResponse => ({
   status,
   data,
 });
-/** The Android test build runs the identical engine locally and commits before reporting success. */
+/** Browser and Android editions run the identical engine locally and commit before reporting success. */
 export class LocalGameAPI {
   private queue: Promise<unknown> = Promise.resolve();
   constructor(
@@ -55,11 +56,29 @@ export class LocalGameAPI {
     } catch {
       return result(503, {
         error:
-          "The saved journeys on this phone could not be read. They have not been overwritten.",
+          "The saved journeys on this device could not be read. They have not been overwritten.",
       });
     }
     const data =
       body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+    if (path === "export-saves") return result(200, { backup: encodeBackup(Object.values(saves.games), saves.highScore) });
+    if (path === "import-saves") {
+      let imported: ReturnType<typeof decodeBackup>;
+      try {
+        if (typeof data.backup !== "string") throw Error("Choose a Teeny Dungeon save backup (.json).");
+        imported = decodeBackup(data.backup);
+      } catch (e) { return result(400, { error: (e as Error).message }); }
+      // Imported adventures are copies: never overwrite an existing or active journey.
+      for (const game of imported.games) {
+        let id = this.makeKey();
+        while (Object.hasOwn(saves.games, id)) id = this.makeKey();
+        saves.games[id] = game;
+      }
+      saves.highScore = Math.max(saves.highScore, imported.highScore, ...imported.games.map(g => g.score));
+      try { await this.storage.set(STORAGE_KEY, JSON.stringify(saves)); }
+      catch { return result(503, { error: "Not enough storage to import this backup. Existing adventures have not been changed." }); }
+      return result(200, { imported: imported.games.length });
+    }
     if (path === "high-score") return result(200, { score: saves.highScore });
     if (path === "saved-adventures") return result(200, {adventures:Object.entries(saves.games).map(([id,game])=>({id,heroName:game.player.name || "Adventurer",startedAt:game.startedAt})).sort((a,b)=>(Date.parse(b.startedAt || "") || 0)-(Date.parse(a.startedAt || "") || 0))});
     if (path === "game") {
@@ -68,7 +87,7 @@ export class LocalGameAPI {
       return game
         ? result(200, { game })
         : result(404, {
-            error: "That adventure is not saved on this phone.",
+            error: "That adventure is not saved on this device.",
           });
     }
     let game: Game,
@@ -97,7 +116,7 @@ export class LocalGameAPI {
         key && /^[a-f0-9]{64}$/.test(key) ? saves.games[key] : undefined;
       if (!current)
         return result(404, {
-          error: "This journey is not saved on this phone.",
+          error: "This journey is not saved on this device.",
         });
       if (data.revision !== current.revision)
         return result(409, {
@@ -120,7 +139,7 @@ export class LocalGameAPI {
     } catch {
       return result(503, {
         error:
-          "This phone could not save the action. Free some storage and try again.",
+          "This device could not save the action. Free some storage and try again.",
       });
     }
     return result(path === "games" ? 201 : 200, {

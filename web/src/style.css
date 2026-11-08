@@ -1332,3 +1332,10 @@ button {
 .saved-adventure-current span { margin-top:5px; color:#c0cbc6; font-size:12px; }
 
 .class .portrait-art { max-width:100%; height:auto; aspect-ratio:1; }
+
+.save-backup-tools { margin:14px 0; padding:12px 0; border-block:1px solid #b49b614d; }
+.save-backup-tools p { font-size:12px; line-height:1.5; color:#c4d0cb; }
+.save-backup-tools > div { display:flex; gap:8px; flex-wrap:wrap; }
+.save-backup-tools button { min-height:40px; }
+
+.save-backup-tools input[type="file"] { display:none; }

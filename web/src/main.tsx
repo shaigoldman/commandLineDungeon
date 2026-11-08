@@ -7,7 +7,7 @@ import type { Game, Action } from "../shared/types";
 import { classes } from "../shared/catalog";
 import { Portrait } from "./Portrait";
 import { PlayScreen } from "./PlayScreen";
-import { requestGame, isDeviceGame } from "./game-api";
+import { requestGame, isLocalGame, isDeviceGame } from "./game-api";
 import { SavedAdventuresMenu } from "./SavedAdventuresMenu";
 import { rememberAdventure } from "./saved-adventures";
 function App() {
@@ -37,7 +37,7 @@ function App() {
       const id=data.recoveryKey || key;
       if (id) {
         setJourneyId(id);localStorage.setItem("dungeon-key",id);
-        if (!isDeviceGame) {
+        if (!isLocalGame) {
           try {rememberAdventure(id,data.game);} catch(e) {setError((e as Error).message);}
         }
       }
@@ -112,7 +112,7 @@ function App() {
     setBusy(true);setError("");setLastAction(undefined);
     try {await api("game",undefined,id);setShowSavedAdventures(false);} catch(e) {setError((e as Error).message);} finally {setBusy(false);}
   }
-  const savedMenu=showSavedAdventures && <SavedAdventuresMenu busy={busy} error={error} onResume={resume} onClose={closeSavedAdventures}/>;
+  const savedMenu=showSavedAdventures && <SavedAdventuresMenu busy={busy} error={error} onResume={resume} onClose={closeSavedAdventures} onImported={()=>{void requestGame("high-score").then(r=>setHighScore(r.data.score || 0)).catch(()=>{});}}/>;
   if (loading) return <main className="loading">Lighting the torches…</main>;
   if (!game)
     return (

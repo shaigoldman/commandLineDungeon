@@ -51,7 +51,7 @@ import { Portrait } from "./Portrait";
 import { ItemIcon } from "./ItemIcon";
 import { spellIcon } from "./spell-art";
 import { sprite } from "./art";
-import { isDeviceGame } from "./game-api";
+import { isDeviceGame, isLocalGame } from "./game-api";
 import "./play.css";
 type Props = {
   game: Game;
@@ -620,7 +620,7 @@ export function PlayScreen({
             : `F${g.floor + 1} · ${floorTheme(g.floor).name}`}{" "}
         </span>
         <button onClick={() => setPanel("save")}>
-          {isDeviceGame ? "Saved on phone" : "Saved journey"} ●
+          {isDeviceGame ? "Saved on phone" : isLocalGame ? "Saved in browser" : "Saved journey"} ●
         </button>
         {enemy && <button aria-label="Open journey chronicle" onClick={()=>setPanel("chronicle")}>Log</button>}
         <button aria-label="How to play" onClick={() => setPanel("help")}>
@@ -1830,7 +1830,7 @@ export function PlayScreen({
             ) : panel === "save" ? (
               <>
                 <h2>Saved after every action</h2>
-                <p>{isDeviceGame ? "Progress is saved on this phone, including offline." : "Progress is saved automatically. Your saved adventures are available in this browser."}</p>
+                <p>{isDeviceGame ? "Progress is saved on this phone, including offline." : isLocalGame ? "Progress is saved in this browser on this device. Export a backup from Saved adventures before clearing browser data or switching devices." : "Progress is saved automatically. Your saved adventures are available in this browser."}</p>
                 <p className="saved-adventure-current"><strong>{p.name}</strong><span>{adventureStartLabel(g.startedAt)}</span></p>
                 <button onClick={onSavedAdventures}>Saved adventures</button>
                 {isDeviceGame && (
