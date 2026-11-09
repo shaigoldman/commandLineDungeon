@@ -207,11 +207,6 @@ export function buy(g: Game, m: Actor, id: string) {
   const offer = m.merchant.stock.find((s) => s.item.id === id);
   if (!offer) throw Error("That item is sold out.");
   if ((g.player.gold || 0) < offer.price) throw Error("Not enough gold.");
-  if (
-    !offer.item.auto &&
-    g.inventory.length + Number(g.player.weapons.length > 0) >= capacityOf(g)
-  )
-    throw Error("Your bag is full.");
   g.player.gold = (g.player.gold || 0) - offer.price;
   m.merchant.stock = m.merchant.stock.filter((s) => s !== offer);
   return offer.item;

@@ -32,6 +32,7 @@ export function DungeonView({
   movementEnabled = true,
   movementBlockedHint,
   onHint,
+  onInspectEnemy,
 }: {
   game: Game;
   action?: { type: string; revision: number };
@@ -40,6 +41,7 @@ export function DungeonView({
   movementEnabled?: boolean;
   movementBlockedHint?: string;
   onHint?: (message: string) => void;
+  onInspectEnemy?: (id: string) => void;
 }) {
   const host = useRef<HTMLDivElement>(null),
     gameRef = useRef(game),
@@ -48,6 +50,8 @@ export function DungeonView({
     blockedHintRef = useRef(movementBlockedHint),
     hintRef = useRef(onHint),
     overviewRef = useRef(overview);
+  const inspectRef = useRef(onInspectEnemy);
+  inspectRef.current = onInspectEnemy;
   const actionRef = useRef(action);
   actionRef.current = action;
   gameRef.current = game;
@@ -988,7 +992,7 @@ export function DungeonView({
         let pointer: { id: number; x: number; y: number } | undefined;
         app.canvas.style.touchAction = "none";
         app.canvas.addEventListener("pointerdown", (e) => {
-          if (!e.isPrimary || (!enabledRef.current && !blockedHintRef.current))
+          if (!e.isPrimary || (!enabledRef.current && !blockedHintRef.current && !inspectRef.current))
             return;
           pointer = { id: e.pointerId, x: e.clientX, y: e.clientY };
           app.canvas.setPointerCapture(e.pointerId);
@@ -1000,29 +1004,26 @@ export function DungeonView({
           const start = pointer;
           pointer = undefined;
           if (!start || start.id !== e.pointerId) return;
-          if (!enabledRef.current) {
-            if (blockedHintRef.current)
-              hintRef.current?.(blockedHintRef.current);
-            return;
-          }
-          const swipe = swipeDirection(
-            e.clientX - start.x,
-            e.clientY - start.y,
-          );
+          const swipe = swipeDirection(e.clientX - start.x, e.clientY - start.y);
           if (swipe) {
-            moveRef.current(swipe.dx, swipe.dy);
+            if (enabledRef.current) moveRef.current(swipe.dx, swipe.dy);
+            else if (blockedHintRef.current) hintRef.current?.(blockedHintRef.current);
             return;
           }
-          const r = app.canvas.getBoundingClientRect(),
-            p = gameRef.current.player;
-          const x = Math.floor(
-              ((e.clientX - r.left) / r.width) * cols + camera.x,
-            ),
-            y = Math.floor(
-              ((e.clientY - r.top) / r.height) * (viewHeight / TILE) + camera.y,
-            ),
-            dx = x - p.x,
-            dy = y - p.y;
+          const r = app.canvas.getBoundingClientRect(), g = gameRef.current, p = g.player;
+          const x = Math.floor(((e.clientX-r.left)/r.width)*cols+camera.x);
+          const y = Math.floor(((e.clientY-r.top)/r.height)*(viewHeight/TILE)+camera.y);
+          const target = g.monsters.find(m=>m.x===x && m.y===y);
+          const visible = g.light[y]?.[x] || (Math.abs(x-p.x)/2)**2+(y-p.y)**2 < g.sight**2;
+          if (target && visible && inspectRef.current) {
+            inspectRef.current(target.id);
+            return;
+          }
+          if (!enabledRef.current) {
+            if (blockedHintRef.current) hintRef.current?.(blockedHintRef.current);
+            return;
+          }
+          const dx=x-p.x, dy=y-p.y;
           if (Math.abs(dx) + Math.abs(dy) === 1) moveRef.current(dx, dy);
           else
             hintRef.current?.(

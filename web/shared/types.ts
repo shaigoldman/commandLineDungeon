@@ -170,7 +170,7 @@ export type Action =
         | "ignore"
         | "talk";
     }
-  | { type: "use-floor" | "equip-floor"; id?: string; spell?: string }
+  | { type: "use-floor" | "equip-floor"; id?: string; spell?: string; target?: string }
   | { type: "pickup"; id?: string }
   | { type: "pickup-swap"; id: string; incomingId?: string }
   | { type: "throw-floor"; id: string; target: string }

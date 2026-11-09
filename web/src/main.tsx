@@ -155,7 +155,7 @@ function App() {
             {["Warrior", "Knight", "Scout", "Mage"].map((c) => (
               <button
                 type="button"
-                className={"class " + (c === cls ? "selected" : "")}
+                className={"class theme-" + c.toLowerCase() + (c === cls ? " selected" : "")}
                 onClick={() => setCls(c)}
                 key={c}
               >

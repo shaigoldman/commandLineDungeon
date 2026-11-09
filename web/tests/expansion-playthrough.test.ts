@@ -158,7 +158,7 @@ describe("Ashfall playthroughs", () => {
       expect(g.chronicles).toHaveLength(1);
     }
   });
-  it("buying is atomic, consumes an offer once and rejects remote/poor/full-bag purchases", () => {
+  it("buying is atomic, consumes an offer once and rejects remote/poor purchases and allows full-bag cleanup", () => {
     let g = meet(arena());
     const item = makeItem(g, "Throwing Knife");
     g.monsters[0].merchant!.stock = [{ item, price: 25 }];
@@ -167,7 +167,9 @@ describe("Ashfall playthroughs", () => {
     g.player.gold = 100;
     g.capacity = 0;
     const before = structuredClone(g);
-    expect(() => act(g, { type: "buy", id: item.id })).toThrow("bag");
+    const fullBagPurchase = act(g, { type: "buy", id: item.id });
+    expect(fullBagPurchase.pendingBagCleanup).toBe(true);
+    expect(fullBagPurchase.inventory[0].id).toBe(item.id);
     expect(g).toEqual(before);
     g.capacity = 100;
     g = act(g, { type: "buy", id: item.id });

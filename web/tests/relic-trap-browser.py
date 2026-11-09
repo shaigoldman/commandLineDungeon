@@ -92,8 +92,9 @@ try:
 
         load(page, "fullEnergyPod")
         page.keyboard.press("ArrowRight")
-        expect(page.get_by_test_id("energy-full-notice")).to_contain_text("ENERGY FULL")
-        expect(page.get_by_test_id("energy-full-notice")).to_contain_text("remains here")
+        expect(page.get_by_test_id("energy-full-notice")).to_have_count(0)
+        page.wait_for_timeout(150)
+        assert any("FULL:" in line for line in saved(page)["log"])
         assert len(saved(page)["pods"]) == 1
         expect(page.get_by_test_id("energy-full-notice")).to_have_count(0, timeout=2500)
 

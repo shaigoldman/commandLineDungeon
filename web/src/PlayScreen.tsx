@@ -82,6 +82,12 @@ export function PlayScreen({
     danger = enemy ? incomingDamage(enemy, p) : undefined,
     spells =
       g.status === "playing" && !g.pendingLevels ? spellMenu(g) : [];
+  const [inspectedEnemyId, setInspectedEnemyId] = useState<string | null>(null);
+  const detailEnemy = g.monsters.find(m => m.id === inspectedEnemyId) || enemy;
+  const detailDanger = detailEnemy ? incomingDamage(detailEnemy, p) : undefined;
+  const detailForecast = detailEnemy ? outgoingDamage(p, detailEnemy) : undefined;
+  const [choice, setChoice] = useState("");
+  const [damageNotice, setDamageNotice] = useState<{amount:number; revision:number} | null>(null);
   const [inspectedSpell, setInspectedSpell] = useState<(typeof spellDefinitions)[number] | null>(null);
   const [panel, setPanel] = useState<
       "stats" | "enemy" | "save" | "help" | "npc" | "level" | "chronicle" | null
@@ -92,11 +98,12 @@ export function PlayScreen({
     [poisonFlash, setPoisonFlash] = useState(0),
     [curseFlash, setCurseFlash] = useState(0),
     [trapNotice, setTrapNotice] = useState<{ message: string; revision: number } | null>(null),
-    [energyFullNotice, setEnergyFullNotice] = useState(0),
     [goldFlash, setGoldFlash] = useState<{ amount: number; revision: number } | null>(null),
     [itemResult, setItemResult] = useState<ItemOutcome | null>(null),
     [trade, setTrade] = useState("");
+  useEffect(() => setChoice(""), [selection?.item.id]);
   const [swapPickup, setSwapPickup] = useState<Item | null>(null);
+  const [deathDetails, setDeathDetails] = useState(false);
   const [boonNotice, setBoonNotice] = useState("");
   useEffect(() => setBoonNotice(""), [g.floor]);
   const modal = useRef<HTMLDivElement>(null);
@@ -226,6 +233,8 @@ export function PlayScreen({
     if (bagOverflow && !selection) return;
     setInspectedSpell(null);
     setPanel(null);
+    setInspectedEnemyId(null);
+    setChoice("");
     setSwapPickup(null);
     if ((selection?.ground && g.pendingLoot) || (swapPickup && g.pendingLoot))
       void send({ type: "ignore" });
@@ -406,6 +415,12 @@ export function PlayScreen({
     const before = g;
     const after = await onAction(a);
     if (!after) return;
+    setChoice("");
+    const lostHP = Math.max(0, before.player.hp - after.player.hp);
+    if (lostHP > 0) {
+      setDamageNotice({amount:lostHP,revision:after.revision});
+      setTimeout(() => setDamageNotice(current => current?.revision === after.revision ? null : current), 2000);
+    }
     setChronicleNotice("");
     const opensLoot =
       after.status === "playing" &&
@@ -445,10 +460,6 @@ export function PlayScreen({
       const notice = { message: trapMessages.join(" "), revision: after.revision };
       setTrapNotice(notice);
       setTimeout(() => setTrapNotice((current) => current?.revision === notice.revision ? null : current), 3600);
-    }
-    if (entries.some((line) => /^(HEALTH|MANA) FULL:/.test(line))) {
-      setEnergyFullNotice(after.revision);
-      setTimeout(() => setEnergyFullNotice((current) => current === after.revision ? 0 : current), 1800);
     }
     const gainedGold = (after.player.gold || 0) - (before.player.gold || 0);
     if (gainedGold > 0) {
@@ -577,11 +588,30 @@ export function PlayScreen({
   const groundPile = g.loot
     .filter((l) => l.x === p.x && l.y === p.y)
     .map((l) => l.item);
+  function itemChoices(item: Item, ground: boolean) {
+    const type = ground ? "use-floor" as const : "use" as const;
+    if (item.kind === "energy-potion") return <div className="item-choice-steps" aria-label="Choose energy restoration">
+      <h3>Restore health or mana?</h3>
+      {actButton(`Restore 5 health · ${n(p.hp)}/${n(p.stats.Health)} HP`, {type,id:item.id,spell:"Health"}, p.hp >= p.stats.Health, "primary")}
+      {actButton(`Restore 5 mana · ${n(p.stats.Mana)}/${manaCap(p)} MP`, {type,id:item.id,spell:"Mana"}, p.stats.Mana >= manaCap(p), "primary")}
+    </div>;
+    const stats = ["Health","Power","Speed","Luck","Magic","Accuracy","Armor"];
+    return <div className="item-choice-steps" aria-label={item.kind === "mixing-potion" ? "Mixing Potion choices" : "Magic Wand choices"}>
+      {choice && <button onClick={()=>setChoice("")}>← Change first choice</button>}
+      {item.kind === "mixing-potion" ? <>
+        <h3>{choice ? `2. Gain 3 in which stat? (${choice} −3)` : "1. Choose a stat to lose 3"}</h3>
+        {choice ? stats.filter(stat=>stat!==choice).map(stat=>actButton(`${stat} +3`,{type,id:item.id,spell:`${choice}:${stat}`},busy,"primary")) : stats.map(stat=><button key={stat} disabled={(p.stats[stat] || 0)<3 || (stat==="Health" && p.stats.Health<=3)} onClick={()=>setChoice(stat)}>{stat} −3 · currently {n(p.stats[stat] || 0)}</button>)}
+      </> : <>
+        <h3>{choice ? "2. Choose your staff element" : "1. Choose an item to transform"}</h3>
+        {choice ? ["Fire","Wind","Water"].map(element=>actButton(`${element} Staff`,{type,id:item.id,target:choice,spell:element},busy,"primary")) : g.inventory.filter(i=>i.id!==item.id).map(i=><button key={i.id} disabled={i.kind==="infinite-bag" && g.inventory.length-1+Number(p.weapons.length>0)>g.capacity} onClick={()=>setChoice(i.id)}><ItemIcon item={i}/>{i.name}</button>)}
+      </>}
+    </div>;
+  }
   const ground = g.pendingLoot || groundPile[0];
   if (g.status === "dead") {
     const story = deathStory(g);
     return (
-    <main className="death-scene"><DungeonView game={g} overview={overview} movementEnabled={false} onMove={()=>{}} onHint={()=>{}} />
+    <main className={"death-scene theme-" + p.className.toLowerCase()}><DungeonView game={g} overview={overview} movementEnabled={false} onMove={()=>{}} onHint={()=>{}} />
     <section className="death-screen" data-testid="death-screen">
       <div className="death-screen-content">
         <span className="death-symbol" aria-hidden="true">☠</span>
@@ -594,20 +624,23 @@ export function PlayScreen({
           <em>“{story.flavor}”</em>
         </section>
         <div className="death-score"><span>Final score</span><strong>{n(g.score)}</strong></div><p>High score · {n(Math.max(highScore,g.score))}</p>
-        <p>Run achievements</p>{(g.achievements || []).map(a=><p key={a.name}>🏆 {a.name} · +{a.points} points</p>)}
+        <button className="death-details-button" onClick={()=>setDeathDetails(true)}>View journey details · {(g.achievements || []).length} achievements</button>
         <button className="death-restart" onClick={onNew}>Begin a new journey</button>
       </div>
-    </section></main>
+    </section>
+    {deathDetails && <div className="play-backdrop"><section className="play-modal death-details" role="dialog" aria-label="Journey details"><button onClick={()=>setDeathDetails(false)}>Close journey details</button><h2>{p.name}’s journey</h2><p>{story.context}</p><p>“{story.flavor}”</p>{(g.achievements || []).map(a=><p key={a.name}>🏆 {a.name} · +{a.points} points</p>)}<h3>Journal</h3>{g.log.map((line,i)=><p key={i}>{line}</p>)}</section></div>}
+    </main>
     );
   }
   return (
     <main
       className={
-        "play-shell" + (!isDeviceGame ? " browser-game" : "") +
+        "play-shell theme-" + p.className.toLowerCase() + (damageNotice ? " took-hit" : "") + (!isDeviceGame ? " browser-game" : "") +
         (p.effects.Poison ? " is-poisoned" : "") +
         (p.hp / p.stats.Health <= 0.1 ? " critical-hp" : "")
       }
     >
+      {damageNotice && <div key={damageNotice.revision} className="damage-notice" role="status">−{n(damageNotice.amount)} HP · Health lost</div>}
       <header className="play-header">
         {boonNotice && <aside className="boon-notice" role="status" aria-live="polite">
           <strong>Floor-clearing boon</strong><span>{boonNotice}</span>
@@ -680,7 +713,7 @@ export function PlayScreen({
                     : "Staff inactive · UNARMED"}
                 </span>
               )}
-              <small className="weapon-uses">
+              <small className="weapon-uses loadout-detail">
                 {p.weapons.length
                   ? p.weapons
                       .map((i) =>
@@ -713,12 +746,8 @@ export function PlayScreen({
           <div
             className={"hero-vitals" + (p.stats.Mana < 2 ? " low-mana" : "")}
           >
-            <label>
-              {p.hp / p.stats.Health <= 0.01
-                ? "LAST BREATH · ≤1% HP"
-                : p.hp / p.stats.Health <= 0.1
-                  ? "CRITICAL · ≤10% HP"
-                  : "HP"}{" "}
+            <label title={p.hp / p.stats.Health <= 0.01 ? "Last breath · ≤1% HP" : p.hp / p.stats.Health <= 0.1 ? "Critical · ≤10% HP" : "Health"}>
+              HP{" "}
               <b>
                 {Math.ceil(p.hp)}/{Math.ceil(p.stats.Health)}
               </b>
@@ -744,7 +773,7 @@ export function PlayScreen({
               (origin?.origin === "enemy" ? " enemy-initiated" : "")
             }
             aria-label="Expand enemy stats"
-            onClick={() => setPanel("enemy")}
+            onClick={() => {setInspectedEnemyId(null);setPanel("enemy");}}
           >
             {enemy.className === "Dragon" ? (
               <img
@@ -815,6 +844,7 @@ export function PlayScreen({
             else if (canSwipeEncounter) void send(encounterExit);
             else if (g.pendingLoot) moveFromLoot(dx, dy);
           }}
+          onInspectEnemy={id => {setInspectedEnemyId(id);setPanel("enemy");}}
           onHint={announce}
         />
         {!isDeviceGame && <div className="browser-controls-hint" aria-label="Keyboard controls"><kbd>↑ ↓ ← →</kbd> Move <span>·</span> Click a tile <span>·</span> <kbd>V</kbd> Saves <span>·</span> <kbd>H</kbd> Help</div>}
@@ -866,12 +896,6 @@ export function PlayScreen({
               <strong>⚠ TRAP!</strong>
               <span>{trapNotice.message.replace(/^TRAP:\s*/, "")}</span>
             </div>
-          </div>
-        )}
-        {!!energyFullNotice && (
-          <div key={energyFullNotice} className="energy-full-notice" role="status" data-testid="energy-full-notice">
-            <strong>{[...g.log].reverse().find(line=>/^(HEALTH|MANA) FULL:/.test(line))?.split(":")[0] || "HEALTH FULL"}</strong>
-            <span>No energy restored. This pod remains here for later.</span>
           </div>
         )}
         {itemResult && (
@@ -1290,10 +1314,11 @@ export function PlayScreen({
                 {error}
               </p>
             )}
+            {panel === "npc" && !selection && !bagOverflow && <details className="conversation-items"><summary>Use a carried item</summary><div className="item-choice-steps">{g.inventory.filter(item=>!isCarriedPassive(item) && !itemUseProblem(g,item)).map(item=><button key={item.id} onClick={()=>{setPanel(null);setSelection({item});}}>Use {item.name}</button>)}</div></details>}
             {bagOverflow && !selection ? (
               <>
                 <h2>Make room in your bag</h2>
-                <p>Your new gear is equipped. Use or drop an item before continuing.</p>
+                <p>Use an item to free space, or drop one before continuing.</p>
                 <p className="bag-overflow-count">BAG {g.inventory.length+Number(p.weapons.length>0)}/{capacityOf(g)} · {g.inventory.length+Number(p.weapons.length>0)-capacityOf(g)} over capacity</p>
                 <div className="swap-use-items">{g.inventory.filter(item=>!isCarriedPassive(item) && !["weapon","tome"].includes(item.kind) && !itemUseProblem(g,item)).map(item=><button key={item.id} onClick={()=>setSelection({item,ground:false})}>Use {item.name}</button>)}</div>
                 <div className="swap-items">{[...g.inventory,...p.weapons].map(item=><button key={item.id} aria-label={(p.weapons.some(w=>w.id===item.id)?"Drop equipped: ":"Drop: ")+item.name} onClick={()=>void send({type:"drop",id:item.id})}><ItemIcon item={item}/>{p.weapons.some(w=>w.id===item.id)?"Drop equipped: ":"Drop: "}{item.name}</button>)}</div>
@@ -1305,7 +1330,7 @@ export function PlayScreen({
                   Use an item to free a slot, or choose one to drop to keep {swapPickup.name}. You can
                   leave the newly found item instead.
                 </p>
-                <div className="swap-use-items">{g.inventory.filter(item=>!itemUseProblem(g,item) && !["weapon","tome","anvil","spiked-potion","mixing-potion"].includes(item.kind)).map(item=><button key={item.id} onClick={()=>void send({type:"use",id:item.id})}>Use {item.name}</button>)}</div>
+                <div className="swap-use-items">{g.inventory.filter(item=>!isCarriedPassive(item) && !itemUseProblem(g,item) && !["weapon","tome"].includes(item.kind)).map(item=><button key={item.id} onClick={()=>{setSwapPickup(null);setSelection({item});}}>Use {item.name}</button>)}</div>
                 <div className="swap-items">
                   {[
                     swapPickup,
@@ -1512,10 +1537,10 @@ export function PlayScreen({
                         )}
                         {picked.kind === "mana-star" && availableSpells(g, { free: true }).sort((a,b)=>spellCost(g,a)-spellCost(g,b)).map((s) =>
                           actButton(`Cast ${s.name} free`, { type: "use-floor", id: picked.id, spell: s.name }, false, "primary"))}
-                        {picked.kind === "mixing-potion" && ["Health","Power","Speed","Luck","Magic","Accuracy","Armor"].flatMap(lose=>["Health","Power","Speed","Luck","Magic","Accuracy","Armor"].filter(gain=>gain!==lose && (p.stats[lose] || 0)>=3).map(gain=>actButton(`${lose} −3 → ${gain} +3`,{type:"use",id:picked.id,spell:`${lose}:${gain}`})))}
+                        {["mixing-potion", "energy-potion"].includes(picked.kind) && itemChoices(picked, !!selection.ground)}
                         {picked.kind === "spiked-potion" && ["Health", "Power", "Luck", "Speed", "Magic", "Accuracy", "Armor"].map((stat) =>
                           actButton(`+5 ${stat} · pay half HP`, { type: "use-floor", id: picked.id, spell: stat }, false, "primary"))}
-                        {!picked.auto && !isCarriedPassive(picked) && !["mana-star", "spiked-potion", "mixing-potion"].includes(picked.kind) && canUseFromFloor(picked) &&
+                        {!picked.auto && !isCarriedPassive(picked) && !["mana-star", "spiked-potion", "mixing-potion", "energy-potion"].includes(picked.kind) && canUseFromFloor(picked) &&
                           actButton(
                             picked.kind === "teleport"
                               ? "Use once & teleport"
@@ -1537,7 +1562,7 @@ export function PlayScreen({
                         )}
                         {picked.kind === "mana-star" && availableSpells(g, { free: true }).sort((a,b)=>spellCost(g,a)-spellCost(g,b)).map((s) =>
                           actButton(`Cast ${s.name} free`, { type: "use", id: picked.id, spell: s.name }, false, "primary"))}
-                        {picked.kind === "mixing-potion" && ["Health","Power","Speed","Luck","Magic","Accuracy","Armor"].flatMap(lose=>["Health","Power","Speed","Luck","Magic","Accuracy","Armor"].filter(gain=>gain!==lose && (p.stats[lose] || 0)>=3).map(gain=>actButton(`${lose} −3 → ${gain} +3`,{type:"use",id:picked.id,spell:`${lose}:${gain}`})))}
+                        {["mixing-potion", "energy-potion"].includes(picked.kind) && itemChoices(picked, !!selection.ground)}
                         {picked.kind === "spiked-potion" && ["Health", "Power", "Luck", "Speed", "Magic", "Accuracy", "Armor"].map((stat) =>
                           actButton(`+5 ${stat} · pay half HP`, { type: "use", id: picked.id, spell: stat }, false, "primary"))}
                         {picked.kind === "anvil" && [...g.inventory, ...p.weapons].filter((weapon) => nextWeaponName(weapon)).map((weapon) => {
@@ -1559,15 +1584,12 @@ export function PlayScreen({
                           <button key={item.id} className="upgrade-choice" disabled={busy || !!itemUseProblem(g, picked)} onClick={() => void send({ type: "use", id: picked.id, target: item.id })}>
                             <ItemIcon item={item} /><span><b>Transmute {item.name}</b><small>5 gold · usually one rarity tier higher · small misfire chance</small></span>
                           </button>)}
-                        {picked.kind === "magic-wand" && g.inventory.filter((item) => item.id !== picked.id).flatMap((item) => ["Fire", "Wind", "Water"].map((element) =>
-                          <button key={item.id + element} className="upgrade-choice" disabled={busy || (item.kind === "infinite-bag" && g.inventory.length - 1 + Number(p.weapons.length > 0) > g.capacity)} onClick={() => void send({ type: "use", id: picked.id, target: item.id, spell: element })}>
-                            <ItemIcon item={item} /><span><b>{item.name} → {element} Staff</b><small>Consumes Magic Wand</small></span>
-                          </button>))}
+                        {picked.kind === "magic-wand" && itemChoices(picked, false)}
                         {picked.kind === "energy-harness" && g.pods.filter((pod) => Math.abs(pod.x - p.x) + Math.abs(pod.y - p.y) === 1).map((pod) =>
                           <button key={`${pod.x},${pod.y}`} className="upgrade-choice" disabled={busy} onClick={() => void send({ type: "use", id: picked.id, target: `${pod.x},${pod.y}` })}>
                             <span><b>Convert adjacent {pod.max ? "large" : "small"} energy pod</b><small>At {pod.x},{pod.y} · item appears there</small></span>
                           </button>)}
-                        {!isCarriedPassive(picked) && ! ["mana-star", "spiked-potion", "anvil", "blade-shard", "magic-scabbard", "alchemy-book", "magic-wand", "energy-harness"].includes(picked.kind) && actButton(
+                        {!isCarriedPassive(picked) && ! ["mixing-potion", "energy-potion", "mana-star", "spiked-potion", "anvil", "blade-shard", "magic-scabbard", "alchemy-book", "magic-wand", "energy-harness"].includes(picked.kind) && actButton(
                           picked.kind === "projectile"
                             ? "Throw at " + (enemy?.name || "enemy")
                             : picked.kind === "teleport"
@@ -1720,36 +1742,36 @@ export function PlayScreen({
                   </p>
                 )}
               </>
-            ) : panel === "enemy" && enemy ? (
+            ) : panel === "enemy" && detailEnemy ? (
               <>
-                <h2>{enemy.name} · Enemy stats</h2>
-                {enemy.key && (
+                <h2>{detailEnemy.name} · Enemy stats</h2>
+                {detailEnemy.key && (
                   <p>
                     Carries a Stair Key · unlocks this floor’s locked stairs.
                   </p>
                 )}
-                {statList(enemy)}
+                {statList(detailEnemy)}
                 <p>
-                  Enemy damage {danger?.normal} · Critical {danger?.critical} (
-                  {chancePercent(criticalChance(combatAttackStats(enemy).Luck))}
-                  ). Enemy hit chance {chancePercent(danger?.hit || 0)}. Your hit chance {chancePercent(forecast?.hit || 0)}.
+                  Enemy damage {detailDanger?.normal} · Critical {detailDanger?.critical} (
+                  {chancePercent(criticalChance(combatAttackStats(detailEnemy).Luck))}
+                  ). Enemy hit chance {chancePercent(detailDanger?.hit || 0)}. Your hit chance {chancePercent(detailForecast?.hit || 0)}.
                 </p>
                 <p>
-                  First to act: {danger?.enemyFirst ? enemy.name : "You"} · Your
+                  First to act: {detailDanger?.enemyFirst ? detailEnemy.name : "You"} · Your
                   initiative {n(attackInitiative(p))}, enemy{" "}
-                  {n(enemy.stats.Speed)}.
+                  {n(detailEnemy.stats.Speed)}.
                   <br />
-                  {forecast?.hitsToKill === null
-                    ? forecast &&
-                      forecast.critical > 0 &&
-                      forecast.critChance > 0
-                      ? `${Math.ceil(enemy.hp / forecast.critical)} critical hits needed; normal hits deal no damage.`
+                  {detailForecast?.hitsToKill === null
+                    ? detailForecast &&
+                      detailForecast.critical > 0 &&
+                      detailForecast.critChance > 0
+                      ? `${Math.ceil(detailEnemy.hp / detailForecast.critical)} critical hits needed; normal hits deal no damage.`
                       : "Your basic attacks cannot damage this enemy."
-                    : `${forecast?.hitsToKill} normal ${forecast?.hitsToKill === 1 ? "hit" : "hits"} to defeat this enemy.`}{" "}
-                  {forecast &&
-                    forecast.hitsToKill !== null &&
-                    forecast.critChance > 0 &&
-                    forecast.critical > forecast.normal &&
+                    : `${detailForecast?.hitsToKill} normal ${detailForecast?.hitsToKill === 1 ? "hit" : "hits"} to defeat this enemy.`}{" "}
+                  {detailForecast &&
+                    detailForecast.hitsToKill !== null &&
+                    detailForecast.critChance > 0 &&
+                    detailForecast.critical > detailForecast.normal &&
                     "Critical hits can shorten this."}
                 </p>
               </>

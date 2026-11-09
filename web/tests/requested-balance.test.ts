@@ -27,17 +27,17 @@ it("makes new and saved gloves rare and limits kill payouts to zero through two"
   expect([...payouts].sort()).toEqual([0, 1, 2]);
 });
 
-it("raises Ruthagor attack by 25 percent, including saved bosses, exactly once", () => {
+it("raises Ruthagor attack by 50 percent, including saved bosses, exactly once", () => {
   const g = newGame();
   for (const floor of [2, 5, 8]) {
     g.floor = floor; generateFloor(g);
     const boss = g.monsters.find(m => m.boss)!;
     const base = makeMonster(g, "Dragon", 10 * floor);
-    expect(boss.stats.Power).toBeCloseTo(base.stats.Power * 1.25);
+    expect(boss.stats.Power).toBeCloseTo(base.stats.Power * 1.5);
     const power = boss.stats.Power;
     migrateGuardians(g); migrateGuardians(g);
     expect(boss.stats.Power).toBe(power);
-    delete boss.ruthagorAttackVersion; boss.stats.Power /= 1.25;
+    delete boss.ruthagorAttackVersion; boss.stats.Power /= 1.5;
     boss.hp = 3;
     migrateGuardians(g);
     expect(boss.stats.Power).toBeCloseTo(power);

@@ -540,8 +540,17 @@ Object.assign(floorBoon.player.stats,{Power:1000,Accuracy:1000,Speed:1000,Luck:0
 const boonBoss=makeMonster(floorBoon,"Golem",1);Object.assign(boonBoss,{boss:true,x:25,y:7});
 const boonEnemy=makeMonster(floorBoon,"Zombie",1);Object.assign(boonEnemy,{x:16,y:7,hp:1});
 floorBoon.monsters=[boonBoss,boonEnemy];floorBoon.combat=boonEnemy.id;floorBoon.encounter={enemyId:boonEnemy.id,origin:"inspection",engaged:false,exchanges:0};floorBoon.xp=99;
+const mixingGround = openArena("Warrior");
+mixingGround.monsters=[];mixingGround.traps=[];mixingGround.inventory=[];
+const floorMix=makeItem(mixingGround,"Mixing Potion");mixingGround.loot=[{x:15,y:7,item:floorMix}];mixingGround.pendingLoot=floorMix;
+const energyChoice=structuredClone(mixingGround);energyChoice.pendingLoot=undefined;energyChoice.loot=[];energyChoice.player.stats.Mana=0;energyChoice.inventory=[makeItem(energyChoice,"Energy Potion")];
+const wandChoice=structuredClone(energyChoice);wandChoice.inventory=[makeItem(wandChoice,"Magic Wand"),makeItem(wandChoice,"Piece of Trash")];
+const inspectVisible=openArena("Scout");inspectVisible.traps=[];inspectVisible.monsters[0].x=18;inspectVisible.monsters[0].y=7;inspectVisible.sight=8;
+const fullShop=structuredClone(market);fullShop.capacity=3;fullShop.inventory=[makeItem(fullShop,"Night Vision Goggles"),makeItem(fullShop,"Energy Potion"),makeItem(fullShop,"Mixing Potion")];fullShop.player.weapons=[];fullShop.monsters[0].merchant!.stock=[{item:makeItem(fullShop,"Throwing Knife"),price:3}];
+const manyAchievements=structuredClone(dead);manyAchievements.achievements=Array.from({length:30},(_,i)=>({name:`Achievement ${i+1}`,points:25}));
 console.log(
   JSON.stringify({
+    mixingGround, energyChoice, wandChoice, inspectVisible, fullShop, manyAchievements,
     floorBoon,
     goldenGauntlet,
     fogSecret,

@@ -1757,3 +1757,66 @@ body.playing-game {
 @media (hover:hover) {
   .browser-game .item-card:hover, .browser-game .spell-card:hover { border-color:#dec380; background:#2d424c; }
 }
+
+/* Each adventurer carries a consistent accent into the HUD and menus. */
+.theme-warrior { --class-accent:#e5a16b; --class-surface:#49362d; }
+.theme-knight { --class-accent:#9ebcf0; --class-surface:#293b58; }
+.theme-scout { --class-accent:#98d6a0; --class-surface:#29493c; }
+.theme-mage { --class-accent:#c8a5ef; --class-surface:#403052; }
+.play-shell .primary { border-color:var(--class-accent,#d9c18a); background:var(--class-surface,#30443f); }
+.play-shell .play-header > b, .play-shell .play-modal h2, .play-shell .level-badge { color:var(--class-accent,#e8cf97); }
+.play-shell .player-panel { border-color:var(--class-accent,#637e84); }
+.play-shell .hero-vitals { flex-basis:110px; }
+.play-shell .hero-vitals label:first-child, .play-shell .hero-vitals label:first-child b { font-size:16px; line-height:20px; font-weight:800; color:#fff0dd; }
+.play-shell .hero-vitals .hp-meter { height:13px; }
+.play-shell .hero-vitals label:first-child { background:#482d32; padding:3px 5px; border-radius:4px; }
+.play-shell.took-hit .player-panel { animation:hero-hit 550ms ease-out; }
+.damage-notice { position:fixed; z-index:220; top:max(12px,env(safe-area-inset-top)); left:50%; transform:translateX(-50%); padding:12px 20px; border:2px solid #ffb0a0; border-radius:8px; background:#7b2529; color:#fff; font:bold 20px/1.2 Arial,sans-serif; pointer-events:none; box-shadow:0 0 30px #e44b4b80; }
+@keyframes hero-hit { 0%,40% { background:#882d35; box-shadow:inset 0 0 0 3px #ffb5a5; } 100% { box-shadow:inset 0 0 0 0 transparent; } }
+.play-modal .modal-actions { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); align-items:stretch; }
+.play-modal .modal-actions > button { width:100%; margin:0; min-height:44px; }
+.item-choice-steps { display:grid; gap:8px; margin:12px 0; }
+.item-choice-steps button { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; }
+.death-screen { overflow:hidden; min-height:0; height:100%; padding:16px; }
+.death-screen-content { max-height:100%; box-sizing:border-box; padding:12px; display:flex; flex-direction:column; gap:8px; }
+.death-screen-content > * { margin:0; }
+.death-screen .death-symbol { font-size:40px; }
+.death-screen h1 { font-size:clamp(32px,8vh,64px); margin:0; }
+.death-screen .death-cause { margin:0; padding:8px 12px; }
+.death-screen .death-cause p, .death-screen .death-cause em { display:none; }
+.death-screen .death-score { margin:0; padding:8px; }
+.death-screen .death-score strong { font-size:30px; }
+.death-details-button { min-height:36px; border:1px solid #b99668; border-radius:5px; background:#263640; color:#f6e8cf; }
+.death-screen .death-restart { flex-shrink:0; min-height:44px; }
+.death-details { color:#f6e8cf; }
+
+@media(prefers-reduced-motion:reduce) { .play-shell.took-hit .player-panel { animation:none; outline:3px solid #ffb5a5; } }
+
+.class-grid .class { border-color:var(--class-accent); }
+.class-grid .class strong { color:var(--class-accent); }
+.class-grid .class.selected { background:var(--class-surface); box-shadow:inset 0 0 0 1px var(--class-accent); }
+.death-scene .death-details-button { border-color:var(--class-accent); }
+
+.play-shell .hero-vitals label:first-child { white-space:nowrap; }
+.play-shell.critical-hp .hero-vitals label:first-child { background:#842b36; color:#fff; outline:1px solid #ff9589; }
+
+
+@media(max-height:560px) {
+ .death-screen-content { gap:5px; }
+ .death-screen .death-symbol, .death-screen .death-eyebrow { display:none; }
+ .death-screen .death-score { display:flex; justify-content:space-between; align-items:center; }
+ .death-screen .death-hero { font-size:13px; }
+ .death-screen .death-cause strong { font-size:15px; }
+ .play-shell .player-expand .loadout-detail { display:none; }
+ .play-shell .hero-vitals { gap:1px; }
+ .play-shell .hero-vitals label:first-child { padding:1px 3px; }
+ .play-shell .inventory-ribbon .item-card { height:58px; min-height:58px; grid-template-rows:22px 10px 10px; padding:3px; }
+ .play-shell .magic-ribbon .spell-card { height:44px; min-height:44px; padding:3px; }
+ .play-shell .magic-ribbon .spell-card img { width:22px; height:22px; }
+ .play-shell .hero-vitals .xp-label, .play-shell .hero-vitals .xp-meter { display:none; }
+ .play-shell .enemy-panel span span { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+ .play-shell .spell-carousel { scrollbar-width:none; padding-bottom:0; }
+ .play-shell .spell-carousel::-webkit-scrollbar { display:none; }
+ .play-shell { gap:2px; }
+ .play-shell .play-map { min-height:66px; }
+}

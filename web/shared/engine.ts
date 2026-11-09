@@ -271,7 +271,7 @@ export function makeItem(g: Game, name: string): Item {
     trash: "It is just trash. Please do not litter.",
   };
   const newDescriptions: Record<string,string> = {
-    sand:"Throw at an adjacent target: −50% Accuracy for 5 turns.", sandstorm:"Permanently reduce an adjacent target’s Accuracy by 50%.", "sand-bag":"Throw at an adjacent target: −80% Speed for 5 turns.", quicksand:"Permanently reduce an adjacent target’s Speed by 80%.", "energy-potion":"Restore 5 to health or mana, whichever is farther below maximum.", "mana-link":"While carried, each health gain also restores 3 mana.", "alchemy-nuke":"Transmute every floor item using the usual alchemy rules.", "escape-pod":"Rescue an adjacent villager for EXP and a valuable gift.", "critical-diamond":"Your next 5 landed attacks are critical hits.", "mana-stream":"Trade 10 gold for +1 maximum mana. Reusable.", "mana-pool":`Permanently gain +${i.value} maximum mana.`, "mana-pot":"Trade 1 gold for 1 mana. Reusable.", "golden-apple":"While carried, a fatal blow instead leaves you with 5 HP and consumes this apple.", "diamond-apple":"While carried, revive at full HP and mana on death; all your items are destroyed.", "thief-gloves":"While carried, kills have a 25% chance to grant 0–2 gold.", "mana-leech":"While carried, gain 1 mana per enemy kill.", "energy-belt":"While carried, pods restore both health and mana.", "energy-armor":"While carried, pods are twice as effective.", quickfoot:"Act first in your next combat.", "ghost-boots":"While carried, walk through walls. Dropping them inside a wall kills you.", "lucky-amulet":"While carried, critical hits heal you for 10 HP.", "lucky-necklace":"While carried, dodging heals you for 5 HP.", ...gauntletDescriptions, "mana-battery":"While carried, +2 maximum mana.", immunity:"Immune to poison while carried.", "mixing-potion":"Choose one stat to lose 3 and a different stat to gain 3.", "stair-key":"Unlocks locked dungeon stairs. Automatically added to your key ring."
+    sand:"Throw at an adjacent target: −50% Accuracy for 5 turns.", sandstorm:"Permanently reduce an adjacent target’s Accuracy by 50%.", "sand-bag":"Throw at an adjacent target: −80% Speed for 5 turns.", quicksand:"Permanently reduce an adjacent target’s Speed by 80%.", "energy-potion":"Choose to restore 5 health or 5 mana.", "mana-link":"While carried, each health gain also restores 3 mana.", "alchemy-nuke":"Transmute every floor item using the usual alchemy rules.", "escape-pod":"Rescue an adjacent villager for EXP and a valuable gift.", "critical-diamond":"Your next 5 landed attacks are critical hits.", "mana-stream":"Trade 10 gold for +1 maximum mana. Reusable.", "mana-pool":`Permanently gain +${i.value} maximum mana.`, "mana-pot":"Trade 1 gold for 1 mana. Reusable.", "golden-apple":"While carried, a fatal blow instead leaves you with 5 HP and consumes this apple.", "diamond-apple":"While carried, revive at full HP and mana on death; all your items are destroyed.", "thief-gloves":"While carried, kills have a 25% chance to grant 0–2 gold.", "mana-leech":"While carried, gain 1 mana per enemy kill.", "energy-belt":"While carried, pods restore both health and mana.", "energy-armor":"While carried, pods are twice as effective.", quickfoot:"Act first in your next combat.", "ghost-boots":"While carried, walk through walls. Dropping them inside a wall kills you.", "lucky-amulet":"While carried, critical hits heal you for 10 HP.", "lucky-necklace":"While carried, dodging heals you for 5 HP.", ...gauntletDescriptions, "mana-battery":"While carried, +2 maximum mana.", immunity:"Immune to poison while carried.", "mixing-potion":"Choose one stat to lose 3 and a different stat to gain 3.", "stair-key":"Unlocks locked dungeon stairs. Automatically added to your key ring."
   };
   i.description = newDescriptions[i.kind] || i.description || desc[i.kind] || "";
   if (i.kind === "stair-key") i.auto=true;
@@ -517,9 +517,9 @@ export function balanceGuardian(g: Game, boss: Actor) {
   boss.hp = boss.stats.Health;
 }
 function strengthenRuthagor(boss: Actor) {
-  if (boss.boss && boss.name.startsWith("Ruthagor") && boss.ruthagorAttackVersion !== 1) {
-    boss.stats.Power *= 1.25;
-    boss.ruthagorAttackVersion = 1;
+  if (boss.boss && boss.name.startsWith("Ruthagor") && boss.ruthagorAttackVersion !== 2) {
+    boss.stats.Power *= boss.ruthagorAttackVersion === 1 ? 1.2 : 1.5;
+    boss.ruthagorAttackVersion = 2;
   }
 }
 export function migrateGuardians(g: Game) {
@@ -839,7 +839,7 @@ export function incomingDamage(enemy: Actor, player: Actor) {
 /** Floor use consumes an item in place without using an inventory slot. */
 export function canUseFromFloor(item: Item) {
   return [
-    "energy-potion", "mana-pool", "critical-diamond", "quickfoot", "alchemy-nuke", "decoy", "mana-stream", "mana-pot",
+    "mixing-potion", "energy-potion", "mana-pool", "critical-diamond", "quickfoot", "alchemy-nuke", "decoy", "mana-stream", "mana-pot",
     "candy",
     "seismic",
     "immunity",
@@ -893,8 +893,8 @@ export function itemUseProblem(g: Game, i: Item): string | undefined {
   if (i.kind === "weapon" && (i.weight || 0) * 2 > g.player.stats.Power)
     return `Requires ${(i.weight || 0) * 2} Power; you have ${g.player.stats.Power}.`;
   if (
-    g.combat &&
-    ["stat", "nuke", "shield", "vision", "sight", "hand", "bag", "anvil", "blade-shard"].includes(
+    g.combat && !(g.monsters.find(m => m.id === g.combat)?.merchant || g.monsters.find(m => m.id === g.combat)?.npc) &&
+    ["stat", "nuke", "shield"].includes(
       i.kind,
     )
   )
@@ -1522,8 +1522,8 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
   const p = g.player,
     m = g.monsters.find((m) => m.id === (targetId || g.combat)) || (i.kind === "projectile" ? g.monsters.find(m => !m.npc && !m.merchant && actorDistance(m,p) === 1) : undefined);
   if (
-    g.combat &&
-    ["stat", "nuke", "shield", "vision", "sight", "hand", "bag", "anvil", "blade-shard"].includes(
+    g.combat && !(g.monsters.find(m => m.id === g.combat)?.merchant || g.monsters.find(m => m.id === g.combat)?.npc) &&
+    ["stat", "nuke", "shield"].includes(
       i.kind,
     )
   )
@@ -1552,8 +1552,14 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       break;
     }
     case "energy-potion": {
-      const healthGap = p.stats.Health-p.hp, manaGap = manaCap(p)-p.stats.Mana;
-      if (healthGap >= manaGap) heal(p, 5); else p.stats.Mana = Math.min(manaCap(p), p.stats.Mana+5);
+      if (chosenSpell !== "Health" && chosenSpell !== "Mana") throw Error("Choose health or mana.");
+      if (chosenSpell === "Health") {
+        if (p.hp >= p.stats.Health) throw Error("Health is already full.");
+        heal(p, 5); log(g, "Energy Potion restored 5 health.");
+      } else {
+        if (p.stats.Mana >= manaCap(p)) throw Error("Mana is already full.");
+        p.stats.Mana = Math.min(manaCap(p), p.stats.Mana+5); log(g, "Energy Potion restored 5 mana.");
+      }
       break;
     }
     case "alchemy-nuke": g.loot = g.loot.map(l => ({ ...l, item: transmute(g, l.item) })); log(g, "Every item on this floor was transmuted!"); break;
@@ -1577,7 +1583,7 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       const [lose, gain] = (chosenSpell || "").split(":");
       const valid = ["Health", "Power", "Speed", "Luck", "Magic", "Accuracy", "Armor"];
       if (!valid.includes(lose) || !valid.includes(gain) || lose===gain || (p.stats[lose] || 0)<3 || (lose==="Health" && p.stats.Health<=3)) throw Error("Choose different stats: lose 3 and gain 3.");
-      p.stats[lose]-=3; p.stats[gain]=(p.stats[gain] || 0)+3; p.hp=Math.min(p.hp,p.stats.Health); break;
+      p.stats[lose]-=3; p.stats[gain]=(p.stats[gain] || 0)+3; p.hp=Math.min(p.hp,p.stats.Health); log(g, `${lose} −3; ${gain} +3.`); break;
     }
     case "jewel": case "crown": {
       const cost = i.kind === "jewel" ? 5 : 10;
@@ -2306,7 +2312,7 @@ export function act(input: Game, a: Action): Game {
         throw Error("That treasure is no longer within reach.");
       if (!canUseFromFloor(i))
         throw Error("Pick up this item before using it.");
-      use(g, i, a.spell);
+      use(g, i, a.spell, a.target);
       if (!(i.uses && i.uses > 0) && !["mana-rock", "energy-magnet", "health-pot", "health-drain"].includes(i.kind) && !(i.kind === "stairfinder" && i.value < 0))
         g.loot = g.loot.filter((l) => l.item.id !== i.id);
       g.pendingLoot = undefined;
