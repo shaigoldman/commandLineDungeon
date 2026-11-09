@@ -43,13 +43,15 @@ describe("simulation regressions", () => {
     g.inventory.push(nuke);
     g.player.effects["Nuke Shield"] = [1, 1];
     const count = g.monsters.filter((m) => !m.merchant).length;
+    const initialLoot = g.loot.length;
+    const heldItems = g.monsters.reduce((sum, m) => sum + new Set([...(m.inventory || []), ...m.weapons].map(i => i.id)).size, 0);
     g = act(g, { type: "use", id: nuke.id });
     expect(g.status).toBe("playing");
     expect(g.monsters).toHaveLength(0);
     expect(g.keys).toBe(1);
     expect(g.xp).toBe(0);
     expect(g.score).toBe(100);
-    expect(g.loot).toHaveLength(10 + count - 1);
+    expect(g.loot).toHaveLength(initialLoot + heldItems + count - 1);
     Object.assign(g.player, g.stairs);
     g = act(g, { type: "ascend" });
     expect(g.floor).toBe(2);

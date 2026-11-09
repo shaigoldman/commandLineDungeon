@@ -59,6 +59,7 @@ describe("floor items and combat safety forecast", () => {
     const before = structuredClone({ m, p: g.player });
     expect(incomingDamage(m, g.player)).toEqual({
       normal: 8,
+      hit: 100,
       critical: 28,
       lethal: true,
       criticalLethal: true,

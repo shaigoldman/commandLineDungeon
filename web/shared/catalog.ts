@@ -218,7 +218,7 @@ export const itemDefinitions: [string, string, Rarity, number, string?][] = [
   ["Mana Stream", "mana-stream", "uncommon", 1], ["Mana Pool", "mana-pool", "rare", 1],
   ["Mana Spring", "mana-pool", "ultrarare", 5], ["Mana Pot", "mana-pot", "uncommon", 1],
   ["Golden Apple", "golden-apple", "rare", 5], ["Diamond Apple", "diamond-apple", "ultrarare", 0],
-  ["Thief's Gloves", "thief-gloves", "uncommon", 0], ["Mana Leech", "mana-leech", "rare", 1],
+  ["Thief's Gloves", "thief-gloves", "rare", 0], ["Mana Leech", "mana-leech", "rare", 1],
   ["Energy Belt", "energy-belt", "uncommon", 0], ["Energy Armor", "energy-armor", "uncommon", 0],
   ["Quickfoot Boots", "quickfoot", "common", 0], ["Ghost Boots", "ghost-boots", "ultrarare", 0],
   ["Lucky Amulet", "lucky-amulet", "uncommon", 10], ["Lucky Necklace", "lucky-necklace", "uncommon", 5],

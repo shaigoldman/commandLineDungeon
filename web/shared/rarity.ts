@@ -13,6 +13,10 @@ export function migrateItemRarities(g: Game) {
   const items: Item[] = [...g.inventory, ...g.loot.map(l => l.item), ...(g.pendingLoot ? [g.pendingLoot] : []), ...(g.chests || []).map(c => c.reward),
     ...actors.flatMap(a => [...a.weapons, ...(a.inventory || []), ...(a.merchant?.stock.map(s => s.item) || [])])];
   for (const item of items) {
+    if (item.kind === "thief-gloves") {
+      item.rarity = "rare";
+      item.description = "While carried, kills have a 25% chance to grant 0–2 gold.";
+    }
     if (item.kind === "blade-shard") item.description = "Restore all uses to one carried or equipped weapon or shield.";
     if (item.kind === "anvil") item.description = "Upgrade a carried or equipped weapon, shield, or staff.";
     if (item.name === "Really Greedy Amulet") {

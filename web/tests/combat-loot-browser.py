@@ -7,12 +7,14 @@ try:
  with sync_playwright() as p:
   exe=os.environ.get('CHROMIUM_PATH') or ('/usr/bin/chromium' if pathlib.Path('/usr/bin/chromium').exists() else None)
   browser=p.chromium.launch(executable_path=exe,headless=True,args=['--no-sandbox']);context=browser.new_context(viewport={'width':390,'height':760},is_mobile=True,has_touch=True,reduced_motion='no-preference');page=context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.goto(BASE);page.get_by_role('button',name='Scout',exact=False).tap();page.get_by_role('button',name='Enter the dungeon',exact=False).tap();page.wait_for_selector('canvas')
-  scenes=[('lootPile','Pick up'),('stairPile','Ascend · leave floor items'),('guaranteedKill','Attack'),('missKill','Attack'),('firstThreat','Attack'),('dragonEncounter','Attack'),('combatLowHealth','Attack')]
+  scenes=[('lootPile','Pick up'),('stairPile','Ascend · leave floor items'),('guaranteedKill','Attack'),('missKill','Attack'),('firstThreat','Attack'),('dragonEncounter','Attack'),('combatLowHealth','Attack with Wind Staff')]
   for width,height in ([] if os.environ.get('FOLLOWUP_SKIP_MATRIX') else [(320,480),(360,560),(390,760),(430,915),(844,390)]):
    page.set_viewport_size({'width':width,'height':height});print('Follow-up layouts',width,height,flush=True)
    for scene,action in scenes:
     print('Checking follow-up',scene,width,height,flush=True)
     load(page,scene);fits(page);visible(page,action)
+    if scene in ['guaranteedKill','missKill','firstThreat','dragonEncounter','combatLowHealth']:
+     expect(page.locator('.turn-order')).to_contain_text('Enemy hit')
   if os.environ.get('FOLLOWUP_LAYOUT_ONLY'):
    assert not errors,errors;print('PASS: 35 targeted combat/loot/dragon/caster-low-health layouts',flush=True);browser.close();raise SystemExit(0)
   page.set_viewport_size({'width':390,'height':760});load(page,'lootPile');expect(page.get_by_role('navigation',name='Items at your feet').get_by_role('button')).to_have_count(3)

@@ -51,6 +51,7 @@ export interface Actor {
   drain?: boolean;
   boss?: boolean;
   guardianBalanceVersion?: number;
+  ruthagorAttackVersion?: number;
   key?: boolean;
   npc?: {
     tribe: string;

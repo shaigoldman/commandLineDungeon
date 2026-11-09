@@ -271,7 +271,7 @@ export function makeItem(g: Game, name: string): Item {
     trash: "It is just trash. Please do not litter.",
   };
   const newDescriptions: Record<string,string> = {
-    sand:"Throw at an adjacent target: −50% Accuracy for 5 turns.", sandstorm:"Permanently reduce an adjacent target’s Accuracy by 50%.", "sand-bag":"Throw at an adjacent target: −80% Speed for 5 turns.", quicksand:"Permanently reduce an adjacent target’s Speed by 80%.", "energy-potion":"Restore 5 to health or mana, whichever is farther below maximum.", "mana-link":"While carried, each health gain also restores 3 mana.", "alchemy-nuke":"Transmute every floor item using the usual alchemy rules.", "escape-pod":"Rescue an adjacent villager for EXP and a valuable gift.", "critical-diamond":"Your next 5 landed attacks are critical hits.", "mana-stream":"Trade 10 gold for +1 maximum mana. Reusable.", "mana-pool":`Permanently gain +${i.value} maximum mana.`, "mana-pot":"Trade 1 gold for 1 mana. Reusable.", "golden-apple":"While carried, a fatal blow instead leaves you with 5 HP and consumes this apple.", "diamond-apple":"While carried, revive at full HP and mana on death; all your items are destroyed.", "thief-gloves":"While carried, kills have a 25% chance to grant 1–5 gold.", "mana-leech":"While carried, gain 1 mana per enemy kill.", "energy-belt":"While carried, pods restore both health and mana.", "energy-armor":"While carried, pods are twice as effective.", quickfoot:"Act first in your next combat.", "ghost-boots":"While carried, walk through walls. Dropping them inside a wall kills you.", "lucky-amulet":"While carried, critical hits heal you for 10 HP.", "lucky-necklace":"While carried, dodging heals you for 5 HP.", ...gauntletDescriptions, "mana-battery":"While carried, +2 maximum mana.", immunity:"Immune to poison while carried.", "mixing-potion":"Choose one stat to lose 3 and a different stat to gain 3.", "stair-key":"Unlocks locked dungeon stairs. Automatically added to your key ring."
+    sand:"Throw at an adjacent target: −50% Accuracy for 5 turns.", sandstorm:"Permanently reduce an adjacent target’s Accuracy by 50%.", "sand-bag":"Throw at an adjacent target: −80% Speed for 5 turns.", quicksand:"Permanently reduce an adjacent target’s Speed by 80%.", "energy-potion":"Restore 5 to health or mana, whichever is farther below maximum.", "mana-link":"While carried, each health gain also restores 3 mana.", "alchemy-nuke":"Transmute every floor item using the usual alchemy rules.", "escape-pod":"Rescue an adjacent villager for EXP and a valuable gift.", "critical-diamond":"Your next 5 landed attacks are critical hits.", "mana-stream":"Trade 10 gold for +1 maximum mana. Reusable.", "mana-pool":`Permanently gain +${i.value} maximum mana.`, "mana-pot":"Trade 1 gold for 1 mana. Reusable.", "golden-apple":"While carried, a fatal blow instead leaves you with 5 HP and consumes this apple.", "diamond-apple":"While carried, revive at full HP and mana on death; all your items are destroyed.", "thief-gloves":"While carried, kills have a 25% chance to grant 0–2 gold.", "mana-leech":"While carried, gain 1 mana per enemy kill.", "energy-belt":"While carried, pods restore both health and mana.", "energy-armor":"While carried, pods are twice as effective.", quickfoot:"Act first in your next combat.", "ghost-boots":"While carried, walk through walls. Dropping them inside a wall kills you.", "lucky-amulet":"While carried, critical hits heal you for 10 HP.", "lucky-necklace":"While carried, dodging heals you for 5 HP.", ...gauntletDescriptions, "mana-battery":"While carried, +2 maximum mana.", immunity:"Immune to poison while carried.", "mixing-potion":"Choose one stat to lose 3 and a different stat to gain 3.", "stair-key":"Unlocks locked dungeon stairs. Automatically added to your key ring."
   };
   i.description = newDescriptions[i.kind] || i.description || desc[i.kind] || "";
   if (i.kind === "stair-key") i.auto=true;
@@ -516,7 +516,14 @@ export function balanceGuardian(g: Game, boss: Actor) {
     Armor: 4 + depth * 2, Accuracy: 70, Speed: 2 + depth, Luck: 0, Magic: 5, Mana: 10 };
   boss.hp = boss.stats.Health;
 }
+function strengthenRuthagor(boss: Actor) {
+  if (boss.boss && boss.name.startsWith("Ruthagor") && boss.ruthagorAttackVersion !== 1) {
+    boss.stats.Power *= 1.25;
+    boss.ruthagorAttackVersion = 1;
+  }
+}
 export function migrateGuardians(g: Game) {
+  g.monsters.forEach(strengthenRuthagor);
   // Upgrade saved guardians once, preserving damage already dealt.
   for (const enemy of g.monsters.filter(m => m.name.startsWith("Ergathon") && m.guardianBalanceVersion !== 2)) {
     const depth = Math.max(0,g.floor-1), hard = 1.3 ** g.difficulty;
@@ -621,6 +628,7 @@ export function generateFloor(g: Game) {
         ? "Ergathon, Ruthagor’s chosen"
         : boss.name + " Boss";
   boss.boss = true;
+  strengthenRuthagor(boss);
   if (boss.name.startsWith("Ergathon")) balanceGuardian(g, boss);
   Object.assign(boss, { x: g.stairs.x, y: g.stairs.y });
   g.monsters.push(boss);
@@ -813,6 +821,8 @@ export function attackInitiative(player: Actor) {
 }
 export function incomingDamage(enemy: Actor, player: Actor) {
   const s = combatAttackStats(enemy);
+  const h = attackStats(enemy, false, enemy.weapons.some(w => w.kind === "weapon"), false);
+  const e = attackStats(player, false, player.weapons.length > 0, false);
   const armor = armorOf(player);
   const normal = Math.max(0, Math.trunc(s.Attack - armor));
   const critical =
@@ -822,6 +832,7 @@ export function incomingDamage(enemy: Actor, player: Actor) {
     critical,
     lethal: normal >= player.hp,
     criticalLethal: critical >= player.hp,
+    hit: Math.min(100, Math.max(5, h.Accuracy + h.Speed - e.Speed * 1.2)) * (player.effects["Speedy Boots"] ? 0.01 : 1),
     enemyFirst: attackInitiative(player) < enemy.stats.Speed,
   };
 }
@@ -1023,7 +1034,7 @@ function kill(g: Game, m: Actor, reward = true, drops = reward) {
     if (g.kills===10) achievement(g, "Dungeon Veteran", 100);
     if (m.boss) achievement(g, "Guardian Slayer", 150);
     if (g.inventory.some(i => i.kind==="mana-leech")) g.player.stats.Mana=Math.min(manaCap(g.player),g.player.stats.Mana+1);
-    if (g.inventory.some(i => i.kind==="thief-gloves") && random(g)<0.25) { const gold=1+roll(g,5); g.player.gold=(g.player.gold || 0)+gold; log(g, `Thief's Gloves found ${gold} gold.`); }
+    if (g.inventory.some(i => i.kind==="thief-gloves") && random(g)<0.25) { const gold=roll(g,3); g.player.gold=(g.player.gold || 0)+gold; log(g, `Thief's Gloves found ${gold} gold.`); }
   }
   if (m.merchant) {
     if (m.key) { g.keys++; log(g,"Acquired a Stair Key!"); }

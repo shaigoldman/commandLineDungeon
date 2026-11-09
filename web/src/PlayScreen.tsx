@@ -920,8 +920,8 @@ export function PlayScreen({
                     <b>
                       First to act: {danger?.enemyFirst ? enemy.name : "You"}
                     </b>
-                    <small>
-                      {origin?.engaged ? "Next exchange" : "If you attack"}
+                    <small title={origin?.engaged ? "Next exchange" : "If you attack"}>
+                      Enemy hit {chancePercent(danger?.hit || 0)}
                     </small>
                   </div>
                   {risk?.safeKill && (
@@ -1732,7 +1732,7 @@ export function PlayScreen({
                 <p>
                   Enemy damage {danger?.normal} · Critical {danger?.critical} (
                   {chancePercent(criticalChance(combatAttackStats(enemy).Luck))}
-                  ). Your hit chance {chancePercent(forecast?.hit || 0)}.
+                  ). Enemy hit chance {chancePercent(danger?.hit || 0)}. Your hit chance {chancePercent(forecast?.hit || 0)}.
                 </p>
                 <p>
                   First to act: {danger?.enemyFirst ? enemy.name : "You"} · Your
