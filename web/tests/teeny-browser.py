@@ -178,6 +178,33 @@ try:
   load(fixtures['trapUi']);page.screenshot(path=str(shots/'traps.png'))
   load(fixtures['won']);expect(page.get_by_role('dialog',name='Victory')).to_be_visible();page.get_by_role('button',name='Continue to floor 4 →',exact=True).click();page.wait_for_timeout(250);assert saved()['floor']==3;assert saved()['status']=='playing'
   load(fixtures['level']);page.screenshot(path=str(shots/'level-up.png'));expect(page.locator('.level-gains')).to_be_visible()
+  page.set_viewport_size({'width':320,'height':360})
+  load(fixtures['multiLevel'])
+  page.get_by_role('button',name='Item: EXP Pill',exact=True).click()
+  after=click_and_save(page.get_by_role('button',name='Use item',exact=True))
+  assert after['player']['level']==2 and after['xp']==125
+  level_dialog=page.get_by_role('dialog',name='Level up')
+  expect(level_dialog.get_by_role('heading',name='Level 2 · Choose a boost')).to_be_visible()
+  expect(level_dialog).to_contain_text('2 level-up boosts to choose.')
+  choice=level_dialog.get_by_role('button',name='Power +2',exact=True)
+  choice.scroll_into_view_if_needed()
+  assert level_dialog.evaluate('dialog => dialog.scrollTop')>0
+  before=after
+  after=click_and_save(choice)
+  expect(level_dialog.get_by_role('heading',name='Level 3 · Choose a boost')).to_be_visible()
+  assert level_dialog.evaluate('dialog => dialog.scrollTop')==0
+  expect(level_dialog.get_by_role('button',name='Close details')).to_be_focused()
+  assert after['levelBefore']['Power']==before['player']['stats']['Power']+2
+  assert after['pendingLevels']==1 and after['xp']==25
+  page.reload();page.wait_for_selector('canvas')
+  expect(level_dialog.get_by_role('heading',name='Level 3 · Choose a boost')).to_be_visible()
+  before=after
+  after=click_and_save(level_dialog.get_by_role('button',name='Magic +2',exact=True))
+  expect(level_dialog).to_have_count(0)
+  assert after['pendingLevels']==0 and after['player']['level']==3 and after['xp']==25
+  assert after['player']['stats']['Magic']==before['player']['stats']['Magic']+2
+  page.set_viewport_size({'width':390,'height':844})
+  print('PASS: a doubled EXP Pill opens a fresh screen for each level, including after reloading',flush=True)
   dead=fixtures['dead'];dead['death']['critical']=True;dead['achievements']=[{'name':'First Blood','points':25}];load(dead);expect(page.get_by_test_id('death-screen')).to_contain_text('CRITICAL HIT');page.wait_for_timeout(3800);page.screenshot(path=str(shots/'death.png'));assert float(page.get_by_test_id('death-screen').evaluate('e=>getComputedStyle(e).opacity'))==1
   for width,height in [(320,480),(360,560),(390,760),(430,915),(844,390)]:
    page.set_viewport_size({'width':width,'height':height})
