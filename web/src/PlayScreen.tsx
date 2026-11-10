@@ -569,9 +569,9 @@ export function PlayScreen({
       <>
         <p>{describe(item).replace(/\b\d+\.\d{2,}\b/g, (v) => n(+v))}</p>
         <div className="weapon-facts">
-          <span>Attack +{n(item.attack || 0)}</span>
+          {item.armorBonus ? <span>Armor +{n(item.armorBonus)}</span> : <span>Attack +{n(item.attack || 0)}</span>}
           <span>Weight {n(item.weight || 0)}</span>
-          <span>Luck +{n(item.luck || 0)}</span>
+          {!item.armorBonus && <span>Luck +{n(item.luck || 0)}</span>}
           <span>
             Power required {n((item.weight || 0) * 2)} / yours{" "}
             {n(p.stats.Power)}
