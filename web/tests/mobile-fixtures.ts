@@ -64,6 +64,9 @@ let level = newGame("Shai", "Warrior", "Wind", 0, 91);
 const pill = makeItem(level, "EXP Pill");
 pill.kind = "xp";
 level.inventory.push(pill);
+const multiLevel = structuredClone(level);
+multiLevel.xp = 25;
+multiLevel.expDoubles = 1;
 level = act(level, { type: "use", id: pill.id });
 const dead = structuredClone(explore);
 dead.status = "dead";
@@ -627,6 +630,7 @@ console.log(
     loot,
     fullBag,
     level,
+    multiLevel,
     dead,
     fullEnergyPod,
     won,

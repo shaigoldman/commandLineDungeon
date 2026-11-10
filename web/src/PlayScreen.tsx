@@ -194,6 +194,8 @@ export function PlayScreen({
   useEffect(() => {
     if (g.pendingLevels && g.status === "playing") setPanel("level");
   }, [g.pendingLevels, p.level, g.status]);
+  const levelDialogLevel = panel === "level" ? p.level : undefined;
+  const queuedBoosts = Math.floor(g.xp / 100) + 1;
   function levelChoices() {
     return (
       <div className="level-choices">
@@ -211,6 +213,7 @@ export function PlayScreen({
           <button
             key={stat}
             aria-label={stat + (stat === "EXP" ? " +20" : " +2")}
+            disabled={busy}
             onClick={() => void send({ type: "level", stat })}
           >
             <b>
@@ -408,7 +411,7 @@ export function PlayScreen({
       document.removeEventListener("keydown", trap);
       if (old?.isConnected) old.focus();
     };
-  }, [panel, !!selection, swapPickup, inspectedSpell, bagOverflow]);
+  }, [panel, !!selection, swapPickup, inspectedSpell, bagOverflow, levelDialogLevel]);
   async function send(a: Action) {
     if (busy) return;
     clearError();
@@ -1273,6 +1276,7 @@ export function PlayScreen({
           }}
         >
           <div
+            key={levelDialogLevel ?? "details"}
             ref={modal}
             className="play-modal"
             role="dialog"
@@ -1612,7 +1616,9 @@ export function PlayScreen({
             ) : panel === "level" ? (
               <>
                 <h2>Level {p.level} · Choose a boost</h2>
-                <p>Current stats and the change from each choice.</p>
+                <p>{queuedBoosts > 1
+                  ? `${queuedBoosts} level-up boosts to choose. Pick one for each level.`
+                  : "Current stats and the change from each choice."}</p>
                 <div className="level-current-stats">
                   {[
                     "Health",
