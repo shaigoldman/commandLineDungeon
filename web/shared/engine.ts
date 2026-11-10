@@ -210,16 +210,16 @@ export function makeItem(g: Game, name: string): Item {
       else i.weight *= 2;
     }
     if (base === "Shield") {
-      i.attack = -(1 + Math.floor(m / 2));
+      i.attack = 0;
       i.weight = 2 + Math.floor(m / 2);
       i.luck = 0;
       i.armorBonus = [5, 10, 15, 20, 27, 35][m];
       i.maxUses = [1, 3, 4, 4, 5, 6][m];
-      i.description = `Equipped: +${i.armorBonus} Armor, ${i.attack} Strength. Loses one use when a direct enemy attack lands.`;
+      i.description = `Equipped: +${i.armorBonus} Armor. Loses one use when a direct enemy attack lands.`;
     }
     i.uses = random(g) < 0.3 ? roll(g, i.maxUses) + 1 : i.maxUses;
     i.name = material + " " + base;
-    if (named?.[1] === "Poison" || (!named && ["Sword", "Spear", "Axe", "Shield"].includes(base) && random(g) < 0.2)) {
+    if (base !== "Shield" && (named?.[1] === "Poison" || (!named && ["Sword", "Spear", "Axe"].includes(base) && random(g) < 0.2))) {
       // Poison variants always have Iron statistics.
       if (m !== 1) return makeItem(g, "Poison " + base);
       i.name = "Poison " + base;
@@ -757,6 +757,8 @@ export function attackStats(
       if (consume && --e[0] <= 0) delete a.effects[stat + " Booster"];
     }
     for (const i of w) {
+      // Shields grant armor, never offensive bonuses or penalties (including legacy saves).
+      if (i.armorBonus) continue;
       if (stat === "Accuracy") s[stat] -= a.skillBook && i.kind === "weapon" ? 0 : (i.weight || 0) * 2;
       else if (stat === "Speed") s[stat] -= a.skillBook && i.kind === "weapon" ? 0 : (i.weight || 0) / 2;
       else s[stat] += stat === "Attack" ? (i.attack || 0) * (a.sharpening && i.kind === "weapon" && !i.armorBonus ? 2 : 1) : i.luck || 0;
