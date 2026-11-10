@@ -779,7 +779,8 @@ export function DungeonView({
           flame = new Graphics();
           effect = new Graphics();
           world.addChild(flame, effect);
-          if (changed && before) {
+          // Changing floors replaces the entire monster roster; those monsters were not killed.
+          if (changed && before && before.floor === g.floor) {
             const label = (
               message: string,
               x: number,
