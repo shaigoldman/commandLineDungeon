@@ -124,9 +124,10 @@ body.playing-game {
 }
 .actor-panels {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 4px;
   flex: none;
+  min-width: 0;
 }
 .player-panel {
   display: flex;
@@ -137,6 +138,7 @@ body.playing-game {
   background: #203645;
   border-radius: 4px;
   min-height: 58px;
+  min-width: 0;
   box-sizing: border-box;
 }
 .play-shell .player-expand {
@@ -298,6 +300,9 @@ body.playing-game {
   min-height: 44px;
   background: #26333f;
   border-color: #b59260;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 .enemy-panel > .portrait-art {
   height: 33px;
@@ -329,7 +334,11 @@ body.playing-game {
 .enemy-panel span span {
   font-size: 9px;
   color: #d4d6c4;
+  overflow-wrap: anywhere;
 }
+.enemy-panel .enemy-reward { overflow-wrap: anywhere; }
+.hero-vitals { min-width: 0; }
+.hero-vitals label, .hero-vitals b { min-width: 0; }
 .enemy-panel meter {
   height: 4px;
 }
@@ -1028,7 +1037,7 @@ body.playing-game {
 }
 @media (min-width: 750px) {
   .actor-panels.has-secondary {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .play-shell {
     padding: 7px 12px;
