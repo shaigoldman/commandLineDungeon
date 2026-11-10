@@ -1129,7 +1129,7 @@ function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
     else a.burn[0]--;
   }
   log(g, `${a.name} attacks ${b.name}.`);
-  const weaponPoison = !unarmed ? a.weapons.find(w => w.poison)?.poison : undefined;
+  const weaponPoison = !unarmed ? a.weapons.find(w => w.poison && !w.armorBonus)?.poison : undefined;
   const physical = !unarmed && a.weapons.some((w) => w.kind === "weapon");
   const s = combatAttackStats(a, true, unarmed);
   const h = attackStats(a, true, physical, false),
