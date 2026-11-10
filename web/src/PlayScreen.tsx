@@ -572,10 +572,10 @@ export function PlayScreen({
           {item.armorBonus ? <span>Armor +{n(item.armorBonus)}</span> : <span>Attack +{n(item.attack || 0)}</span>}
           <span>Weight {n(item.weight || 0)}</span>
           {!item.armorBonus && <span>Luck +{n(item.luck || 0)}</span>}
-          <span>
+          {!item.armorBonus && <span>
             Power required {n((item.weight || 0) * 2)} / yours{" "}
             {n(p.stats.Power)}
-          </span>
+          </span>}
           <span>
             {item.kind === "tome"
               ? `${item.element} · 2 MP per basic attack`
