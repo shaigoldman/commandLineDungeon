@@ -219,12 +219,14 @@ export function makeItem(g: Game, name: string): Item {
     }
     i.uses = random(g) < 0.3 ? roll(g, i.maxUses) + 1 : i.maxUses;
     i.name = material + " " + base;
-    if (base !== "Shield" && (named?.[1] === "Poison" || (!named && ["Sword", "Spear", "Axe"].includes(base) && random(g) < 0.2))) {
+    if (named?.[1] === "Poison" || (!named && ["Sword", "Spear", "Axe", "Shield"].includes(base) && random(g) < 0.2)) {
       // Poison variants always have Iron statistics.
       if (m !== 1) return makeItem(g, "Poison " + base);
       i.name = "Poison " + base;
       i.poison = [5, 2];
-      i.description += " Landed hits poison: 2 damage per action for 5 actions.";
+      i.description += base === "Shield"
+        ? " Enemies that land an attack on the wearer are poisoned: 2 damage per action for 5 actions."
+        : " Landed hits poison: 2 damage per action for 5 actions.";
     }
   }
   if (i.kind === "tome") {
@@ -1165,6 +1167,18 @@ function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
   const hpBeforeHit = b.hp;
   hurt(g, b, damage, "Attack", a.id === "player", a);
   if (g.death?.source === "Attack" && b.id === "player") g.death.critical = criticalHit;
+  // Retaliation triggers on a landed attack, even if armor absorbs all damage.
+  // Capture shields before durability is spent so the final block still poisons.
+  const poisonShield = b.weapons.find((weapon) => weapon.armorBonus && weapon.poison);
+  if (poisonShield?.poison && a.hp > 0 && !a.poisonImmune) {
+    const old = a.effects.Poison || [0, 0];
+    a.effects.Poison = [
+      Math.max(old[0], poisonShield.poison[0]),
+      Math.max(old[1], poisonShield.poison[1]),
+    ];
+    a.poisonSource = b.name;
+    log(g, `${a.name} is poisoned by ${poisonShield.name}!`);
+  }
   for (const shield of [...b.weapons].filter((weapon) => weapon.armorBonus))
     if (--shield.uses! <= 0) {
       b.weapons = b.weapons.filter((weapon) => weapon.id !== shield.id);
