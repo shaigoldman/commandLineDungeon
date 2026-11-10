@@ -18,7 +18,13 @@ try:
   def load(g):
    page.evaluate('''game=>{const k=Object.keys(localStorage).find(k=>k.endsWith('dungeon.android.saves.v1'));const all=JSON.parse(localStorage.getItem(k));all.games[localStorage.getItem('dungeon-key')]=game;localStorage.setItem(k,JSON.stringify(all));}''',g)
    page.reload();page.wait_for_selector('canvas');page.wait_for_timeout(350)
-  def saved():return page.evaluate('''()=>{const k=Object.keys(localStorage).find(k=>k.endsWith('dungeon.android.saves.v1'));return JSON.parse(localStorage.getItem(k)).games[localStorage.getItem('dungeon-key')];}''')
+  read_save='''()=>{const k=Object.keys(localStorage).find(k=>k.endsWith('dungeon.android.saves.v1'));return JSON.parse(localStorage.getItem(k)).games[localStorage.getItem('dungeon-key')];}'''
+  def saved():return page.evaluate(read_save)
+  def click_and_save(button):
+   revision=saved()['revision']
+   button.click()
+   page.wait_for_function(f'revision => ({read_save})().revision > revision',arg=revision)
+   return saved()
   original_id=page.evaluate("localStorage.getItem('dungeon-key')");started=saved()['startedAt']
   page.get_by_role('button',name='Saved on phone ●',exact=True).click();assert page.get_by_role('textbox',name='Device journey code',exact=True).count()==0
   page.get_by_role('button',name='Saved adventures',exact=True).click();expect(page.get_by_role('dialog',name='Saved adventures')).to_be_visible();expect(page.get_by_role('button',name='Resume Elara',exact=True)).to_contain_text('Started ')
@@ -82,10 +88,10 @@ try:
   page.get_by_role('button',name='All',exact=True).click();page.screenshot(path=str(shots/'chronicle.png'))
   page.get_by_role('button',name='Close details',exact=True).click()
   load(fixtures['attackChoices']);expect(page.get_by_role('button',name='Attack with Wind Staff',exact=True)).to_contain_text('20 damage');expect(page.get_by_role('button',name='Attack unarmed',exact=True)).to_contain_text('12 damage')
-  before=saved();page.get_by_role('button',name='Attack unarmed',exact=True).click();assert saved()['player']['stats']['Mana']==10 and saved()['monsters'][0]['hp']==before['monsters'][0]['hp']-12
-  load(fixtures['attackChoices']);page.get_by_role('button',name='Attack with Wind Staff',exact=True).click();assert saved()['player']['stats']['Mana']==8 and saved()['monsters'][0]['hp']==480
-  load(fixtures['bladeAttackChoices']);page.get_by_role('button',name='Attack unarmed',exact=True).click();assert saved()['player']['weapons'][0]['uses']==7
-  load(fixtures['bladeAttackChoices']);page.get_by_role('button',name='Attack with Iron Sword',exact=True).click();assert saved()['player']['weapons'][0]['uses']==6
+  before=saved();after=click_and_save(page.get_by_role('button',name='Attack unarmed',exact=True));assert after['player']['stats']['Mana']==10 and after['monsters'][0]['hp']==before['monsters'][0]['hp']-12
+  load(fixtures['attackChoices']);after=click_and_save(page.get_by_role('button',name='Attack with Wind Staff',exact=True));assert after['player']['stats']['Mana']==8 and after['monsters'][0]['hp']==480
+  load(fixtures['bladeAttackChoices']);after=click_and_save(page.get_by_role('button',name='Attack unarmed',exact=True));assert after['player']['weapons'][0]['uses']==7
+  load(fixtures['bladeAttackChoices']);after=click_and_save(page.get_by_role('button',name='Attack with Iron Sword',exact=True));assert after['player']['weapons'][0]['uses']==6
   low=json.loads(json.dumps(fixtures['attackChoices']));low['player']['stats']['Mana']=0;load(low)
   expect(page.get_by_role('button',name='Attack with Wind Staff',exact=True)).to_be_disabled();expect(page.get_by_role('button',name='Attack unarmed',exact=True)).to_be_enabled()
   load(fixtures['pairAttackChoices']);expect(page.get_by_role('button',name='Attack with Iron Sword + Wind Staff',exact=True)).to_be_visible();expect(page.get_by_role('button',name='Attack unarmed',exact=True)).to_be_visible();page.screenshot(path=str(root/'work/encounter-attack-choices.png'))
@@ -101,20 +107,20 @@ try:
   load(fixtures['combat']);page.screenshot(path=str(shots/'encounter.png'))
   expect(page.locator('.chronicle-feed')).to_have_count(0);expect(page.locator('.enemy-panel')).to_be_visible()
   page.get_by_role('button',name='Leave encounter',exact=True).click();expect(feed).to_be_visible();expect(page.locator('.enemy-panel')).to_have_count(0)
-  load(fixtures['combat']);page.get_by_role('button',name='Attack with Wind Staff',exact=True).click()
+  load(fixtures['combat']);after=click_and_save(page.get_by_role('button',name='Attack with Wind Staff',exact=True))
   expect(page.locator('.chronicle-feed')).to_have_count(0)
-  latest=saved()['log'][-1];page.get_by_role('button',name='Open journey chronicle',exact=True).click();expect(page.locator('.chronicle-entries')).to_contain_text(latest);page.get_by_role('button',name='Close details',exact=True).click()
+  latest=after['log'][-1];page.get_by_role('button',name='Open journey chronicle',exact=True).click();expect(page.locator('.chronicle-entries')).to_contain_text(latest);page.get_by_role('button',name='Close details',exact=True).click()
   page.reload();page.wait_for_selector('canvas');expect(page.locator('.chronicle-feed')).to_have_count(0)
   page.evaluate('document.activeElement.blur()');before=saved()['revision'];page.keyboard.press('Space');page.wait_for_timeout(100);assert saved()['revision']==before
   load(fixtures['fullBag']);expect(page.locator('.inventory-ribbon')).to_contain_text('FULL');page.screenshot(path=str(shots/'bag.png'))
   load(fixtures['market']);expect(page.locator('.chronicle-feed')).to_have_count(0);page.get_by_role('button',name='Talk / trade',exact=True).click();page.get_by_role('button',name='Sell items',exact=True).click();expect(page.locator('.market-offer').first).to_be_visible();review=page.get_by_role('button',name='Review sale').first;review.click();expect(page.get_by_role('button',name='Sell for',exact=False)).to_be_visible();page.screenshot(path=str(shots/'market.png'))
   load(fixtures['gearTools']);page.get_by_role('button',name='Item: Escape Rope',exact=True).click()
-  drop=page.get_by_role('button',name='↓ Drop item on floor',exact=True);expect(drop).to_be_visible();drop.click()
-  assert not any(i['name']=='Escape Rope' for i in saved()['inventory'])
-  assert any(l['item']['name']=='Escape Rope' for l in saved()['loot'])
+  drop=page.get_by_role('button',name='↓ Drop item on floor',exact=True);expect(drop).to_be_visible();after=click_and_save(drop)
+  assert not any(i['name']=='Escape Rope' for i in after['inventory'])
+  assert any(l['item']['name']=='Escape Rope' for l in after['loot'])
   for tool,choice,uses in [('Blade Shard','Restore Iron Sword',10),('Magic Scabbard','Double Iron Sword',20),('Anvil','Upgrade Iron Sword',20)]:
-   page.get_by_role('button',name='Item: '+tool,exact=True).click();target=page.locator('.upgrade-choice').filter(has_text=choice);expect(target).to_contain_text('Equipped');target.click()
-   assert saved()['player']['weapons'][0]['uses']==uses
+   page.get_by_role('button',name='Item: '+tool,exact=True).click();target=page.locator('.upgrade-choice').filter(has_text=choice);expect(target).to_contain_text('Equipped');after=click_and_save(target)
+   assert after['player']['weapons'][0]['uses']==uses
   assert saved()['player']['weapons'][0]['name']=='Steel Sword'
   page.get_by_role('button',name='Equipped: Steel Sword',exact=True).click();expect(page.get_by_role('button',name='↓ Drop item on floor',exact=True)).to_be_visible();page.screenshot(path=str(root/'work/visible-item-drop.png'));page.get_by_role('button',name='Close details',exact=True).click()
   load(fixtures['floorSwap']);page.get_by_role('button',name='Equip, then make bag space',exact=True).click()
