@@ -508,14 +508,17 @@ function position(g: Game) {
   if (!a.length) throw Error("No open tiles");
   return pick(g, a);
 }
+const guardianBalanceVersion = 4;
+const guardianArmor = (depth: number) => 10 + depth * 2;
+
 /** A slow armored checkpoint, rather than an ordinary over-levelled golem. */
 export function balanceGuardian(g: Game, boss: Actor) {
   const depth = Math.max(0, g.floor - 1), hard = 1.3 ** g.difficulty;
   boss.className = "Golem";
   boss.level = 8 + depth * 2;
-  boss.guardianBalanceVersion = 3;
+  boss.guardianBalanceVersion = guardianBalanceVersion;
   boss.stats = { Health: Math.round((58 + depth * 12) * hard), Power: Math.round((22 + depth * 4) * hard),
-    Armor: 4 + depth * 2, Accuracy: 70, Speed: 2 + depth, Luck: 0, Magic: 5, Mana: 10 };
+    Armor: guardianArmor(depth), Accuracy: 70, Speed: 2 + depth, Luck: 0, Magic: 5, Mana: 10 };
   boss.hp = boss.stats.Health;
 }
 function strengthenRuthagor(boss: Actor) {
@@ -527,23 +530,22 @@ function strengthenRuthagor(boss: Actor) {
 export function migrateGuardians(g: Game) {
   g.monsters.forEach(strengthenRuthagor);
   // Upgrade saved guardians once, preserving damage already dealt.
-  for (const enemy of g.monsters.filter(m => m.name.startsWith("Ergathon") && m.guardianBalanceVersion !== 3)) {
+  for (const enemy of g.monsters.filter(m => m.name.startsWith("Ergathon") && (m.guardianBalanceVersion ?? 0) < guardianBalanceVersion)) {
     const depth = Math.max(0,g.floor-1), hard = 1.3 ** g.difficulty;
     const legacy = enemy.level === 1 + g.floor + 3 + (g.floor + 2) * g.floor;
     const previous = enemy.stats.Health === Math.round((44+depth*12)*hard)
       && enemy.stats.Power === Math.round((9+depth*3)*hard);
-    if (legacy || previous) {
+    if (enemy.guardianBalanceVersion !== 3 && (legacy || previous)) {
       const fraction = Math.max(0, enemy.hp / enemy.stats.Health);
       balanceGuardian(g, enemy); enemy.hp = Math.ceil(enemy.stats.Health * fraction);
     } else if (enemy.guardianBalanceVersion === 2) {
       // Upgrade already-balanced guardians without healing them or resetting effects.
       enemy.stats.Power = Math.round((22 + depth * 4) * hard);
-      enemy.guardianBalanceVersion = 3;
-    } else {
-      // Preserve custom/unknown saved guardians while updating the balance marker.
-      if (enemy.level === 3 + depth * 2) enemy.level = 8 + depth * 2;
-      enemy.guardianBalanceVersion = 3;
+    } else if (enemy.guardianBalanceVersion === undefined && enemy.level === 3 + depth * 2) {
+      enemy.level = 8 + depth * 2;
     }
+    enemy.stats.Armor = Math.max(enemy.stats.Armor || 0, guardianArmor(depth));
+    enemy.guardianBalanceVersion = guardianBalanceVersion;
   }
 }
 export function generateFloor(g: Game) {

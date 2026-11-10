@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { act, newGame, makeItem, makeMonster, randomItem, randomItemOfRarity, generateFloor, balanceGuardian, combatAttackStats, incomingDamage } from "../shared/engine";
+import { act, newGame, makeItem, makeMonster, randomItem, randomItemOfRarity, generateFloor, balanceGuardian } from "../shared/engine";
 import { makeVillager, villagerStock, catalogItems } from "../shared/expansion";
 import { describe as describeItem, itemDefinitions } from "../shared/catalog";
 import { normalizeRarity, migrateItemRarities } from "../shared/rarity";
@@ -17,24 +17,56 @@ describe("the second-floor guardian",()=>{
       const g=arena(seed);g.floor=1;generateFloor(g);
       const boss=g.monsters.find(m=>m.name.startsWith("Ergathon"))!;
       expect(boss.className).toBe("Golem");expect(boss.level).toBe(8);
-      expect(boss.stats).toMatchObject({Health:58,Power:11,Armor:4,Speed:2});
-      expect(combatAttackStats(g.player).Attack-boss.stats.Armor).toBeGreaterThan(0);
+      expect(boss.stats).toMatchObject({Health:58,Power:22,Armor:10,Speed:2});
     }
   });
-  it("lets a modest level-three Warrior win reliably, while an unprepared hero struggles",()=>{
-    const wins=[0,0];
-    for(let prepared=0;prepared<=1;prepared++)for(let seed=1;seed<=300;seed++){
-      let g=arena(seed);g.floor=1;
-      if(prepared){g.player.level=3;Object.assign(g.player.stats,{Health:30,Power:19,Armor:2,Accuracy:88,Speed:6,Luck:13});g.player.hp=30;g.player.weapons=[makeItem(g,"Iron Sword")];g.player.weapons[0].uses=10;}
-      const boss=makeMonster(g,"Golem",8);boss.name="Ergathon, Ruthagor’s chosen";boss.boss=true;balanceGuardian(g,boss);
-      Object.assign(boss,{x:6,y:5});g.monsters=[boss];g.combat=boss.id;
-      for(let round=0;round<60&&g.status==="playing"&&g.monsters.some(m=>m.id===boss.id);round++) g=act(g,{type:"attack"});
-      if(g.status!=="dead"&&!g.monsters.some(m=>m.id===boss.id))wins[prepared]++;
+  it("keeps Ruthagor on the stairs when Blow would move an ordinary enemy", () => {
+    const g = arena();
+    g.floor = 2;
+    Object.assign(g.player.stats, { Magic: 15, Mana: 10 });
+    g.player.weapons = [makeItem(g, "Wind Staff")];
+    const boss = makeMonster(g, "Dragon", 12);
+    Object.assign(boss, { name: "Ruthagor, Dungeon Master", boss: true, x: 6, y: 5 });
+    g.stairs = { x: 6, y: 5, locked: false };
+    g.monsters = [boss];
+    g.combat = boss.id;
+    const ordinary = structuredClone(g);
+    Object.assign(ordinary.monsters[0], { name: "Zombie", className: "Zombie", boss: false });
+
+    const anchored = act(g, { type: "cast", spell: "Blow" });
+    expect(anchored.monsters[0]).toMatchObject({ x: 6, y: 5 });
+    expect(anchored.combat).toBe(boss.id);
+    expect(act(ordinary, { type: "cast", spell: "Blow" }).monsters[0].x).toBeGreaterThan(6);
+  });
+  it.each([
+    { loadout: "starting Warrior", health: 0, armor: 0, minWins: 0, maxWins: 30 },
+    { loadout: "lightly armored Warrior with Iron Sword", health: 30, armor: 2, minWins: 0, maxWins: 90 },
+    { loadout: "Warrior with Iron Sword and upgraded health and armor", health: 45, armor: 8, minWins: 165, maxWins: 270 },
+  ])("keeps Ergathon challenging for a $loadout", ({ loadout, health, armor, minWins, maxWins }) => {
+    let wins = 0;
+    for (let seed = 1; seed <= 300; seed++) {
+      let g = arena(seed);
+      g.floor = 1;
+      if (health) {
+        g.player.level = 3;
+        Object.assign(g.player.stats, { Health: health, Power: 19, Armor: armor, Accuracy: 88, Speed: 6, Luck: 13 });
+        g.player.hp = health;
+        g.player.weapons = [makeItem(g, "Iron Sword")];
+        g.player.weapons[0].uses = 10;
+      }
+      const boss = makeMonster(g, "Golem", 8);
+      Object.assign(boss, { name: "Ergathon, Ruthagor’s chosen", boss: true, x: 6, y: 5 });
+      balanceGuardian(g, boss);
+      g.monsters = [boss];
+      g.combat = boss.id;
+      for (let round = 0; round < 60 && g.status === "playing" && g.monsters.some(m => m.id === boss.id); round++) {
+        g = act(g, { type: "attack" });
+      }
+      if (g.status !== "dead" && !g.monsters.some(m => m.id === boss.id)) wins++;
     }
-    console.info("Guardian wins over 300 seeds: starting Warrior",wins[0],"level-three Warrior with Iron Sword",wins[1]);
-    expect(wins[1]/300).toBeGreaterThan(0.8);
-    expect(wins[1]/300).toBeLessThan(0.96);expect(wins[0]/300).toBeLessThan(0.1);
-    expect(wins[1]).toBeGreaterThan(wins[0]);
+    console.info(`Guardian wins over 300 seeds for ${loadout}: ${wins}`);
+    expect(wins).toBeGreaterThanOrEqual(minWins);
+    expect(wins).toBeLessThanOrEqual(maxWins);
   });
   it("migrates an existing wounded boss without healing it on later actions",()=>{
     let g=arena();g.floor=1;const m=makeMonster(g,"Golem",8);m.name="Ergathon, Ruthagor’s chosen";m.hp=m.stats.Health/2;g.monsters=[m];
@@ -75,7 +107,7 @@ describe("hostile throws and poison weapons",()=>{
     let g=arena();const m=makeMonster(g,"Zombie",1);Object.assign(m,{x:6,y:5,hp:200});m.stats.Health=200;g.monsters=[m];const i=makeItem(g,name);g.inventory=[i];
     g=act(g,{type:"use",id:i.id,target:m.id});expect(g.combat).toBe(m.id);expect(g.encounter?.engaged).toBe(true);expect(()=>act(g,{type:"leave"})).toThrow("must flee");
   });
-  for(const weapon of ["Sword","Spear","Axe","Shield"])it("Poison "+weapon+" has Iron stats and applies poison on a landed hit",()=>{
+  for(const weapon of ["Sword","Spear","Axe"])it("Poison "+weapon+" has Iron stats and applies poison on a landed hit",()=>{
     let g=arena(40);const iron=makeItem(g,"Iron "+weapon),poison=makeItem(g,"Poison "+weapon);
     for(const stat of ["attack","weight","luck","maxUses","armorBonus"] as const)expect(poison[stat]).toBe(iron[stat]);
     g.player.weapons=[poison];g.player.stats.Accuracy=200;g.player.stats.Power=30;const m=makeMonster(g,"Golem",1);Object.assign(m,{x:6,y:5,hp:200});m.stats.Health=200;m.stats.Power=0;g.monsters=[m];g.combat=m.id;

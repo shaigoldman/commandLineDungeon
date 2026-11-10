@@ -26,9 +26,32 @@ it("updates a tuned saved guardian to level eight, preserving HP and permanent d
  const boss=makeMonster(g,"Golem",3);boss.name="Ergathon, Ruthagor’s chosen";boss.boss=true;balanceGuardian(g,boss);delete boss.guardianBalanceVersion;boss.level=3;boss.hp=17;boss.stats.Accuracy=35;g.monsters=[boss];
  const revision=g.revision;migrateGuardians(g);expect(g.revision).toBe(revision);
  g.inventory=[makeItem(g,"Sand")];g=act(g,{type:"drop",id:g.inventory[0].id});
- expect(g.monsters[0]).toMatchObject({level:8,hp:17,stats:{Health:58,Power:11,Armor:4,Accuracy:35}});
+ expect(g.monsters[0]).toMatchObject({level:8,hp:17,stats:{Health:58,Power:22,Armor:10,Accuracy:35}});
  expect(experience(g.monsters[0].level,3)).toBe(120);
  g.inventory=[makeItem(g,"Sand")];g.monsters[0].level=3;g.monsters[0].stats.Power=5;
  g=act(g,{type:"drop",id:g.inventory[0].id});
  expect(g.monsters[0]).toMatchObject({level:3,hp:17,stats:{Power:5,Accuracy:35}});
+});
+
+it.each([2, 3])("upgrades a wounded version %i Ergathon from a saved game once", (version) => {
+  const g = newGame("Guardian migration", "Warrior", "Wind", 0, 21);
+  g.floor = 4;
+  const boss = makeMonster(g, "Golem", 14);
+  boss.name = "Ergathon, Ruthagor’s chosen";
+  boss.boss = true;
+  balanceGuardian(g, boss);
+  boss.guardianBalanceVersion = version;
+  boss.hp = 17;
+  Object.assign(boss.stats, { Armor: 10, Power: version === 2 ? 20 : 31, Accuracy: 35 });
+  boss.effects.Poison = [3, 2];
+  g.monsters = [boss];
+  const revision = g.revision;
+
+  migrateGuardians(g);
+  expect(boss).toMatchObject({ guardianBalanceVersion: 4, hp: 17, effects: { Poison: [3, 2] },
+    stats: { Armor: 16, Power: version === 2 ? 34 : 31, Accuracy: 35 } });
+  expect(g.revision).toBe(revision);
+  boss.stats.Armor = 15;
+  migrateGuardians(g);
+  expect(boss.stats.Armor).toBe(15);
 });

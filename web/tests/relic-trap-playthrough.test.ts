@@ -151,7 +151,7 @@ describe("new relic and trap playthroughs", () => {
     expect(shield.armorBonus).toBeGreaterThanOrEqual(10);
     g.player.weapons = [shield];
     expect(armorOf(g.player)).toBe(shield.armorBonus);
-    expect(combatAttackStats(g.player).Attack).toBeLessThan(g.player.stats.Power);
+    expect(combatAttackStats(g.player).Attack).toBe(g.player.stats.Power);
     const enemy = makeMonster(g, "Zombie", 1);
     Object.assign(enemy, { x: 11, y: 7, hp: 10000 });
     Object.assign(enemy.stats, { Health: 10000, Accuracy: 1000, Power: 10, Speed: 0 });
@@ -163,6 +163,42 @@ describe("new relic and trap playthroughs", () => {
     g = act(g, { type: "attack" });
     expect(g.player.weapons).toHaveLength(0);
     expect(g.log.some((line) => line.includes("WEAPON BROKE: Iron Shield"))).toBe(true);
+  });
+
+  it("poisons on the shield's last block even when the hit does no damage", () => {
+    const g = base();
+    const shield = makeItem(g, "Poison Shield");
+    shield.uses = 1;
+    g.player.weapons = [shield];
+    g.player.stats.Accuracy = 1000;
+    const enemy = makeMonster(g, "Zombie", 1);
+    Object.assign(enemy, { x: 11, y: 7, hp: 1000 });
+    Object.assign(enemy.stats, { Health: 1000, Accuracy: 1000, Power: 1, Speed: 0, Luck: 0 });
+    g.monsters = [enemy];
+    g.combat = enemy.id;
+
+    const after = act(g, { type: "attack" });
+    expect(after.player.hp).toBe(g.player.hp);
+    expect(after.player.weapons).toHaveLength(0);
+    expect(after.monsters[0].effects.Poison).toEqual([5, 2]);
+  });
+
+  it("does not poison on the hero's attack or on a missed counterattack", () => {
+    const g = base();
+    const shield = makeItem(g, "Poison Shield");
+    g.player.weapons = [shield];
+    g.player.stats.Accuracy = 1000;
+    const enemy = makeMonster(g, "Zombie", 1);
+    Object.assign(enemy, { x: 11, y: 7, hp: 1000 });
+    Object.assign(enemy.stats, { Health: 1000, Accuracy: -1000, Speed: 0 });
+    g.monsters = [enemy];
+    g.combat = enemy.id;
+
+    const after = act(g, { type: "attack" });
+    expect(after.monsters[0].hp).toBeLessThan(enemy.hp);
+    expect(after.log).toContain(`MISS! ${enemy.name} missed ${g.player.name}.`);
+    expect(after.monsters[0].effects.Poison).toBeUndefined();
+    expect(after.player.weapons[0].uses).toBe(shield.uses);
   });
 
   it("reveals reusable traps, removes monster traps, and scales their count by floor", () => {
