@@ -1388,6 +1388,12 @@ function performSpell(g: Game, s: (typeof spells)[number], m: Actor | undefined,
   log(g, `${p.name} cast ${s.name}${free ? " for free" : ""}.`);
   switch (s.name) {
     case "Blow": {
+      // Stair guardians must remain on the stairs until defeated; displacement
+      // would let the player bypass the floor's required boss encounter.
+      if (m!.boss && m!.x === g.stairs.x && m!.y === g.stairs.y) {
+        log(g, `${m!.name} holds its ground on the stairs!`);
+        break;
+      }
       const dx=Math.sign(m!.x-p.x), dy=dx===0 ? Math.sign(m!.y-p.y) : 0;
       for (let n=0;n<10;n++) { const x=m!.x+dx,y=m!.y+dy; if (g.tiles[y]?.[x]!==0 || g.monsters.some(a=>a.id!==m!.id && a.x===x && a.y===y) || g.chests?.some(c=>!c.opened && c.x===x && c.y===y)) { hurt(g,m!,5,"Collision"); break; } m!.x=x; m!.y=y; }
       g.combat=undefined; g.encounter=undefined; break;
