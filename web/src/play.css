@@ -334,7 +334,11 @@ body.playing-game {
 .enemy-panel span span {
   font-size: 9px;
   color: #d4d6c4;
+  overflow-wrap: anywhere;
 }
+.enemy-panel .enemy-reward { overflow-wrap: anywhere; }
+.hero-vitals { min-width: 0; }
+.hero-vitals label, .hero-vitals b { min-width: 0; }
 .enemy-panel meter {
   height: 4px;
 }
