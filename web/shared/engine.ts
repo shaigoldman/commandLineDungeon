@@ -513,8 +513,8 @@ export function balanceGuardian(g: Game, boss: Actor) {
   const depth = Math.max(0, g.floor - 1), hard = 1.3 ** g.difficulty;
   boss.className = "Golem";
   boss.level = 8 + depth * 2;
-  boss.guardianBalanceVersion = 2;
-  boss.stats = { Health: Math.round((58 + depth * 12) * hard), Power: Math.round((11 + depth * 3) * hard),
+  boss.guardianBalanceVersion = 3;
+  boss.stats = { Health: Math.round((58 + depth * 12) * hard), Power: Math.round((22 + depth * 4) * hard),
     Armor: 4 + depth * 2, Accuracy: 70, Speed: 2 + depth, Luck: 0, Magic: 5, Mana: 10 };
   boss.hp = boss.stats.Health;
 }
@@ -527,7 +527,7 @@ function strengthenRuthagor(boss: Actor) {
 export function migrateGuardians(g: Game) {
   g.monsters.forEach(strengthenRuthagor);
   // Upgrade saved guardians once, preserving damage already dealt.
-  for (const enemy of g.monsters.filter(m => m.name.startsWith("Ergathon") && m.guardianBalanceVersion !== 2)) {
+  for (const enemy of g.monsters.filter(m => m.name.startsWith("Ergathon") && m.guardianBalanceVersion !== 3)) {
     const depth = Math.max(0,g.floor-1), hard = 1.3 ** g.difficulty;
     const legacy = enemy.level === 1 + g.floor + 3 + (g.floor + 2) * g.floor;
     const previous = enemy.stats.Health === Math.round((44+depth*12)*hard)
@@ -535,10 +535,14 @@ export function migrateGuardians(g: Game) {
     if (legacy || previous) {
       const fraction = Math.max(0, enemy.hp / enemy.stats.Health);
       balanceGuardian(g, enemy); enemy.hp = Math.ceil(enemy.stats.Health * fraction);
+    } else if (enemy.guardianBalanceVersion === 2) {
+      // Upgrade already-balanced guardians without healing them or resetting effects.
+      enemy.stats.Power = Math.round((22 + depth * 4) * hard);
+      enemy.guardianBalanceVersion = 3;
     } else {
-      // Relabel the tuned level-three guardian, preserving wounds and debuffs.
+      // Preserve custom/unknown saved guardians while updating the balance marker.
       if (enemy.level === 3 + depth * 2) enemy.level = 8 + depth * 2;
-      enemy.guardianBalanceVersion = 2;
+      enemy.guardianBalanceVersion = 3;
     }
   }
 }
