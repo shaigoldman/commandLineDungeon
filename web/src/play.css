@@ -1829,3 +1829,11 @@ body.playing-game {
  .play-shell { gap:2px; }
  .play-shell .play-map { min-height:66px; }
 }
+
+.achievement-notices { position:fixed; z-index:230; left:50%; bottom:max(16px,env(safe-area-inset-bottom)); transform:translateX(-50%); width:min(420px,calc(100vw - 24px)); pointer-events:none; }
+.achievement-notice { display:flex; align-items:center; gap:12px; padding:14px; border:2px solid #d8bd73; border-radius:8px; background:#243b34; color:#fff1c8; box-shadow:0 8px 30px #0009; font:15px/1.4 Georgia,serif; }
+.achievement-notice > span { font-size:26px; }
+.achievement-notice > div { flex:1; min-width:0; overflow-wrap:anywhere; }
+.achievement-notice strong,.achievement-notice div span { display:block; }
+.achievement-notice strong { color:#ffe49a; }
+.achievement-notice button { pointer-events:auto; flex-shrink:0; min-width:36px; min-height:36px; padding:0; color:#fff1c8; font-size:22px; }

@@ -97,7 +97,7 @@ export interface Spell {
   description: string;
 }
 export const spells: Spell[] = [
-  { name: "Blow", element: "Wind", cost: 4, req: 8, when: "combat", description: "Push a target up to 10 tiles; a collision deals 5 damage." },
+  { name: "Blow", element: "Wind", cost: 5, req: 8, when: "combat", description: "Push a target up to 10 tiles; a collision deals 5 damage. Ends the encounter only if the target moves or dies." },
   { name: "Study", element: "Water", cost: 6, req: 10, when: "any", description: "Gain 10 EXP." },
   { name: "Mana Drain", element: "Dark", cost: 1, req: 1, when: "any", description: "Lose 1 life and gain 2 mana." },
   { name: "Nightmare", element: "Dark", cost: 5, req: 5, when: "combat", description: "Curse a target for 5 turns." },

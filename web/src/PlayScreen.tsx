@@ -1,3 +1,4 @@
+import { AchievementNotices } from "./AchievementNotices";
 import { adventureStartLabel } from "./saved-adventures";
 import { gauntletBonus, isCarriedPassive } from "../shared/passive-items";
 import { rarityRank } from "../shared/rarity";
@@ -627,11 +628,11 @@ export function PlayScreen({
           <em>“{story.flavor}”</em>
         </section>
         <div className="death-score"><span>Final score</span><strong>{n(g.score)}</strong></div><p>High score · {n(Math.max(highScore,g.score))}</p>
-        <button className="death-details-button" onClick={()=>setDeathDetails(true)}>View journey details · {(g.achievements || []).length} achievements</button>
+        <button className="death-details-button" onClick={()=>setDeathDetails(true)}>View achievements · {(g.achievements || []).length} achievements</button>
         <button className="death-restart" onClick={onNew}>Begin a new journey</button>
       </div>
     </section>
-    {deathDetails && <div className="play-backdrop"><section className="play-modal death-details" role="dialog" aria-label="Journey details"><button onClick={()=>setDeathDetails(false)}>Close journey details</button><h2>{p.name}’s journey</h2><p>{story.context}</p><p>“{story.flavor}”</p>{(g.achievements || []).map(a=><p key={a.name}>🏆 {a.name} · +{a.points} points</p>)}<h3>Journal</h3>{g.log.map((line,i)=><p key={i}>{line}</p>)}</section></div>}
+    {deathDetails && <div className="play-backdrop"><section className="play-modal death-details" role="dialog" aria-label="Achievements"><button onClick={()=>setDeathDetails(false)}>Close achievements</button><h2>{p.name}’s achievements</h2>{(g.achievements || []).length ? g.achievements!.map(a=><p key={a.name}>🏆 {a.name} · +{a.points} points</p>) : <p>No achievements earned this journey.</p>}</section></div>}
     </main>
     );
   }
@@ -643,6 +644,7 @@ export function PlayScreen({
         (p.hp / p.stats.Health <= 0.1 ? " critical-hp" : "")
       }
     >
+      <AchievementNotices key={`${g.startedAt}:${p.name}`} achievements={g.achievements} />
       {damageNotice && <div key={damageNotice.revision} className="damage-notice" role="status">−{n(damageNotice.amount)} HP · Health lost</div>}
       <header className="play-header">
         {boonNotice && <aside className="boon-notice" role="status" aria-live="polite">
