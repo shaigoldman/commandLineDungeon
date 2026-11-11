@@ -9,7 +9,8 @@ try:
   try:urllib.request.urlopen(BASE,timeout=1);break
   except Exception:time.sleep(.1)
  with sync_playwright() as p:
-  browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+  exe=os.environ.get('CHROMIUM_PATH') or ('/usr/bin/chromium' if pathlib.Path('/usr/bin/chromium').exists() else None)
+  browser=p.chromium.launch(executable_path=exe,headless=True,args=['--no-sandbox'])
   context=browser.new_context(viewport={'width':390,'height':760},is_mobile=True,has_touch=True)
   page=context.new_page();page.set_default_timeout(10000);errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
   page.goto(BASE);page.get_by_role('button',name='Warrior',exact=False).tap();page.get_by_role('button',name='Enter the dungeon',exact=False).tap();page.wait_for_selector('canvas')
