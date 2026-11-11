@@ -1417,8 +1417,13 @@ function performSpell(g: Game, s: (typeof spells)[number], m: Actor | undefined,
         break;
       }
       const dx=Math.sign(m!.x-p.x), dy=dx===0 ? Math.sign(m!.y-p.y) : 0;
+      const startX = m!.x, startY = m!.y;
       for (let n=0;n<10;n++) { const x=m!.x+dx,y=m!.y+dy; if (g.tiles[y]?.[x]!==0 || g.monsters.some(a=>a.id!==m!.id && a.x===x && a.y===y) || g.chests?.some(c=>!c.opened && c.x===x && c.y===y)) { hurt(g,m!,5,"Collision"); break; } m!.x=x; m!.y=y; }
-      g.combat=undefined; g.encounter=undefined; break;
+      if (m!.hp <= 0 || m!.x !== startX || m!.y !== startY) {
+        g.combat = undefined;
+        g.encounter = undefined;
+      }
+      break;
     }
     case "Study": addXP(g,10); checkLevel(g); break;
     case "Mana Drain": hurt(g,p,1,"Mana Drain"); if (p.hp>0) p.stats.Mana=Math.min(manaCap(p),p.stats.Mana+2); break;
