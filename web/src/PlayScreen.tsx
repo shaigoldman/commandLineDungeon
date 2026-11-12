@@ -27,6 +27,7 @@ import {
   hitRate,
   capacityOf,
   manaCap,
+  manaDrainCastsLeft,
   spellCost,
   experience,
   nextWeaponName,
@@ -436,7 +437,7 @@ export function PlayScreen({
     const remaining = usedItem && (a.type === "use"
       ? after.inventory.find((item) => item.id === a.id)
       : after.loot.find((entry) => entry.item.id === a.id)?.item);
-    const consecutiveUse = remaining && (remaining.uses !== undefined || ["health-pot", "health-drain", "mana-rock", "energy-magnet", "mana-pot", "mana-stream"].includes(remaining.kind) || (remaining.kind === "stairfinder" && remaining.value < 0));
+    const consecutiveUse = remaining && (remaining.uses !== undefined || ["health-pot", "mana-rock", "energy-magnet", "mana-pot", "mana-stream"].includes(remaining.kind) || (remaining.kind === "stairfinder" && remaining.value < 0));
     setSelection(opensLoot ? { item: after.pendingLoot!, ground: true } : consecutiveUse && after.status === "playing" && !after.pendingLevels
       ? { item: remaining, ground: a.type === "use-floor" } : null);
     setSwapPickup(null);
@@ -1230,6 +1231,7 @@ export function PlayScreen({
         <button className="modal-close" aria-label="Close spell" onClick={()=>setInspectedSpell(null)}>×</button>
         <img width="64" src={spellIcon(inspectedSpell.name,inspectedSpell.element)} alt="" />
         <h2>{inspectedSpell.name}</h2><p>{inspectedSpell.description}</p>
+        {inspectedSpell.name === "Mana Drain" && <p>{manaDrainCastsLeft(g)} casts left this level</p>}
         <p>{spellCost(g,inspectedSpell)} mana · Requires {inspectedSpell.req} Magic · You have {n(p.stats.Mana)} mana and {n(p.stats.Magic)} Magic</p>
         <button className="primary" disabled={busy || !availableSpells(g).some(s=>s.name===inspectedSpell.name)} onClick={()=>{void send({type:"cast",spell:inspectedSpell.name});setInspectedSpell(null);}}>Cast {inspectedSpell.name}</button>
       </section></div>}

@@ -1,4 +1,5 @@
 import type { Game } from "./types";
+import { MANA_DRAIN_CASTS_PER_LEVEL } from "./catalog";
 
 export const MAX_BACKUP_BYTES = 10 * 1024 * 1024;
 const object = (v: unknown): v is Record<string, any> => !!v && typeof v === "object" && !Array.isArray(v);
@@ -32,6 +33,7 @@ function actor(v: unknown): boolean {
 }
 function game(v: unknown): v is Game {
   if (!object(v) || v.version !== 1 || !actor(v.player)) return false;
+  if (!optional(v, ["manaDrainCastsLeft"], x => number(x) && Number.isInteger(x) && x >= 0 && x <= MANA_DRAIN_CASTS_PER_LEVEL)) return false;
   if (!["seed", "floor", "difficulty", "keys", "hands", "capacity", "sight", "xp", "score", "turn", "pendingLevels", "revision"].every(k => number(v[k]))) return false;
   if (!["playing", "dead", "won"].includes(v.status) || !strings(v.log) || !items(v.inventory)) return false;
   if (!Array.isArray(v.tiles) || !v.tiles.length || v.tiles.length > 500 || !Array.isArray(v.tiles[0]) || !v.tiles[0].length || v.tiles[0].length > 500) return false;
