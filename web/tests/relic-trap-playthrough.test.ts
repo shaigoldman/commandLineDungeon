@@ -109,6 +109,8 @@ describe("new relic and trap playthroughs", () => {
       let g = base(seed); g.player.gold = 5;
       const source = makeItem(g, "Mana Potion"), book = makeItem(g, "Alchemy Book");
       g.inventory = [source, book];
+      // Sample alchemy rolls independently of random draws during floor generation.
+      g.seed = seed;
       g = act(g, { type: "use", id: book.id, target: source.id });
       const result = g.inventory.find((item) => item.id === source.id)!;
       if (result.kind === "trash") misfires++;

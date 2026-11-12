@@ -20,6 +20,7 @@ export function migrateItemRarities(g: Game) {
       item.description = HEALTH_DRAIN_DESCRIPTION;
     }
     if (item.kind === "energy-potion") item.description = "Choose to restore 5 health or 5 mana.";
+    if (item.kind === "mana-pot") item.rarity = "rare";
     if (item.kind === "thief-gloves") {
       item.rarity = "rare";
       item.description = "While carried, kills have a 25% chance to grant 0–2 gold.";

@@ -219,7 +219,7 @@ export const itemDefinitions: [string, string, Rarity, number, string?][] = [
   ["Alchemy Nuke", "alchemy-nuke", "ultrarare", 0], ["Decoy", "decoy", "rare", 0],
   ["Escape Pod", "escape-pod", "rare", 0], ["Critical Diamond", "critical-diamond", "rare", 5],
   ["Mana Stream", "mana-stream", "uncommon", 1], ["Mana Pool", "mana-pool", "rare", 1],
-  ["Mana Spring", "mana-pool", "ultrarare", 5], ["Mana Pot", "mana-pot", "uncommon", 1],
+  ["Mana Spring", "mana-pool", "ultrarare", 5], ["Mana Pot", "mana-pot", "rare", 1],
   ["Golden Apple", "golden-apple", "rare", 5], ["Diamond Apple", "diamond-apple", "ultrarare", 0],
   ["Thief's Gloves", "thief-gloves", "rare", 0], ["Mana Leech", "mana-leech", "rare", 1],
   ["Energy Belt", "energy-belt", "uncommon", 0], ["Energy Armor", "energy-armor", "uncommon", 0],
