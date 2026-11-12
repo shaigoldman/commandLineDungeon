@@ -1,6 +1,6 @@
 import { rarityRank } from "../shared/rarity";
 import { describe, it, expect } from 'vitest';
-import { act,newGame,makeItem,makeMonster,availableSpells,generateFloor,attackStats,manaCap,itemUseProblem,nextWeaponName } from '../shared/engine';
+import { act,newGame,makeItem,makeMonster,availableSpells,generateFloor,attackStats,manaCap,itemUseProblem,nextWeaponName,manaDrainCastsLeft,spellMenu } from '../shared/engine';
 import { addChest,makeVillager } from '../shared/expansion';
 import { displayNumber } from '../shared/presentation';
 import type { Game } from '../shared/types';
@@ -34,6 +34,58 @@ describe('Teeny Dungeon expansion',()=>{
 });
 
 describe('Teeny relic and spell interactions',()=>{
+ it('spends a Health Drain charge per successful use and consumes the item on its last charge', () => {
+   let g = arena();
+   const drain = makeItem(g, 'Health Drain');
+   expect(drain).toMatchObject({ uses: 50, maxUses: 50 });
+   // An item from an older save has no durability fields.
+   delete drain.uses;
+   delete drain.maxUses;
+   g.inventory = [drain];
+   expect(() => act(g, { type: 'use', id: drain.id })).toThrow('room for mana');
+   for (let use = 1; use <= 50; use++) {
+     g.player.stats.Mana = 0;
+     g = act(g, { type: 'use', id: drain.id });
+     expect(g.player.hp).toBe(100 - use);
+     expect(g.player.stats.Mana).toBe(1);
+     if (use < 50) expect(g.inventory[0].uses).toBe(50 - use);
+   }
+   expect(g.inventory).toHaveLength(0);
+ });
+ it('consumes a Health Drain used from the floor only when its final charge is spent', () => {
+   let g = arena();
+   const drain = makeItem(g, 'Health Drain');
+   drain.uses = 2;
+   g.loot = [{ x: g.player.x, y: g.player.y, item: drain }];
+   g.player.stats.Mana = 0;
+   const action = { type: 'use-floor', id: drain.id } as const;
+   g = act(g, action);
+   expect(g.loot[0].item.uses).toBe(1);
+   g = act(g, action);
+   expect(g.loot).toHaveLength(0);
+ });
+ it('counts free Mana Drain casts toward the 30-cast limit and refills on level-up', () => {
+   let g = arena();
+   const star = makeItem(g, 'Double Mana Star');
+   g.inventory = [makeItem(g, 'Dark Staff'), star, makeItem(g, 'Rare Candy')];
+   expect(manaDrainCastsLeft(g)).toBe(30);
+   for (let cast = 0; cast < 29; cast++) {
+     g = act(g, { type: 'cast', spell: 'Mana Drain' });
+   }
+   expect(manaDrainCastsLeft(g)).toBe(1);
+   g = act(g, { type: 'use', id: star.id, spell: 'Mana Drain' });
+   expect(manaDrainCastsLeft(g)).toBe(0);
+   expect(spellMenu(g).map(s => s.name)).toContain('Mana Drain');
+   expect(availableSpells(g, { free: true, anyElement: true, ignoreReq: true }).map(s => s.name)).not.toContain('Mana Drain');
+   expect(() => act(g, { type: 'cast', spell: 'Mana Drain' })).toThrow('Spell unavailable');
+   expect(() => act(g, { type: 'use', id: star.id, spell: 'Mana Drain' })).toThrow('Choose an accessible spell');
+   generateFloor(g);
+   expect(manaDrainCastsLeft(g)).toBe(0);
+   g.xp = 65;
+   g = act(g, { type: 'use', id: g.inventory.find(i => i.name === 'Rare Candy')!.id });
+   expect(g.player.level).toBe(2);
+   expect(manaDrainCastsLeft(g)).toBe(30);
+ });
  it('keeps five critical charges and grants critical healing',()=>{let g=arena();target(g);g.monsters[0].hp=g.monsters[0].stats.Health=10000;g.combat=g.monsters[0].id;g.player.hp=20;g.inventory=[makeItem(g,'Lucky Amulet')];g=use(g,'Critical Diamond');g=act(g,{type:'attack'});expect(g.player.effects['Critical Star'][0]).toBe(4);expect(g.player.hp).toBeGreaterThan(20);});
  it('grants mana from healing and killing and removes carried mana capacity',()=>{let g=arena();g.player.hp=20;g.player.stats.Mana=0;g.inventory=[makeItem(g,'Mana Link'),makeItem(g,'Mana Leech')];g=use(g,'Tiny Health Potion');expect(g.player.stats.Mana).toBe(3);const m=target(g);m.hp=1;g.combat=m.id;g=act(g,{type:'attack'});expect(g.player.stats.Mana).toBe(4);g.combat=undefined;const battery=makeItem(g,'Mana Battery');g.inventory.push(battery);g=act(g,{type:'move',dx:0,dy:-1});expect(manaCap(g.player)).toBe(32);g=act(g,{type:'drop',id:battery.id});expect(manaCap(g.player)).toBe(30);});
  it('makes dragon hits burn and critical deaths explicit',()=>{let g=arena();const m=target(g,'Dragon');m.stats.Accuracy=10000;m.stats.Speed=1000;m.stats.Power=2;m.stats.Luck=0;g.combat=m.id;g.player.stats.Power=0;g=act(g,{type:'attack'});expect(g.player.burn).toEqual([3,3]);let found=false;for(let seed=1;seed<50;seed++){g=arena(seed);const enemy=target(g);enemy.stats.Accuracy=1000;enemy.stats.Speed=1000;enemy.stats.Power=100;enemy.stats.Luck=1000;g.player.hp=1;g.combat=enemy.id;g=act(g,{type:'attack'});found ||=g.death?.critical===true;}expect(found).toBe(true);});

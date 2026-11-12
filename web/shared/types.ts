@@ -123,6 +123,7 @@ export interface Game {
   capacity: number;
   sight: number;
   xp: number;
+  manaDrainCastsLeft?: number;
   score: number;
   turn: number;
   combat?: string;

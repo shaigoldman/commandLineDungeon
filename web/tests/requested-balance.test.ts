@@ -2,6 +2,16 @@ import { expect, it } from "vitest";
 import { act, attackStats, generateFloor, incomingDamage, makeItem, makeMonster, migrateGuardians, newGame } from "../shared/engine";
 import { migrateItemRarities } from "../shared/rarity";
 
+it("makes Mana Pot rare in new loot and existing saves", () => {
+  const g = newGame();
+  const pot = makeItem(g, "Mana Pot");
+  expect(pot.rarity).toBe("rare");
+  pot.rarity = "uncommon";
+  g.inventory.push(pot);
+  migrateItemRarities(g);
+  expect(pot.rarity).toBe("rare");
+});
+
 it("makes new and saved gloves rare and limits kill payouts to zero through two", () => {
   const payouts = new Set<number>();
   for (let seed = 1; seed <= 120; seed++) {

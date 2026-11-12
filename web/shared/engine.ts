@@ -26,6 +26,9 @@ import {
   growth,
   itemDefinitions,
   spells,
+  HEALTH_DRAIN_DESCRIPTION,
+  HEALTH_DRAIN_USES,
+  MANA_DRAIN_CASTS_PER_LEVEL,
 } from "./catalog";
 import type { Game, Actor, Item, Action, Stats } from "./types";
 export function random(g: Pick<Game, "seed">) {
@@ -79,6 +82,7 @@ export function makeItem(g: Game, name: string): Item {
     i.uses = i.maxUses = 1 + roll(g, 5);
   if (name === "Boomerang") i.uses = i.maxUses = 1 + roll(g, 10);
   if (i.kind === "mana-star") i.uses = i.maxUses = i.value;
+  if (i.kind === "health-drain") i.uses = i.maxUses = HEALTH_DRAIN_USES;
   if (name === "Really Greedy Amulet") i.uses = i.maxUses = 2;
   if (i.kind === "charm") {
     i.stat = pick(g, ["Power", "Luck", "Health", "Speed", "Magic", "Accuracy", "Armor"]);
@@ -97,7 +101,7 @@ export function makeItem(g: Game, name: string): Item {
   const descriptions: Record<string, string> = {
     "Cleanser": "Turn an enemy into a villager, or rarely a chieftain.",
     "Health Pot": "Trade one gold for two health. Never runs dry.",
-    "Health Drain": "Trade one life for one mana. Never runs dry.",
+    "Health Drain": HEALTH_DRAIN_DESCRIPTION,
     "Spiked Potion": "Sacrifice half your current health for +5 to a chosen stat.",
     "Critical Star": "Your next landed attack is a critical hit.",
     "Speedy Boots": "The next enemy attack has a 99% chance to miss.",
@@ -946,6 +950,7 @@ export function itemUseProblem(g: Game, i: Item): string | undefined {
     return "Need more than 10 HP and room for mana.";
   if (i.kind === "health-pot" && (!(g.player.gold || 0) || g.player.hp >= g.player.stats.Health))
     return "Need one gold and room to heal.";
+  if (i.kind === "health-drain" && i.uses === 0) return "No uses remaining.";
   if (i.kind === "health-drain" && (g.player.hp <= 1 || g.player.stats.Mana >= manaCap(g.player)))
     return "Need more than one health and room for mana.";
   if (i.kind === "energy-magnet" && g.pods[0]?.healthOnly && g.player.hp >= g.player.stats.Health && !g.inventory.some(item => item.kind === "energy-belt")) return "Health is already full.";
@@ -1105,6 +1110,7 @@ function checkLevel(g: Game) {
     g.xp -= 100;
     g.levelBefore = { ...g.player.stats };
     g.player.level++;
+    g.manaDrainCastsLeft = MANA_DRAIN_CASTS_PER_LEVEL;
     g.score += 100;
     for (const s of Object.keys(g.player.stats)) {
       if (s === "Mana") continue;
@@ -1376,7 +1382,10 @@ function monsterTurn(g: Game) {
       }
     }
 }
-export function availableSpells(g: Game, options: { free?: boolean; anyElement?: boolean; ignoreReq?: boolean } = {}) {
+export function manaDrainCastsLeft(g: Game) {
+  return g.manaDrainCastsLeft ?? MANA_DRAIN_CASTS_PER_LEVEL;
+}
+export function availableSpells(g: Game, options: { free?: boolean; anyElement?: boolean; ignoreReq?: boolean; includeExhausted?: boolean } = {}) {
   const elements = [...g.inventory, ...g.player.weapons]
     .filter((i) => i.kind === "tome")
     .map((i) => i.element);
@@ -1385,6 +1394,7 @@ export function availableSpells(g: Game, options: { free?: boolean; anyElement?:
       (options.anyElement || elements.includes(s.element) || (elements.includes("Elemental") && ["Wind", "Water", "Fire", "Mystery"].includes(s.element))) &&
       (options.ignoreReq || magicOf(g.player) >= s.req) &&
       (options.free || g.player.stats.Mana >= spellCost(g, s)) &&
+      (s.name !== "Mana Drain" || options.includeExhausted || manaDrainCastsLeft(g) > 0) &&
       (s.name !== "Befriend" || !!g.monsters.find((m) => m.id === g.combat && !m.boss && !m.merchant && !m.npc)) &&
       (s.name !== "Unseal" || (!g.pendingLoot && (
         (g.stairs.locked && Math.abs(g.stairs.x - g.player.x) + Math.abs(g.stairs.y - g.player.y) <= 1) || !![
@@ -1397,7 +1407,7 @@ export function availableSpells(g: Game, options: { free?: boolean; anyElement?:
 /** Show castable spells first, then ascending effective mana cost in each group. */
 export function spellMenu(g: Game) {
   const usable = new Set(availableSpells(g).map(s => s.name));
-  return availableSpells(g, {free:true,ignoreReq:true}).sort((a,b) =>
+  return availableSpells(g, {free:true,ignoreReq:true,includeExhausted:true}).sort((a,b) =>
     Number(usable.has(b.name))-Number(usable.has(a.name)) || spellCost(g,a)-spellCost(g,b) || a.name.localeCompare(b.name));
 }
 function performSpell(g: Game, s: (typeof spells)[number], m: Actor | undefined, free = false) {
@@ -1426,7 +1436,11 @@ function performSpell(g: Game, s: (typeof spells)[number], m: Actor | undefined,
       break;
     }
     case "Study": addXP(g,10); checkLevel(g); break;
-    case "Mana Drain": hurt(g,p,1,"Mana Drain"); if (p.hp>0) p.stats.Mana=Math.min(manaCap(p),p.stats.Mana+2); break;
+    case "Mana Drain":
+      g.manaDrainCastsLeft = manaDrainCastsLeft(g) - 1;
+      hurt(g, p, 1, "Mana Drain");
+      if (p.hp > 0) p.stats.Mana = Math.min(manaCap(p), p.stats.Mana + 2);
+      break;
     case "Nightmare": m!.effects.Curse=[5,3]; break;
     case "Life Drain": hurt(g,m!,20,"Magic"); heal(p,20); break;
     case "Dark Summon": {
@@ -1735,9 +1749,15 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
     case "health-pot":
       if (!(p.gold || 0) || p.hp >= p.stats.Health) throw Error("Need one gold and room to heal.");
       p.gold!--; heal(p, 2); return;
-    case "health-drain":
-      if (p.hp <= 1 || p.stats.Mana >= manaCap(p)) throw Error("Need health and room for mana.");
-      p.hp--; p.stats.Mana++; return;
+    case "health-drain": {
+      const problem = itemUseProblem(g, i);
+      if (problem) throw Error(problem);
+      p.hp--;
+      p.stats.Mana++;
+      i.uses = (i.uses ?? HEALTH_DRAIN_USES) - 1;
+      if (i.uses > 0) return;
+      break;
+    }
     case "spiked-potion": {
       const stat = chosenSpell;
       if (!stat || !["Health", "Power", "Luck", "Speed", "Magic", "Accuracy", "Armor"].includes(stat))
@@ -2346,7 +2366,7 @@ export function act(input: Game, a: Action): Game {
       if (!canUseFromFloor(i))
         throw Error("Pick up this item before using it.");
       use(g, i, a.spell, a.target);
-      if (!(i.uses && i.uses > 0) && !["mana-rock", "energy-magnet", "health-pot", "health-drain"].includes(i.kind) && !(i.kind === "stairfinder" && i.value < 0))
+      if (!(i.uses && i.uses > 0) && !["mana-rock", "energy-magnet", "health-pot"].includes(i.kind) && !(i.kind === "stairfinder" && i.value < 0))
         g.loot = g.loot.filter((l) => l.item.id !== i.id);
       g.pendingLoot = undefined;
       break;

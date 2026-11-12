@@ -96,10 +96,13 @@ export interface Spell {
   when: "combat" | "peace" | "any";
   description: string;
 }
+export const HEALTH_DRAIN_USES = 50;
+export const HEALTH_DRAIN_DESCRIPTION = "Trade 1 HP for 1 mana.";
+export const MANA_DRAIN_CASTS_PER_LEVEL = 30;
 export const spells: Spell[] = [
   { name: "Blow", element: "Wind", cost: 5, req: 8, when: "combat", description: "Push a target up to 10 tiles; a collision deals 5 damage. Ends the encounter only if the target moves or dies." },
   { name: "Study", element: "Water", cost: 6, req: 10, when: "any", description: "Gain 10 EXP." },
-  { name: "Mana Drain", element: "Dark", cost: 1, req: 1, when: "any", description: "Lose 1 life and gain 2 mana." },
+  { name: "Mana Drain", element: "Dark", cost: 1, req: 1, when: "any", description: `Lose 1 life and gain 2 mana. Up to ${MANA_DRAIN_CASTS_PER_LEVEL} casts per hero level.` },
   { name: "Nightmare", element: "Dark", cost: 5, req: 5, when: "combat", description: "Curse a target for 5 turns." },
   { name: "Life Drain", element: "Dark", cost: 10, req: 10, when: "combat", description: "Deal 20 damage and restore 20 life." },
   { name: "Dark Summon", element: "Dark", cost: 15, req: 15, when: "peace", description: "Summon an enemy nearby, with a greater chance of rare creatures." },
@@ -216,7 +219,7 @@ export const itemDefinitions: [string, string, Rarity, number, string?][] = [
   ["Alchemy Nuke", "alchemy-nuke", "ultrarare", 0], ["Decoy", "decoy", "rare", 0],
   ["Escape Pod", "escape-pod", "rare", 0], ["Critical Diamond", "critical-diamond", "rare", 5],
   ["Mana Stream", "mana-stream", "uncommon", 1], ["Mana Pool", "mana-pool", "rare", 1],
-  ["Mana Spring", "mana-pool", "ultrarare", 5], ["Mana Pot", "mana-pot", "uncommon", 1],
+  ["Mana Spring", "mana-pool", "ultrarare", 5], ["Mana Pot", "mana-pot", "rare", 1],
   ["Golden Apple", "golden-apple", "rare", 5], ["Diamond Apple", "diamond-apple", "ultrarare", 0],
   ["Thief's Gloves", "thief-gloves", "rare", 0], ["Mana Leech", "mana-leech", "rare", 1],
   ["Energy Belt", "energy-belt", "uncommon", 0], ["Energy Armor", "energy-armor", "uncommon", 0],

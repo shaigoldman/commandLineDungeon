@@ -5,8 +5,10 @@ import { Preferences } from "@capacitor/preferences";
 import { LocalGameAPI, type GameResponse } from "../shared/local-api";
 import { repairSecretRoomLighting } from "../shared/expansion";
 import { syncPassiveStats, migrateGuardians } from "../shared/engine";
+import { migrateItemRarities } from "../shared/rarity";
 function prepareResponse(response: GameResponse): GameResponse {
   if (response.data.game) {
+    migrateItemRarities(response.data.game);
     repairSecretRoomLighting(response.data.game);
     migrateGuardians(response.data.game);
     syncPassiveStats(response.data.game);

@@ -1,4 +1,5 @@
 import type { Game, Item } from "./types";
+import { HEALTH_DRAIN_DESCRIPTION, HEALTH_DRAIN_USES } from "./catalog";
 export const lootRarities = ["common", "uncommon", "rare", "ultrarare"] as const;
 export type Rarity = typeof lootRarities[number] | "legendary";
 /** Numeric values are accepted only when reading journeys saved before the four-tier system. */
@@ -13,7 +14,13 @@ export function migrateItemRarities(g: Game) {
   const items: Item[] = [...g.inventory, ...g.loot.map(l => l.item), ...(g.pendingLoot ? [g.pendingLoot] : []), ...(g.chests || []).map(c => c.reward),
     ...actors.flatMap(a => [...a.weapons, ...(a.inventory || []), ...(a.merchant?.stock.map(s => s.item) || [])])];
   for (const item of items) {
+    if (item.kind === "health-drain") {
+      item.uses ??= HEALTH_DRAIN_USES;
+      item.maxUses = HEALTH_DRAIN_USES;
+      item.description = HEALTH_DRAIN_DESCRIPTION;
+    }
     if (item.kind === "energy-potion") item.description = "Choose to restore 5 health or 5 mana.";
+    if (item.kind === "mana-pot") item.rarity = "rare";
     if (item.kind === "thief-gloves") {
       item.rarity = "rare";
       item.description = "While carried, kills have a 25% chance to grant 0–2 gold.";
