@@ -16,6 +16,8 @@ import {
   prepareSecretRoom,
   chestReward,
   repairSecretRoomLighting,
+  isSecretDoorTile,
+  secretRoomDoor,
 } from "./expansion";
 import npcDialogue from "./npc-dialogue.json";
 import { gauntletBonus, isCarriedPassive, gauntletDescriptions } from "./passive-items";
@@ -489,7 +491,7 @@ function empty(g: Game, x: number, y: number) {
   return (
     g.tiles[y]?.[x] === 0 &&
     (g.inSecret ? x >= 33 : x < 29) &&
-    !(g.inSecret && x === 33 && y === 7) &&
+    !isSecretDoorTile(g, x, y) &&
     !g.monsters.some((m) => m.hp > 0 && actorOccupies(m,x,y)) &&
     !(g.player.x === x && g.player.y === y) &&
     !g.loot.some((i) => i.x === x && i.y === y) &&
@@ -499,10 +501,40 @@ function empty(g: Game, x: number, y: number) {
     !(g.stairs.x === x && g.stairs.y === y)
   );
 }
-function teleportPosition(g: Game) {
-  if (g.secretDoors?.length && random(g)<0.15) { const door=pick(g,g.secretDoors); prepareSecretRoom(g,door); const spots=[]; for(let y=4;y<=10;y++) for(let x=33;x<=39;x++) if (!g.monsters.some(m=>m.x===x && m.y===y) && !g.chests?.some(c=>!c.opened && c.x===x && c.y===y) && !(g.player.x===x && g.player.y===y)) spots.push({x,y}); if(spots.length) return pick(g,spots); }
-  const spots=g.tiles.flatMap((row,y)=>row.map((v,x)=>({v,x,y}))).filter(t=>t.v===0 && !(t.x===g.player.x && t.y===g.player.y) && !g.monsters.some(m=>m.x===t.x && m.y===t.y) && !g.chests?.some(c=>!c.opened && c.x===t.x && c.y===t.y));
-  return pick(g,spots) || {x:g.player.x,y:g.player.y};
+function teleportPosition(g: Game, mainFloorOnly = false) {
+  const clear = (x: number, y: number) =>
+    g.tiles[y]?.[x] === 0 &&
+    !isSecretDoorTile(g, x, y) &&
+    !(g.player.x === x && g.player.y === y) &&
+    !g.monsters.some(m => actorOccupies(m, x, y)) &&
+    !g.chests?.some(c => !c.opened && c.x === x && c.y === y);
+  if (!mainFloorOnly && g.secretDoors?.length && random(g) < 0.15) {
+    const door = pick(g, g.secretDoors);
+    prepareSecretRoom(g, door);
+    const spots = [];
+    for (let y = 4; y <= 10; y++)
+      for (let x = 33; x <= 39; x++)
+        if (clear(x, y)) spots.push({ x, y });
+    if (spots.length) return pick(g, spots);
+  }
+  const spots = g.tiles.flatMap((row, y) =>
+    row.flatMap((_, x) => (!mainFloorOnly || x < 29) && clear(x, y) ? [{ x, y }] : [])
+  );
+  return pick(g, spots) || { x: g.player.x, y: g.player.y };
+}
+function teleportPlayer(g: Game) {
+  const escapingSecretRoom = !!g.inSecret || g.player.x >= 29;
+  const destination = teleportPosition(g, escapingSecretRoom);
+  if (escapingSecretRoom && destination.x >= 29)
+    throw Error("No open tile in the main dungeon.");
+  Object.assign(g.player, destination);
+  g.inSecret = destination.x >= 33 ? g.secretDoors?.find(d => d.roomMade)?.id : undefined;
+  g.pendingLoot = undefined;
+  g.pendingChest = undefined;
+  g.pendingDoor = undefined;
+  g.combat = undefined;
+  g.encounter = undefined;
+  log(g, "Teleported to safety.");
 }
 function position(g: Game) {
   const a: { x: number; y: number }[] = [];
@@ -1334,6 +1366,7 @@ function monsterTurn(g: Game) {
       ]);
       const x = m.x + dx,
         y = m.y + dy;
+      if (isSecretDoorTile(g, x, y) || (m.className === "Dragon" && isSecretDoorTile(g, x + 1, y))) continue;
       const other = g.monsters.find((a) => a.id !== m.id && actorOccupies(a,x,y));
       if (m.className === "Shadow" && other && (other.merchant || other.npc)) {
         strike(g, m, other);
@@ -1428,7 +1461,7 @@ function performSpell(g: Game, s: (typeof spells)[number], m: Actor | undefined,
       }
       const dx=Math.sign(m!.x-p.x), dy=dx===0 ? Math.sign(m!.y-p.y) : 0;
       const startX = m!.x, startY = m!.y;
-      for (let n=0;n<10;n++) { const x=m!.x+dx,y=m!.y+dy; if (g.tiles[y]?.[x]!==0 || g.monsters.some(a=>a.id!==m!.id && a.x===x && a.y===y) || g.chests?.some(c=>!c.opened && c.x===x && c.y===y)) { hurt(g,m!,5,"Collision"); break; } m!.x=x; m!.y=y; }
+      for (let n=0;n<10;n++) { const x=m!.x+dx,y=m!.y+dy; if (g.tiles[y]?.[x]!==0 || isSecretDoorTile(g, x, y) || (m!.className === "Dragon" && isSecretDoorTile(g, x + 1, y)) || g.monsters.some(a=>a.id!==m!.id && a.x===x && a.y===y) || g.chests?.some(c=>!c.opened && c.x===x && c.y===y)) { hurt(g,m!,5,"Collision"); break; } m!.x=x; m!.y=y; }
       if (m!.hp <= 0 || m!.x !== startX || m!.y !== startY) {
         g.combat = undefined;
         g.encounter = undefined;
@@ -1505,14 +1538,7 @@ function performSpell(g: Game, s: (typeof spells)[number], m: Actor | undefined,
           break;
         }
         case "Teleport":
-          Object.assign(p, teleportPosition(g));
-          g.inSecret = p.x >= 33 ? g.secretDoors?.find(d=>d.roomMade)?.id : undefined;
-          g.pendingLoot = undefined;
-          g.pendingChest = undefined;
-          g.pendingDoor = undefined;
-          g.combat = undefined;
-          g.encounter = undefined;
-          log(g, "Teleported to safety.");
+          teleportPlayer(g);
           break;
         case "Gust":
           hurt(g, m!, 10);
@@ -2010,14 +2036,7 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       else hurt(g, p, p.hp, "Nuke");
       break;
     case "teleport":
-      Object.assign(p, teleportPosition(g));
-          g.inSecret = p.x >= 33 ? g.secretDoors?.find(d=>d.roomMade)?.id : undefined;
-      g.pendingLoot = undefined;
-      g.pendingChest = undefined;
-      g.pendingDoor = undefined;
-      g.combat = undefined;
-      g.encounter = undefined;
-      log(g, "Teleported to safety.");
+      teleportPlayer(g);
       break;
     case "vision":
       g.light = g.light.map((r) => r.map(() => true));
@@ -2210,7 +2229,7 @@ export function act(input: Game, a: Action): Game {
       g.pendingLoot = undefined;
       const x = p.x + a.dx,
         y = p.y + a.dy;
-      if (g.inSecret && x === 32 && y === 7) {
+      if (g.inSecret && x === secretRoomDoor.x - 1 && y === secretRoomDoor.y) {
         const door = g.secretDoors?.find((d) => d.id === g.inSecret)!;
         p.x = door.x - 1;
         p.y = door.y;

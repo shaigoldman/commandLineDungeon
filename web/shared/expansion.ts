@@ -7,6 +7,13 @@ import { makeItem, makeMonster, random, randomItem, randomItemOfRarity, pickItem
 const roll = (g: Game, n: number) => Math.floor(random(g) * n);
 const pick = <T>(g: Game, a: T[]) => a[roll(g, a.length)];
 const uid = (g: Game) => "ash-" + roll(g, 2 ** 32).toString(36);
+export const secretRoomDoor = { x: 33, y: 7 };
+export function isSecretDoorTile(g: Game, x: number, y: number) {
+  return !!g.secretDoors?.some(door =>
+    (x === door.x && y === door.y) ||
+    (door.roomMade && y === secretRoomDoor.y && (x === secretRoomDoor.x || x === secretRoomDoor.x - 1))
+  );
+}
 export const history = [
   [
     "Mabel Crumb",
@@ -249,6 +256,7 @@ export function spawnGhosts(g: Game) {
   for (const h of [...(g.haunting || [])])
     if (
       g.turn >= h.due &&
+      !isSecretDoorTile(g, h.x, h.y) &&
       !(g.player.x === h.x && g.player.y === h.y) &&
       !g.monsters.some((m) => m.x === h.x && m.y === h.y)
     ) {
@@ -310,7 +318,7 @@ export function summon(g: Game, monstersOnly = false) {
     if (
       g.tiles[y]?.[x] === 0 &&
       (g.inSecret ? x >= 33 : x < 29) &&
-      !(g.inSecret && x === 33 && y === 7) &&
+      !isSecretDoorTile(g, x, y) &&
       !g.monsters.some((m) => m.x === x && m.y === y) &&
       !g.chests?.some((c) => !c.opened && c.x === x && c.y === y) &&
       !g.loot.some((l) => l.x === x && l.y === y) &&

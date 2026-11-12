@@ -8,6 +8,7 @@ import {
   Text,
 } from "pixi.js";
 import type { Game } from "../shared/types";
+import { secretRoomDoor } from "../shared/expansion";
 import { sprite, patterns } from "./art";
 import { heroCanvas } from "./hero-art";
 import { itemArtKey, itemCanvas } from "./item-art";
@@ -304,6 +305,7 @@ export function DungeonView({
           torches = [];
           const visible = (x: number, y: number) =>
             g.light[y]?.[x] ||
+            (!!g.inSecret && x === secretRoomDoor.x && y === secretRoomDoor.y) ||
             (Math.abs(x - g.player.x) / 2) ** 2 + (y - g.player.y) ** 2 <
               g.sight ** 2;
           const rect = (
@@ -623,6 +625,7 @@ export function DungeonView({
               .filter((c) => !c.opened)
               .map((c) => ({ ...c, chestKind:c.kind, kind: c.ultra ? "UltraChest" : "Chest" })),
             ...(g.secretDoors || []).map((d) => ({ ...d, kind: "SecretDoor" })),
+            ...(g.inSecret ? [{ ...secretRoomDoor, kind: "SecretDoor" }] : []),
           ]) {
             if (!visible(object.x, object.y)) continue;
             const marker = new Sprite(textures[object.kind]);
@@ -637,8 +640,8 @@ export function DungeonView({
               text: "← EXIT",
               style: { fontSize: 11, fill: 0xffdf9f },
             });
-            exit.x = 33 * TILE;
-            exit.y = 7 * TILE - 12;
+            exit.x = secretRoomDoor.x * TILE;
+            exit.y = secretRoomDoor.y * TILE - 12;
             world.addChild(exit);
           }
           for (const a of [...g.monsters, g.player].sort((a, b) => a.y - b.y))
