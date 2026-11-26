@@ -211,6 +211,7 @@ function App() {
               {error}
             </p>
           )}
+          <p className="landing-high-score"><span>High score</span> <strong>{highScore.toLocaleString()}</strong><small>{isDeviceGame ? "On this device" : isLocalGame ? "In this browser" : "All adventurers"}</small></p>
           <button type="button" className="recover-adventure-button" onClick={()=>{setError("");setShowSavedAdventures(true);}}>Recover a saved adventure</button>
           {!isDeviceGame && isLocalGame && <p className="browser-save-note">Saved automatically in this browser. Export a backup from Saved adventures to take your hero with you.</p>}
         </form>
