@@ -13,7 +13,7 @@ describe("portable browser save backups",()=>{
       for(let seed=1;seed<=10;seed++) {
         const game=newGame("Hero",cls,"Wind",0,seed);
         const decoded=decodeBackup(encodeBackup([game],42));
-        expect(decoded).toEqual({games:[game],highScore:42});
+        expect(decoded).toEqual({games:[game],highScore:42,achievements:[]});
       }
   });
   it("exports all heroes and imports copies without overwriting active progress",async()=>{
@@ -34,6 +34,24 @@ describe("portable browser save backups",()=>{
     expect(elara.data.game?.revision).toBe(1);
     expect(elara.data.game?.player.stats.Mana).toBe(9);
     expect(elara.data.game?.startedAt).toBe(a.data.game?.startedAt);
+  });
+  it("preserves the collection across adventures, restarts, and backups", async()=>{
+    const storage=memory(), api=new LocalGameAPI(storage);
+    const first=await api.request("games",options);
+    const key=first.data.recoveryKey!, storeKey=[...storage.map.keys()][0];
+    const saved=JSON.parse(storage.map.get(storeKey)!);
+    saved.games[key].achievements=[{name:"First Blood",points:25}];
+    saved.games[key].floor=5;
+    storage.map.set(storeKey,JSON.stringify(saved));
+    await api.request("games",{...options,name:"New Hero"});
+    const collection=(await new LocalGameAPI(storage).request("achievements")).data.achievements!;
+    expect(collection).toEqual(expect.arrayContaining(["First Blood","Dragon Slayer: Mage","Into the Depths"]));
+    const backup=(await api.request("export-saves")).data.backup!;
+    const restored=new LocalGameAPI(memory());
+    expect((await restored.request("import-saves",{backup})).ok).toBe(true);
+    expect((await restored.request("achievements")).data.achievements).toEqual(expect.arrayContaining(collection));
+    const legacy=JSON.parse(backup); delete legacy.achievements;
+    expect((await restored.request("import-saves",{backup:JSON.stringify(legacy)})).ok).toBe(true);
   });
   it("restores the high score even when it exceeds the scores of surviving adventures",async()=>{
     const api=new LocalGameAPI(memory());
