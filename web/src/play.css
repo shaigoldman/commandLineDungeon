@@ -1837,3 +1837,6 @@ body.playing-game {
 .achievement-notice strong,.achievement-notice div span { display:block; }
 .achievement-notice strong { color:#ffe49a; }
 .achievement-notice button { pointer-events:auto; flex-shrink:0; min-width:36px; min-height:36px; padding:0; color:#fff1c8; font-size:22px; }
+
+.poison-danger-warning { position: sticky; top: 0; z-index: 15; display: flex; flex-wrap: wrap; gap: 4px 10px; justify-content: center; padding: 9px 12px; background: #641b24; border: 2px solid #ffb3a0; color: #fff4dd; font: 700 14px/1.3 Arial, sans-serif; text-align: center; }
+.poison-danger-warning strong { color: #ffe094; text-transform: uppercase; }
