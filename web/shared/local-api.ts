@@ -1,3 +1,4 @@
+import { achievementsFromGame } from "./achievements";
 import { decodeBackup, encodeBackup } from "./save-backup";
 import { act, newGame } from "./engine";
 import type { Game, Action, SavedAdventure } from "./types";
@@ -8,12 +9,13 @@ export interface DeviceStorage {
 export interface GameResponse {
   ok: boolean;
   status: number;
-  data: { game?: Game; recoveryKey?: string; score?: number; adventures?: SavedAdventure[]; error?: string; backup?: string; imported?: number };
+  data: { game?: Game; recoveryKey?: string; score?: number; adventures?: SavedAdventure[]; error?: string; backup?: string; imported?: number; achievements?: string[] };
 }
 interface DeviceSaves {
   version: 1;
   games: Record<string, Game>;
   highScore: number;
+  achievements?: string[];
 }
 const STORAGE_KEY = "dungeon.android.saves.v1";
 const result = (status: number, data: GameResponse["data"]): GameResponse => ({
@@ -59,9 +61,10 @@ export class LocalGameAPI {
           "The saved journeys on this device could not be read. They have not been overwritten.",
       });
     }
+    const collected = new Set([...(saves.achievements || []), ...Object.values(saves.games).flatMap(achievementsFromGame)]);
     const data =
       body && typeof body === "object" ? (body as Record<string, unknown>) : {};
-    if (path === "export-saves") return result(200, { backup: encodeBackup(Object.values(saves.games), saves.highScore) });
+    if (path === "export-saves") return result(200, { backup: encodeBackup(Object.values(saves.games), saves.highScore, [...collected]) });
     if (path === "import-saves") {
       let imported: ReturnType<typeof decodeBackup>;
       try {
@@ -75,10 +78,18 @@ export class LocalGameAPI {
         saves.games[id] = game;
       }
       saves.highScore = Math.max(saves.highScore, imported.highScore, ...imported.games.map(g => g.score));
+      saves.achievements = [...new Set([...collected, ...imported.achievements, ...imported.games.flatMap(achievementsFromGame)])];
       try { await this.storage.set(STORAGE_KEY, JSON.stringify(saves)); }
       catch { return result(503, { error: "Not enough storage to import this backup. Existing adventures have not been changed." }); }
       return result(200, { imported: imported.games.length });
     }
+    if (path === "record-achievements") {
+      if (!Array.isArray(data.achievements) || !data.achievements.every((a: unknown) => typeof a === "string")) return result(400, { error: "Invalid achievements." });
+      saves.achievements = [...new Set([...collected, ...data.achievements as string[]])];
+      try { await this.storage.set(STORAGE_KEY, JSON.stringify(saves)); } catch { return result(503, { error: "Achievements could not be saved." }); }
+      return result(200, { achievements: saves.achievements });
+    }
+    if (path === "achievements") return result(200, { achievements: [...collected] });
     if (path === "high-score") return result(200, { score: saves.highScore });
     if (path === "saved-adventures") return result(200, {adventures:Object.entries(saves.games).map(([id,game])=>({id,heroName:game.player.name || "Adventurer",startedAt:game.startedAt})).sort((a,b)=>(Date.parse(b.startedAt || "") || 0)-(Date.parse(a.startedAt || "") || 0))});
     if (path === "game") {
@@ -133,6 +144,7 @@ export class LocalGameAPI {
       }
     } else return result(404, { error: "Unknown game operation" });
     saves.games[newKey!] = game;
+    saves.achievements = [...new Set([...collected, ...achievementsFromGame(game)])];
     saves.highScore = Math.max(saves.highScore, game.score);
     try {
       await this.storage.set(STORAGE_KEY, JSON.stringify(saves));

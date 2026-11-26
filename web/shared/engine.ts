@@ -1043,6 +1043,7 @@ function kill(g: Game, m: Actor, reward = true, drops = reward) {
   if (g.combat === m.id) g.combat = undefined;
   log(g, m.name + " falls.");
   for (const item of [...new Map([...(m.inventory || []), ...m.weapons].map(i=>[i.id,i])).values()]) g.loot.push({x:m.x,y:m.y,item});
+  if (m.boss && m.name.startsWith("Ruthagor") && ["Warrior", "Knight", "Scout", "Mage"].includes(g.player.className)) achievement(g, `Dragon Slayer: ${g.player.className}`, 0);
   if (reward && !m.merchant) {
     g.kills = (g.kills || 0)+1;
     if (g.kills===1) achievement(g, "First Blood", 25);
@@ -2532,6 +2533,7 @@ export function act(input: Game, a: Action): Game {
         );
       } else {
         g.floor++;
+        if (g.floor === 5) achievement(g, "Into the Depths", 0);
         g.score += 500;
         generateFloor(g);
       }

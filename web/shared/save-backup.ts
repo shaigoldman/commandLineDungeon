@@ -50,15 +50,15 @@ function game(v: unknown): v is Game {
   for (const key of ["secretDoors", "traps", "haunting"]) if (v[key] !== undefined && (!Array.isArray(v[key]) || !v[key].every(position))) return false;
   return v.startedAt === undefined || (typeof v.startedAt === "string" && Number.isFinite(Date.parse(v.startedAt)));
 }
-export function encodeBackup(games: Game[], highScore: number) {
-  return JSON.stringify({ format: "teeny-dungeon-save", version: 1, exportedAt: new Date().toISOString(), games, highScore });
+export function encodeBackup(games: Game[], highScore: number, achievements: string[] = []) {
+  return JSON.stringify({ format: "teeny-dungeon-save", version: 1, exportedAt: new Date().toISOString(), games, highScore, achievements });
 }
-export function decodeBackup(text: string): { games: Game[]; highScore: number } {
+export function decodeBackup(text: string): { games: Game[]; highScore: number; achievements: string[] } {
   if (new TextEncoder().encode(text).length > MAX_BACKUP_BYTES) throw Error("This backup is too large (maximum 10 MB).");
   let value: unknown;
   try { value = JSON.parse(text); } catch { throw Error("Choose a valid Teeny Dungeon save backup (.json)."); }
   if (!object(value) || value.format !== "teeny-dungeon-save" || value.version !== 1 || !Array.isArray(value.games)
-    || !value.games.every(game) || !number(value.highScore) || value.highScore < 0)
+    || !value.games.every(game) || !number(value.highScore) || value.highScore < 0 || (value.achievements !== undefined && !strings(value.achievements)))
     throw Error("This backup is invalid or from an unsupported version. Existing adventures have not been changed.");
-  return { games: value.games, highScore: value.highScore };
+  return { games: value.games, highScore: value.highScore, achievements: value.achievements || [] };
 }

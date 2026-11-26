@@ -179,6 +179,22 @@ describe("source mechanics", () => {
     expect(g.floor).toBe(3);
     expect(g.status).toBe("playing");
   });
+  it("awards a dragon victory for each hero and the sixth-floor milestone", () => {
+    for (const cls of ["Warrior", "Knight", "Scout", "Mage"]) {
+      let g = newGame("Hero", cls, "Wind", 0, 42);
+      g.floor = 2; generateFloor(g);
+      const dragon = g.monsters.find(m => m.boss)!;
+      g.monsters = [dragon];
+      const shield = makeItem(g, "Nuke Shield"); g.inventory.push(shield);
+      g = act(g, { type: "use", id: shield.id });
+      const nuke = makeItem(g, "Nuke"); g.inventory.push(nuke);
+      g = act(g, { type: "use", id: nuke.id });
+      expect(g.achievements?.some(a => a.name === `Dragon Slayer: ${cls}`)).toBe(true);
+      g.floor = 4; g.monsters = []; Object.assign(g.player, g.stairs); g.stairs.locked = false;
+      g = act(g, { type: "ascend" });
+      expect(g.achievements?.some(a => a.name === "Into the Depths")).toBe(true);
+    }
+  });
   it("nuke shield protects once, unshielded nukes kill", () => {
     let g = game();
     let shield = makeItem(g, "Nuke Shield");

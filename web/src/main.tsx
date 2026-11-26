@@ -8,6 +8,7 @@ import { classes } from "../shared/catalog";
 import { Portrait } from "./Portrait";
 import { PlayScreen } from "./PlayScreen";
 import { requestGame, isLocalGame, isDeviceGame } from "./game-api";
+import { AchievementCollection } from "./AchievementCollection";
 import { SavedAdventuresMenu } from "./SavedAdventuresMenu";
 import { rememberAdventure } from "./saved-adventures";
 function App() {
@@ -21,6 +22,7 @@ function App() {
     [element, setElement] = useState("Wind"),
     [difficulty, setDifficulty] = useState(0),
     [showSavedAdventures,setShowSavedAdventures] = useState(false),
+    [showAchievements,setShowAchievements] = useState(false),
     [journeyId, setJourneyId] = useState(
       localStorage.getItem("dungeon-key") || "",
     ),
@@ -29,6 +31,7 @@ function App() {
       revision: number;
     }>();
   const lock = useRef(false);
+  const closeAchievements=useCallback(()=>setShowAchievements(false),[]);
   const closeSavedAdventures=useCallback(()=>{setShowSavedAdventures(false);setError("");},[]);
   async function api(path: string, body?: unknown, key?: string) {
     const { ok, data } = await requestGame(path, body, key);
@@ -62,12 +65,12 @@ function App() {
   useEffect(() => {
     if (game || showSavedAdventures || !Capacitor.isNativePlatform()) return;
     const h = NativeApp.addListener("backButton", () => {
-      void NativeApp.exitApp();
+      if (showAchievements) closeAchievements(); else void NativeApp.exitApp();
     });
     return () => {
       void h.then((v) => v.remove());
     };
-  }, [!!game,showSavedAdventures]);
+  }, [!!game,showSavedAdventures,showAchievements,closeAchievements]);
   async function act(action: Action) {
     if (!game || lock.current) return;
     lock.current = true;
@@ -117,7 +120,7 @@ function App() {
   if (!game)
     return (
       <>
-      <div className={"landing"+(!isDeviceGame?" browser-welcome":"")} inert={showSavedAdventures} aria-hidden={showSavedAdventures || undefined}>
+      <div className={"landing"+(!isDeviceGame?" browser-welcome":"")} inert={showSavedAdventures || showAchievements} aria-hidden={showSavedAdventures || showAchievements || undefined}>
         <div className="landing-art">
           <div className="sigil">✦</div>
           <p className="eyebrow">A TURN-BASED DUNGEON RPG</p>
@@ -212,11 +215,13 @@ function App() {
             </p>
           )}
           <p className="landing-high-score"><span>High score</span> <strong>{highScore.toLocaleString()}</strong><small>{isDeviceGame ? "On this device" : isLocalGame ? "In this browser" : "All adventurers"}</small></p>
+          <button type="button" className="recover-adventure-button" onClick={()=>setShowAchievements(true)}>View achievements</button>
           <button type="button" className="recover-adventure-button" onClick={()=>{setError("");setShowSavedAdventures(true);}}>Recover a saved adventure</button>
           {!isDeviceGame && isLocalGame && <p className="browser-save-note">Saved automatically in this browser. Export a backup from Saved adventures to take your hero with you.</p>}
         </form>
       </div>
       {savedMenu}
+      {showAchievements && <AchievementCollection onClose={closeAchievements} />}
       </>
     );
   return (
