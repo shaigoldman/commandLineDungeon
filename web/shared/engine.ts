@@ -1048,6 +1048,7 @@ function kill(g: Game, m: Actor, reward = true, drops = reward) {
     if (g.kills===1) achievement(g, "First Blood", 25);
     if (g.kills===10) achievement(g, "Dungeon Veteran", 100);
     if (m.boss) achievement(g, "Guardian Slayer", 150);
+    if (m.boss && m.name.startsWith("Ruthagor") && ["Warrior", "Knight", "Scout", "Mage"].includes(g.player.className)) achievement(g, `Dragon Slayer: ${g.player.className}`, 0);
     if (g.inventory.some(i => i.kind==="mana-leech")) g.player.stats.Mana=Math.min(manaCap(g.player),g.player.stats.Mana+1);
     if (g.inventory.some(i => i.kind==="thief-gloves") && random(g)<0.25) { const gold=roll(g,3); g.player.gold=(g.player.gold || 0)+gold; log(g, `Thief's Gloves found ${gold} gold.`); }
   }
@@ -2532,6 +2533,7 @@ export function act(input: Game, a: Action): Game {
         );
       } else {
         g.floor++;
+        if (g.floor === 5) achievement(g, "Into the Depths", 0);
         g.score += 500;
         generateFloor(g);
       }
