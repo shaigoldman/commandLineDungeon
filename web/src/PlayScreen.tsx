@@ -92,6 +92,7 @@ export function PlayScreen({
   const detailDanger = detailEnemy ? incomingDamage(detailEnemy, p) : undefined;
   const detailForecast = detailEnemy ? outgoingDamage(p, detailEnemy) : undefined;
   const [choice, setChoice] = useState("");
+  const [armorNotice, setArmorNotice] = useState<{message:string; revision:number} | null>(null);
   const [damageNotice, setDamageNotice] = useState<{amount:number; revision:number} | null>(null);
   const [inspectedSpell, setInspectedSpell] = useState<(typeof spellDefinitions)[number] | null>(null);
   const [panel, setPanel] = useState<
@@ -452,6 +453,11 @@ export function PlayScreen({
     )
       setPanel(null);
     const entries = freshGameLog(before, after);
+    const armorMessages = entries.filter(line => line.startsWith("ARMOR:")).map(line => line.slice(7));
+    if (armorMessages.length) {
+      setArmorNotice({message: armorMessages.join(" "), revision: after.revision});
+      setTimeout(() => setArmorNotice(current => current?.revision === after.revision ? null : current), 4000);
+    }
     const boon = entries.find(line => line.startsWith("FLOOR BOON:"));
     if (boon) setBoonNotice(boon.replace("FLOOR BOON: ", ""));
     if (a.type === "use" || a.type === "use-floor") {
@@ -650,6 +656,7 @@ export function PlayScreen({
     >
       {lethalPoison && <aside className="poison-danger-warning" role="alert"><strong>☠ Poison danger</strong><span>{lifeSavingApple ? `Your next step would be fatal. ${lifeSavingApple.name} will save you.` : "Your next step will kill you. Heal or cure poison before moving."}</span></aside>}
       <AchievementNotices key={`${g.startedAt}:${p.name}`} achievements={g.achievements} />
+      {armorNotice && <div key={armorNotice.revision} className="armor-notice" role="status">🛡 {armorNotice.message}</div>}
       {damageNotice && <div key={damageNotice.revision} className="damage-notice" role="status">−{n(damageNotice.amount)} HP · Health lost</div>}
       <header className="play-header">
         {boonNotice && <aside className="boon-notice" role="status" aria-live="polite">

@@ -999,10 +999,13 @@ export function experience(monsterLevel: number, playerLevel: number) {
     : Math.ceil(10 / (playerLevel - monsterLevel));
 }
 function hurt(g: Game, a: Actor, n: number, source = "Attack", reward = true, attacker?: Actor) {
+  const incoming = Math.trunc(n);
   if (source === "Attack") n = Math.max(0, n - armorOf(a));
   n = Math.trunc(n);
+  const blocked = source === "Attack" ? Math.max(0, incoming - n) : 0;
   a.hp = Math.max(0, a.hp - n);
   log(g, `${a.name} takes ${n} ${["Poison", "Fire"].includes(source) ? source.toLowerCase() + " " : ""}damage.`);
+  if (blocked > 0) log(g, `ARMOR: ${a.name} blocked ${blocked} damage${n === 0 ? " — no damage dealt" : ""}.`);
   if (a.hp <= 0 && a.id === "player") {
     const apple = g.inventory.find(i => i.kind === "diamond-apple") || g.inventory.find(i => i.kind === "golden-apple");
     if (apple) {
@@ -1130,9 +1133,14 @@ function checkLevel(g: Game) {
   }
 }
 function tickPenalties(a: Actor) { for (const key of ["Accuracy Penalty","Speed Penalty"]) if (a.effects[key] && --a.effects[key][0]<=0) delete a.effects[key]; }
-function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
+function strike(g: Game, a: Actor, b: Actor, unarmed = false, effectsTicked = false) {
   syncPassiveStats(g);
-  if (a.id !== "player") { tickEnemyPoison(g, a); if (a.hp <= 0) return false; }
+  if (a.id !== "player" && !effectsTicked) {
+    tickEnemyPoison(g, a);
+    if (a.hp <= 0) return false;
+    tickEnemyCurse(g, a);
+    if (a.hp <= 0) return false;
+  }
   if (a.id!=="player") syncMonsterItems(a);
   if (b.id!=="player") syncMonsterItems(b);
   if (a.burn) {
@@ -1224,6 +1232,12 @@ function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
     a.stats.Mana = Math.min(manaCap(a), a.stats.Mana + 1);
   return damage > 0;
 }
+function tickEnemyCurse(g: Game, enemy: Actor) {
+  const effect = enemy.effects.Curse;
+  if (!effect) return;
+  hurt(g, enemy, effect[1], "Curse");
+  if (--effect[0] <= 0) delete enemy.effects.Curse;
+}
 function tickEnemyPoison(g: Game, enemy: Actor) {
   const effect = enemy.effects.Poison;
   if (!effect || enemy.poisonImmune) return;
@@ -1311,7 +1325,7 @@ function monsterTurn(g: Game) {
     for (const m of [...g.monsters]) {
       if ((!!g.inSecret !== m.x >= 29 && m.className !== "Ghost" && m.className !== "Shadow") || m.spawnTurn === g.turn) continue;
       if (pass === 1 && (m.stats.Speed <= 5 || m.className === "Shadow")) continue;
-      if (m.effects.Curse) { hurt(g,m,m.effects.Curse[1],"Curse"); if (--m.effects.Curse[0]<=0) delete m.effects.Curse; }
+      tickEnemyCurse(g, m);
       if (m.hp <= 0) {
         kill(g, m);
         continue;
@@ -1336,7 +1350,7 @@ function monsterTurn(g: Game) {
         y = m.y + dy;
       const other = g.monsters.find((a) => a.id !== m.id && actorOccupies(a,x,y));
       if (m.className === "Shadow" && other && (other.merchant || other.npc)) {
-        strike(g, m, other);
+        strike(g, m, other, false, true);
         continue;
       }
       const ghostSpace = m.className === "Ghost" && y>=0 && y<g.tiles.length && x>=0 && x<g.tiles[y].length && !(x===g.player.x && y===g.player.y) && !other;
