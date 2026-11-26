@@ -83,6 +83,12 @@ export class LocalGameAPI {
       catch { return result(503, { error: "Not enough storage to import this backup. Existing adventures have not been changed." }); }
       return result(200, { imported: imported.games.length });
     }
+    if (path === "record-achievements") {
+      if (!Array.isArray(data.achievements) || !data.achievements.every((a: unknown) => typeof a === "string")) return result(400, { error: "Invalid achievements." });
+      saves.achievements = [...new Set([...collected, ...data.achievements as string[]])];
+      try { await this.storage.set(STORAGE_KEY, JSON.stringify(saves)); } catch { return result(503, { error: "Achievements could not be saved." }); }
+      return result(200, { achievements: saves.achievements });
+    }
     if (path === "achievements") return result(200, { achievements: [...collected] });
     if (path === "high-score") return result(200, { score: saves.highScore });
     if (path === "saved-adventures") return result(200, {adventures:Object.entries(saves.games).map(([id,game])=>({id,heroName:game.player.name || "Adventurer",startedAt:game.startedAt})).sort((a,b)=>(Date.parse(b.startedAt || "") || 0)-(Date.parse(a.startedAt || "") || 0))});
