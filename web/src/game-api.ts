@@ -1,3 +1,4 @@
+import { achievementsFromGame } from "../shared/achievements";
 import { readSavedAdventures } from "./saved-adventures";
 import type { SavedAdventure } from "../shared/types";
 import { Capacitor } from "@capacitor/core";
@@ -29,6 +30,7 @@ export async function requestGame(
   body?: unknown,
   key?: string,
 ): Promise<GameResponse> {
+  if (path === "achievements") return device.request(path);
   if (isLocalGame) {
     const request = () => device.request(path, body, key);
     // Serialize read/modify/write across tabs as well as within this app instance.
@@ -42,7 +44,9 @@ export async function requestGame(
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
-  return prepareResponse({ ok: r.ok, status: r.status, data: await r.json() });
+  const response = prepareResponse({ ok: r.ok, status: r.status, data: await r.json() });
+  if (response.ok && response.data.game) await device.request("record-achievements", { achievements: achievementsFromGame(response.data.game) });
+  return response;
 }
 
 export async function listSavedAdventures(): Promise<SavedAdventure[]> {
