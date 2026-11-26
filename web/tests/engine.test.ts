@@ -151,6 +151,30 @@ describe("source mechanics", () => {
     expect(g.player.hp).toBe(17);
     expect(g.player.effects.Poison).toEqual([1, 3]);
   });
+  it("damages enemies with poison, curse and burn on each combat attack", () => {
+    let g = game();
+    const m = makeMonster(g, "Zombie", 1);
+    m.hp = 1000; m.stats.Speed = 100; m.stats.Accuracy = 100;
+    m.effects.Poison = [2, 2]; m.effects.Curse = [2, 3]; m.burn = [2, 4];
+    g.monsters = [m]; g.combat = m.id;
+    g = act(g, { type: "attack" });
+    const enemy = g.monsters.find(x => x.id === m.id)!;
+    expect(enemy.effects.Poison).toEqual([1, 2]);
+    expect(enemy.effects.Curse).toEqual([1, 3]);
+    expect(enemy.burn).toEqual([1, 4]);
+    expect(g.log.some(line => line.includes("takes 2 poison damage"))).toBe(true);
+    expect(g.log.some(line => line.includes("takes 3 damage"))).toBe(true);
+    expect(g.log.some(line => line.includes("takes 4 fire damage"))).toBe(true);
+  });
+  it("reports damage blocked by armor and a fully blocked hit", () => {
+    let g = game();
+    const m = makeMonster(g, "Zombie", 1);
+    m.hp = 1000; m.stats.Speed = 100; m.stats.Accuracy = 100;
+    g.player.stats.Armor = 1000;
+    g.monsters = [m]; g.combat = m.id;
+    g = act(g, { type: "attack" });
+    expect(g.log.some(line => line.startsWith("ARMOR: Ada blocked ") && line.includes("no damage dealt"))).toBe(true);
+  });
   it("rope guarantees escape and is consumed", () => {
     let g = game();
     g.combat = g.monsters[0].id;
