@@ -25,6 +25,17 @@ describe("source mechanics", () => {
       expect(g.player.stats.Mana).toBe(10);
     }
   });
+  it("adds bag slots repeatedly, including bags saved with legacy values", () => {
+    let g = game();
+    g.capacity = 10;
+    for (const [name, oldValue, expected] of [["Bigger Bag", 8, 11], ["Huge Bag", 10, 13], ["Bigger Bag", 8, 14]] as const) {
+      const bag = makeItem(g, name);
+      bag.value = oldValue;
+      g.inventory.push(bag);
+      g = act(g, { type: "use", id: bag.id });
+      expect(g.capacity).toBe(expected);
+    }
+  });
   it("matches original hit and EXP formulas", () => {
     const a = game().player,
       b = newGame("B", "Scout").player;

@@ -78,6 +78,9 @@ export function PlayScreen({
   onSavedAdventures,
   clearError,
 }: Props) {
+  const poison = g.player.effects.Poison;
+  const lethalPoison = g.status === "playing" && poison && !g.player.poisonImmune && Math.trunc(poison[1]) >= g.player.hp && g.player.hp > 0;
+  const lifeSavingApple = g.inventory.find(i => i.kind === "diamond-apple") || g.inventory.find(i => i.kind === "golden-apple");
   const bagOverflow = g.status === "playing" && !g.pendingLevels && g.inventory.length+Number(g.player.weapons.length>0)>capacityOf(g);
   const p = g.player,
     enemy = g.monsters.find((m) => m.id === g.combat),
@@ -645,6 +648,7 @@ export function PlayScreen({
         (p.hp / p.stats.Health <= 0.1 ? " critical-hp" : "")
       }
     >
+      {lethalPoison && <aside className="poison-danger-warning" role="alert"><strong>☠ Poison danger</strong><span>{lifeSavingApple ? `Your next step would be fatal. ${lifeSavingApple.name} will save you.` : "Your next step will kill you. Heal or cure poison before moving."}</span></aside>}
       <AchievementNotices key={`${g.startedAt}:${p.name}`} achievements={g.achievements} />
       {damageNotice && <div key={damageNotice.revision} className="damage-notice" role="status">−{n(damageNotice.amount)} HP · Health lost</div>}
       <header className="play-header">

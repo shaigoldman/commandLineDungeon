@@ -1346,3 +1346,7 @@ button {
   .browser-welcome .creation { padding:32px; border-color:#7e795c; box-shadow:0 12px 48px #0003; }
   .browser-welcome .recover-adventure-button { width:100%; min-height:44px; margin-top:10px; }
 }
+
+.landing-high-score { display:flex; align-items:baseline; flex-wrap:wrap; gap:6px 10px; margin:16px 0 8px; color:#ddc9a6; }
+.landing-high-score strong { color:#ffe4a7; font-size:1.3em; }
+.landing-high-score small { width:100%; opacity:.8; }

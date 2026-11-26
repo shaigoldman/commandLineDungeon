@@ -273,7 +273,7 @@ export function makeItem(g: Game, name: string): Item {
     vision: "Permanently reveal this floor.",
     sight: "Increase sight range by 1.",
     hand: "Add one equipment slot.",
-    bag: `Increase inventory capacity to ${i.value}.`,
+    bag: `Permanently add ${i.name === "Huge Bag" ? 2 : i.name === "Bigger Bag" ? 1 : i.value} inventory slot${(i.name === "Huge Bag" ? 2 : i.name === "Bigger Bag" ? 1 : i.value) === 1 ? "" : "s"}.`,
     trash: "It is just trash. Please do not litter.",
   };
   const newDescriptions: Record<string,string> = {
@@ -2029,7 +2029,7 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       g.hands++;
       break;
     case "bag":
-      g.capacity = Math.max(g.capacity, i.value);
+      g.capacity += i.name === "Huge Bag" ? 2 : i.name === "Bigger Bag" ? 1 : i.value;
       break;
     case "xp":
       addXP(g, 100);
