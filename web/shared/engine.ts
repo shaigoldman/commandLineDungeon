@@ -1043,12 +1043,12 @@ function kill(g: Game, m: Actor, reward = true, drops = reward) {
   if (g.combat === m.id) g.combat = undefined;
   log(g, m.name + " falls.");
   for (const item of [...new Map([...(m.inventory || []), ...m.weapons].map(i=>[i.id,i])).values()]) g.loot.push({x:m.x,y:m.y,item});
+  if (m.boss && m.name.startsWith("Ruthagor") && ["Warrior", "Knight", "Scout", "Mage"].includes(g.player.className)) achievement(g, `Dragon Slayer: ${g.player.className}`, 0);
   if (reward && !m.merchant) {
     g.kills = (g.kills || 0)+1;
     if (g.kills===1) achievement(g, "First Blood", 25);
     if (g.kills===10) achievement(g, "Dungeon Veteran", 100);
     if (m.boss) achievement(g, "Guardian Slayer", 150);
-    if (m.boss && m.name.startsWith("Ruthagor") && ["Warrior", "Knight", "Scout", "Mage"].includes(g.player.className)) achievement(g, `Dragon Slayer: ${g.player.className}`, 0);
     if (g.inventory.some(i => i.kind==="mana-leech")) g.player.stats.Mana=Math.min(manaCap(g.player),g.player.stats.Mana+1);
     if (g.inventory.some(i => i.kind==="thief-gloves") && random(g)<0.25) { const gold=roll(g,3); g.player.gold=(g.player.gold || 0)+gold; log(g, `Thief's Gloves found ${gold} gold.`); }
   }
