@@ -80,7 +80,7 @@ export function PlayScreen({
 }: Props) {
   const poison = g.player.effects.Poison;
   const lethalPoison = g.status === "playing" && poison && !g.player.poisonImmune && Math.trunc(poison[1]) >= g.player.hp && g.player.hp > 0;
-  const lifeSavingApple = g.inventory.find(i => i.kind === "diamond-apple" || i.kind === "golden-apple");
+  const lifeSavingApple = g.inventory.find(i => i.kind === "diamond-apple") || g.inventory.find(i => i.kind === "golden-apple");
   const bagOverflow = g.status === "playing" && !g.pendingLevels && g.inventory.length+Number(g.player.weapons.length>0)>capacityOf(g);
   const p = g.player,
     enemy = g.monsters.find((m) => m.id === g.combat),
