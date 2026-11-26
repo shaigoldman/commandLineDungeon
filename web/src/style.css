@@ -1350,3 +1350,15 @@ button {
 .landing-high-score { display:flex; align-items:baseline; flex-wrap:wrap; gap:6px 10px; margin:16px 0 8px; color:#ddc9a6; }
 .landing-high-score strong { color:#ffe4a7; font-size:1.3em; }
 .landing-high-score small { width:100%; opacity:.8; }
+
+.collection-backdrop { position:fixed; inset:0; z-index:500; display:grid; place-items:center; padding:16px; background:#070b10dd; }
+.achievement-collection { position:relative; width:min(100%,600px); max-height:min(85vh,750px); overflow:auto; padding:24px; box-sizing:border-box; border:2px solid #b89660; border-radius:10px; background:#17232c; color:#f4e7ce; box-shadow:0 10px 40px #000; }
+.collection-close { position:absolute; right:16px; top:16px; font-size:20px; }
+.collection-note { color:#cbbda4; font-size:13px; }
+.achievement-collection ul { padding:0; margin:20px 0 0; list-style:none; display:grid; gap:8px; }
+.achievement-collection li { display:flex; align-items:center; gap:12px; padding:12px; border:1px solid #5e6b68; border-radius:6px; background:#25333a; }
+.achievement-collection li.earned { border-color:#d1aa5f; background:#413c2b; }
+.achievement-collection li > span { font-size:22px; }
+.achievement-collection li div { flex:1; }
+.achievement-collection li p { margin:3px 0 0; font-size:13px; }
+.achievement-collection li small { color:#e5ce9a; white-space:nowrap; }
