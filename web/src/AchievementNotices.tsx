@@ -21,7 +21,7 @@ export function AchievementNotices({ achievements = [] }: { achievements?: Achie
   return <aside className="achievement-notices" role="status" aria-live="polite" aria-atomic="true">
     {current && <div className="achievement-notice">
       <span aria-hidden="true">🏆</span>
-      <div><strong>Achievement unlocked</strong><span>{current.name} · +{current.points} points</span></div>
+      <div><strong>Achievement unlocked</strong><span>{current.name}{current.points > 0 ? ` · +${current.points} points` : ""}</span></div>
       <button aria-label="Dismiss achievement announcement" onClick={() => setQueue(items => items.slice(1))}>×</button>
     </div>}
   </aside>;
