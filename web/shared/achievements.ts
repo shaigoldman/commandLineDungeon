@@ -11,6 +11,13 @@ export const ACHIEVEMENTS = [
     description: `Defeat Ruthagor as a ${hero}.`,
   })),
   { name: "Into the Depths", description: "Reach floor 6." },
+  { name: "Monster Hunter", description: "Defeat 25 enemies in one adventure." },
+  { name: "Dungeon Legend", description: "Defeat 50 enemies in one adventure." },
+  { name: "Seasoned Adventurer", description: "Reach level 5." },
+  { name: "Deep Pockets", description: "Hold 100 gold at once." },
+  { name: "Treasure Seeker", description: "Open a treasure chest." },
+  { name: "Behind Closed Doors", description: "Unlock a secret door." },
+  { name: "Supporting Local Business", description: "Buy an item from a villager." },
 ];
 
 /** Infer only milestones established by the state of an existing adventure. */
@@ -19,5 +26,11 @@ export function achievementsFromGame(game: Game): string[] {
   if ((game.status === "won" || game.floor >= 3) && ["Warrior", "Knight", "Scout", "Mage"].includes(game.player.className))
     names.push(`Dragon Slayer: ${game.player.className}`);
   if (game.floor >= 5) names.push("Into the Depths");
+  if ((game.kills || 0) >= 25) names.push("Monster Hunter");
+  if ((game.kills || 0) >= 50) names.push("Dungeon Legend");
+  if (game.player.level >= 5) names.push("Seasoned Adventurer");
+  if ((game.player.gold || 0) >= 100) names.push("Deep Pockets");
+  if (game.chests?.some(c => c.opened)) names.push("Treasure Seeker");
+  if (game.secretDoors?.some(d => d.unlocked)) names.push("Behind Closed Doors");
   return names;
 }

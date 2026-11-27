@@ -1034,7 +1034,7 @@ function addXP(g: Game, amount: number) {
 }
 function achievement(g: Game, name: string, points: number) {
   g.achievements ??= [];
-  if (!g.achievements.some(a => a.name===name)) { g.achievements.push({name,points}); g.score+=points; log(g, `Achievement: ${name} (+${points} score)`); }
+  if (!g.achievements.some(a => a.name===name)) { g.achievements.push({name,points}); g.score+=points; log(g, `Achievement: ${name}${points ? ` (+${points} score)` : ""}`); }
 }
 function kill(g: Game, m: Actor, reward = true, drops = reward) {
   if (!g.monsters.some((a) => a.id === m.id)) return;
@@ -2687,6 +2687,13 @@ export function act(input: Game, a: Action): Game {
   if (input.inventory.some(i=>i.kind==="ghost-boots") && !g.inventory.some(i=>i.kind==="ghost-boots") && g.tiles[p.y]?.[p.x]!==0 && p.hp>0) hurt(g,p,p.hp,"Entombed");
   syncPassiveStats(g);
   grantFloorBoon(g);
+  if ((g.kills || 0) >= 25) achievement(g, "Monster Hunter", 0);
+  if ((g.kills || 0) >= 50) achievement(g, "Dungeon Legend", 0);
+  if (p.level >= 5) achievement(g, "Seasoned Adventurer", 0);
+  if ((p.gold || 0) >= 100) achievement(g, "Deep Pockets", 0);
+  if (g.floor === input.floor && g.chests?.some(c => c.opened && input.chests?.some(old => old.id === c.id && !old.opened))) achievement(g, "Treasure Seeker", 0);
+  if (g.floor === input.floor && g.secretDoors?.some(d => d.unlocked && input.secretDoors?.some(old => old.id === d.id && !old.unlocked))) achievement(g, "Behind Closed Doors", 0);
+  if (a.type === "buy") achievement(g, "Supporting Local Business", 0);
   g.pendingBagCleanup = g.inventory.length+Number(p.weapons.length>0)>capacityOf(g);
   return g;
 }

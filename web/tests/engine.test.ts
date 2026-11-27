@@ -12,10 +12,25 @@ import {
   randomItem,
 } from "../shared/engine";
 import { classes, spells, itemDefinitions } from "../shared/catalog";
+import { achievementsFromGame } from "../shared/achievements";
 function game() {
   return newGame("Ada", "Warrior", "Wind", 0, 42);
 }
 describe("source mechanics", () => {
+  it("awards and recovers milestone achievements without changing score", () => {
+    let g = game();
+    g.monsters = [];
+    g.kills = 50; g.player.level = 5; g.player.gold = 100;
+    const score = g.score;
+    g = act(g, { type: "dismiss-object" });
+    const expected = ["Monster Hunter", "Dungeon Legend", "Seasoned Adventurer", "Deep Pockets"];
+    expect(g.achievements?.map(a => a.name)).toEqual(expect.arrayContaining(expected));
+    expect(g.score).toBe(score);
+    g = act(g, { type: "dismiss-object" });
+    for (const name of expected) expect(g.achievements?.filter(a => a.name === name)).toHaveLength(1);
+    g.achievements = [];
+    expect(achievementsFromGame(g)).toEqual(expect.arrayContaining(expected));
+  });
   it("preserves class bases, starting inventory, and fixed mana", () => {
     for (const c of ["Warrior", "Knight", "Scout", "Mage"]) {
       const g = newGame("Ada", c, "Wind", 0, 42);
