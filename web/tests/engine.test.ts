@@ -12,11 +12,15 @@ import {
   randomItem,
 } from "../shared/engine";
 import { classes, spells, itemDefinitions } from "../shared/catalog";
-import { achievementsFromGame } from "../shared/achievements";
+import { ACHIEVEMENTS, achievementsFromGame } from "../shared/achievements";
 function game() {
   return newGame("Ada", "Warrior", "Wind", 0, 42);
 }
 describe("source mechanics", () => {
+  it("offers 50 uniquely named achievements", () => {
+    expect(ACHIEVEMENTS).toHaveLength(50);
+    expect(new Set(ACHIEVEMENTS.map(a => a.name)).size).toBe(50);
+  });
   it("awards and recovers milestone achievements without changing score", () => {
     let g = game();
     g.monsters = [];
@@ -49,6 +53,7 @@ describe("source mechanics", () => {
       g.inventory.push(bag);
       g = act(g, { type: "use", id: bag.id });
       expect(g.capacity).toBe(expected);
+      expect(g.achievements?.some(a => a.name === "More Room for Loot")).toBe(true);
     }
   });
   it("matches original hit and EXP formulas", () => {
@@ -172,6 +177,7 @@ describe("source mechanics", () => {
     const rope = g.inventory.find((i) => i.kind === "rope")!;
     g = act(g, { type: "use", id: rope.id });
     expect(g.combat).toBeUndefined();
+    expect(g.achievements?.some(a => a.name === "Rope Trick")).toBe(true);
     expect(g.inventory.some((i) => i.id === rope.id)).toBe(false);
   });
   it("advances floors, requires keys and wins at floor three", () => {
@@ -220,6 +226,7 @@ describe("source mechanics", () => {
     g = act(g, { type: "use", id: nuke.id });
     expect(g.monsters).toHaveLength(0);
     expect(g.status).toBe("playing");
+    expect(g.achievements?.some(a => a.name === "Nuclear Survivor")).toBe(true);
     nuke = makeItem(g, "Nuke");
     g.inventory.push(nuke);
     g = act(g, { type: "use", id: nuke.id });

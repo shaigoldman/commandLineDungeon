@@ -197,12 +197,15 @@ describe("Ashfall playthroughs", () => {
     expect(g.seed).toBe(seed);
     expect(g.monsters[0].merchant!.buyPrices[normal.id]).toBe(price);
     g = act(g, { type: "sell", id: normal.id });
+    expect(g.achievements?.some(a => a.name === "Entrepreneur")).toBe(true);
     expect(g.player.gold).toBe(price);
     g = act(g, { type: "quote", id: wanted.id });
     expect(g.monsters[0].merchant!.buyPrices[wanted.id]).toBe(
       marketValue(wanted) * 3,
     );
+    g.achievements = [];
     g = act(g, { type: "sell", id: refused.id });
+    expect(g.achievements?.some(a => a.name === "Entrepreneur")).toBe(false);
     expect(g.inventory.some((i) => i.id === refused.id)).toBe(true);
     expect(g.marketNotice).toContain(g.monsters[0].merchant!.refusal);
   });

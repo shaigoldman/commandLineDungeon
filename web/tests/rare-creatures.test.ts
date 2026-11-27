@@ -141,6 +141,7 @@ describe("rare creatures and keyless magic", () => {
   it("befriends an ordinary enemy, unseals keyed objects, and burns moving enemies", () => {
     let g = arena(7); const m = target(g, "Zombie"); g.player.weapons = [makeItem(g, "Water Staff")];
     g = act(g, { type: "cast", spell: "Befriend" });
+    expect(g.achievements?.some(a => a.name === "Make a Friend")).toBe(true);
     expect(g.combat).toBeUndefined(); expect(g.monsters[0].merchant).toBeDefined();
     expect(g.monsters[0].x).toBe(m.x); expect(g.xp).toBe(0);
     const guarded = arena(14); const boss = target(guarded, "Zombie");
