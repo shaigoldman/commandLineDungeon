@@ -17,9 +17,9 @@ function game() {
   return newGame("Ada", "Warrior", "Wind", 0, 42);
 }
 describe("source mechanics", () => {
-  it("offers 50 uniquely named achievements", () => {
-    expect(ACHIEVEMENTS).toHaveLength(50);
-    expect(new Set(ACHIEVEMENTS.map(a => a.name)).size).toBe(50);
+  it("offers 57 uniquely named achievements", () => {
+    expect(ACHIEVEMENTS).toHaveLength(57);
+    expect(new Set(ACHIEVEMENTS.map(a => a.name)).size).toBe(57);
   });
   it("awards and recovers milestone achievements without changing score", () => {
     let g = game();
@@ -34,6 +34,18 @@ describe("source mechanics", () => {
     for (const name of expected) expect(g.achievements?.filter(a => a.name === name)).toHaveLength(1);
     g.achievements = [];
     expect(achievementsFromGame(g)).toEqual(expect.arrayContaining(expected));
+  });
+  it("requires stats to exceed 100 and recovers them from existing saves", () => {
+    let g = game(); g.monsters = [];
+    Object.assign(g.player.stats, { Power: 100, Magic: 100, Speed: 100 });
+    g = act(g, { type: "dismiss-object" });
+    const names = ["Might Beyond Measure", "Magical Overload", "Faster Than Thought"];
+    for (const name of names) expect(g.achievements?.some(a => a.name === name)).toBeFalsy();
+    Object.assign(g.player.stats, { Power: 101, Magic: 101, Speed: 101 });
+    g = act(g, { type: "dismiss-object" });
+    expect(g.achievements?.map(a => a.name)).toEqual(expect.arrayContaining(names));
+    g.achievements = [];
+    expect(achievementsFromGame(g)).toEqual(expect.arrayContaining(names));
   });
   it("preserves class bases, starting inventory, and fixed mana", () => {
     for (const c of ["Warrior", "Knight", "Scout", "Mage"]) {

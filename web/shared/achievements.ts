@@ -51,6 +51,13 @@ export const ACHIEVEMENTS = [
   { name: "Deal or No Deal", description: "Complete a bargain with a dungeon character." },
   { name: "Clean Sweep", description: "Clear every ordinary enemy from a floor and earn its boon." },
   { name: "Live to Fight Another Day", description: "Successfully flee an encounter." },
+  { name: "Obsidian Obliteration", description: "Break an equipped obsidian weapon or shield." },
+  { name: "Obsidian Smith", description: "Use an Anvil to make an obsidian weapon or shield." },
+  { name: "Cursed to Death", description: "Die from curse damage." },
+  { name: "Curiosity Cursed the Cat", description: "Curse yourself with a cursed item." },
+  { name: "Might Beyond Measure", description: "Raise your Power above 100." },
+  { name: "Magical Overload", description: "Raise your Magic above 100." },
+  { name: "Faster Than Thought", description: "Raise your Speed above 100." },
 ];
 
 /** Infer only milestones established by the state of an existing adventure. */
@@ -65,5 +72,9 @@ export function achievementsFromGame(game: Game): string[] {
   if ((game.player.gold || 0) >= 100) names.push("Deep Pockets");
   if (game.chests?.some(c => c.opened)) names.push("Treasure Seeker");
   if (game.secretDoors?.some(d => d.unlocked)) names.push("Behind Closed Doors");
+  if (game.death?.source === "Curse") names.push("Cursed to Death");
+  if (game.player.stats.Power > 100) names.push("Might Beyond Measure");
+  if (game.player.stats.Magic > 100) names.push("Magical Overload");
+  if (game.player.stats.Speed > 100) names.push("Faster Than Thought");
   return names;
 }

@@ -30,11 +30,13 @@ describe("final journey context", () => {
     let poisoned = arena(); poisoned.player.effects.Poison = [2, 2]; poisoned.player.poisonSource = "Snake";
     poisoned = act(poisoned, { type: "move", dx: 1, dy: 0 });
     expect(poisoned.death?.source).toBe("Poison");
+    expect(poisoned.achievements?.some(a => a.name === "Cursed to Death")).toBeFalsy();
     expect(deathStory(poisoned).cause).toContain("Snake");
     expect(deathStory(poisoned).flavor).toContain("green stain");
     let cursed = arena(); cursed.player.effects.Curse = [2, 3]; cursed.player.curseSource = "Ghost";
     cursed = act(cursed, { type: "move", dx: 0, dy: -1 });
     expect(cursed.death?.source).toBe("Curse");
+    expect(cursed.achievements?.some(a => a.name === "Cursed to Death")).toBe(true);
     expect(deathStory(cursed).cause).toContain("Ghost");
   });
 
