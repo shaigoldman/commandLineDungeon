@@ -12,6 +12,19 @@ function base(seed = 97) {
 }
 
 describe("weapon relic playthroughs", () => {
+  it("recognizes forging and breaking obsidian weapons", () => {
+    let g = base();
+    const weapon = makeItem(g, "Magic Sword"), anvil = makeItem(g, "Anvil");
+    g.player.weapons = [weapon]; g.inventory = [anvil];
+    g = act(g, { type: "use", id: anvil.id, target: weapon.id });
+    expect(g.player.weapons[0].name).toBe("Obsidian Sword");
+    expect(g.achievements?.some(a => a.name === "Obsidian Smith")).toBe(true);
+    g.player.weapons[0].uses = 1;
+    const enemy = makeMonster(g, "Zombie", 1); Object.assign(enemy, { x: 11, y: 7, hp: 1000 });
+    g.monsters = [enemy]; g.combat = enemy.id;
+    g = act(g, { type: "attack" });
+    expect(g.achievements?.some(a => a.name === "Obsidian Obliteration")).toBe(true);
+  });
   it("upgrades a chosen bag weapon by one material and restores its new full durability", () => {
     let g = base();
     const sword = makeItem(g, "Fragile Sword"), axe = makeItem(g, "Iron Axe"), anvil = makeItem(g, "Anvil");

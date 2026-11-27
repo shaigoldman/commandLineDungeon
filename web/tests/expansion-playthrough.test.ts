@@ -173,6 +173,7 @@ describe("Ashfall playthroughs", () => {
     expect(g).toEqual(before);
     g.capacity = 100;
     g = act(g, { type: "buy", id: item.id });
+    expect(g.achievements?.some(a => a.name === "Supporting Local Business")).toBe(true);
     expect(g.player.gold).toBe(75);
     expect(g.inventory[0].id).toBe(item.id);
     expect(() => act(g, { type: "buy", id: item.id })).toThrow("sold out");
@@ -196,12 +197,15 @@ describe("Ashfall playthroughs", () => {
     expect(g.seed).toBe(seed);
     expect(g.monsters[0].merchant!.buyPrices[normal.id]).toBe(price);
     g = act(g, { type: "sell", id: normal.id });
+    expect(g.achievements?.some(a => a.name === "Entrepreneur")).toBe(true);
     expect(g.player.gold).toBe(price);
     g = act(g, { type: "quote", id: wanted.id });
     expect(g.monsters[0].merchant!.buyPrices[wanted.id]).toBe(
       marketValue(wanted) * 3,
     );
+    g.achievements = [];
     g = act(g, { type: "sell", id: refused.id });
+    expect(g.achievements?.some(a => a.name === "Entrepreneur")).toBe(false);
     expect(g.inventory.some((i) => i.id === refused.id)).toBe(true);
     expect(g.marketNotice).toContain(g.monsters[0].merchant!.refusal);
   });
@@ -299,6 +303,7 @@ describe("Ashfall playthroughs", () => {
     g = act(g, { type: "move", dx: 1, dy: 0 });
     expect(g.pendingChest).toBe(c.id);
     g = act(JSON.parse(JSON.stringify(g)), { type: "open-chest", id: c.id });
+    expect(g.achievements?.some(a => a.name === "Treasure Seeker")).toBe(true);
     expect(g.inventory.map((i) => i.id)).toEqual([rare.id]);
     expect(g.pendingLoot!.id).toBe(c.reward.id);
     g = act(g, { type: "pickup" });
@@ -333,6 +338,7 @@ describe("Ashfall playthroughs", () => {
       const rare = makeItem(g, "Rare Key");
       g.inventory.push(rare);
       g = act(g, { type: "unlock-door", id: d.id });
+      expect(g.achievements?.some(a => a.name === "Behind Closed Doors")).toBe(true);
       expect(g.player.x).toBe(34);
       expect(g.inventory.some((i) => i.id === rare.id)).toBe(false);
       g = JSON.parse(JSON.stringify(g));

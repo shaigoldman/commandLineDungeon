@@ -12,10 +12,41 @@ import {
   randomItem,
 } from "../shared/engine";
 import { classes, spells, itemDefinitions } from "../shared/catalog";
+import { ACHIEVEMENTS, achievementsFromGame } from "../shared/achievements";
 function game() {
   return newGame("Ada", "Warrior", "Wind", 0, 42);
 }
 describe("source mechanics", () => {
+  it("offers 57 uniquely named achievements", () => {
+    expect(ACHIEVEMENTS).toHaveLength(57);
+    expect(new Set(ACHIEVEMENTS.map(a => a.name)).size).toBe(57);
+  });
+  it("awards and recovers milestone achievements without changing score", () => {
+    let g = game();
+    g.monsters = [];
+    g.kills = 50; g.player.level = 5; g.player.gold = 100;
+    const score = g.score;
+    g = act(g, { type: "dismiss-object" });
+    const expected = ["Monster Hunter", "Dungeon Legend", "Seasoned Adventurer", "Deep Pockets"];
+    expect(g.achievements?.map(a => a.name)).toEqual(expect.arrayContaining(expected));
+    expect(g.score).toBe(score);
+    g = act(g, { type: "dismiss-object" });
+    for (const name of expected) expect(g.achievements?.filter(a => a.name === name)).toHaveLength(1);
+    g.achievements = [];
+    expect(achievementsFromGame(g)).toEqual(expect.arrayContaining(expected));
+  });
+  it("requires stats to exceed 100 and recovers them from existing saves", () => {
+    let g = game(); g.monsters = [];
+    Object.assign(g.player.stats, { Power: 100, Magic: 100, Speed: 100 });
+    g = act(g, { type: "dismiss-object" });
+    const names = ["Might Beyond Measure", "Magical Overload", "Faster Than Thought"];
+    for (const name of names) expect(g.achievements?.some(a => a.name === name)).toBeFalsy();
+    Object.assign(g.player.stats, { Power: 101, Magic: 101, Speed: 101 });
+    g = act(g, { type: "dismiss-object" });
+    expect(g.achievements?.map(a => a.name)).toEqual(expect.arrayContaining(names));
+    g.achievements = [];
+    expect(achievementsFromGame(g)).toEqual(expect.arrayContaining(names));
+  });
   it("preserves class bases, starting inventory, and fixed mana", () => {
     for (const c of ["Warrior", "Knight", "Scout", "Mage"]) {
       const g = newGame("Ada", c, "Wind", 0, 42);
@@ -34,6 +65,7 @@ describe("source mechanics", () => {
       g.inventory.push(bag);
       g = act(g, { type: "use", id: bag.id });
       expect(g.capacity).toBe(expected);
+      expect(g.achievements?.some(a => a.name === "More Room for Loot")).toBe(true);
     }
   });
   it("matches original hit and EXP formulas", () => {
@@ -157,6 +189,7 @@ describe("source mechanics", () => {
     const rope = g.inventory.find((i) => i.kind === "rope")!;
     g = act(g, { type: "use", id: rope.id });
     expect(g.combat).toBeUndefined();
+    expect(g.achievements?.some(a => a.name === "Rope Trick")).toBe(true);
     expect(g.inventory.some((i) => i.id === rope.id)).toBe(false);
   });
   it("advances floors, requires keys and wins at floor three", () => {
@@ -205,6 +238,7 @@ describe("source mechanics", () => {
     g = act(g, { type: "use", id: nuke.id });
     expect(g.monsters).toHaveLength(0);
     expect(g.status).toBe("playing");
+    expect(g.achievements?.some(a => a.name === "Nuclear Survivor")).toBe(true);
     nuke = makeItem(g, "Nuke");
     g.inventory.push(nuke);
     g = act(g, { type: "use", id: nuke.id });

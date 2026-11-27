@@ -1017,6 +1017,7 @@ function hurt(g: Game, a: Actor, n: number, source = "Attack", reward = true, at
         g.death = { source, attacker: attacker?.name || (source === "Poison" ? a.poisonSource : source === "Curse" ? a.curseSource : undefined), damage: n, floor: g.floor + 1, turn: g.turn };
       g.status = "dead";
       g.combat = undefined;
+      if (source === "Curse") achievement(g, "Cursed to Death", 0);
       log(g, "Your journey ends here. Your score: " + g.score);
     } else kill(g, a, reward, reward);
   }
@@ -1034,7 +1035,7 @@ function addXP(g: Game, amount: number) {
 }
 function achievement(g: Game, name: string, points: number) {
   g.achievements ??= [];
-  if (!g.achievements.some(a => a.name===name)) { g.achievements.push({name,points}); g.score+=points; log(g, `Achievement: ${name} (+${points} score)`); }
+  if (!g.achievements.some(a => a.name===name)) { g.achievements.push({name,points}); g.score+=points; log(g, `Achievement: ${name}${points ? ` (+${points} score)` : ""}`); }
 }
 function kill(g: Game, m: Actor, reward = true, drops = reward) {
   if (!g.monsters.some((a) => a.id === m.id)) return;
@@ -1044,6 +1045,10 @@ function kill(g: Game, m: Actor, reward = true, drops = reward) {
   log(g, m.name + " falls.");
   for (const item of [...new Map([...(m.inventory || []), ...m.weapons].map(i=>[i.id,i])).values()]) g.loot.push({x:m.x,y:m.y,item});
   if (m.boss && m.name.startsWith("Ruthagor") && ["Warrior", "Knight", "Scout", "Mage"].includes(g.player.className)) achievement(g, `Dragon Slayer: ${g.player.className}`, 0);
+  if (reward && !m.merchant && !m.npc) {
+    const trophies: Record<string, string> = { Gremlin: "Gremlin Repellent", Shadow: "Afraid of the Dark?", Robot: "Robot Recycling", "Dark Fairy": "Fairy Tale Ending", Snake: "Snake Charmer", Dragon: "Here Be Dragons" };
+    if (!m.boss && trophies[m.className]) achievement(g, trophies[m.className], 0);
+  }
   if (reward && !m.merchant) {
     g.kills = (g.kills || 0)+1;
     if (g.kills===1) achievement(g, "First Blood", 25);
@@ -1104,6 +1109,7 @@ function grantFloorBoon(g: Game) {
     g.pods.push({...spot, max:false, healthOnly:true});
   }
   g.floorBoonGranted = true;
+  achievement(g, "Clean Sweep", 0);
   log(g, "FLOOR BOON: All non-boss enemies defeated! Three health pods appeared at random locations on this floor.");
 }
 function checkLevel(g: Game) {
@@ -1157,6 +1163,7 @@ function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
   for (const w of [...a.weapons])
     if (!unarmed && w.kind === "weapon" && !w.armorBonus && !(grip > 0 && random(g) < grip) && --w.uses! <= 0) {
       a.weapons = a.weapons.filter((i) => i.id !== w.id);
+      if (a.id === "player" && w.name.startsWith("Obsidian ")) achievement(g, "Obsidian Obliteration", 0);
       log(g, a.id === "player" ? `WEAPON BROKE: ${w.name} broke! Equip another weapon from your bag.` : `${a.name}'s ${w.name} broke!`);
     }
   const speedy = !!b.effects["Speedy Boots"];
@@ -1178,7 +1185,11 @@ function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
   }
   const criticalHit = damage === s.Attack * 3;
   const hpBeforeHit = b.hp;
+  if (a.id === "player" && criticalHit) achievement(g, "Critical Acclaim", 0);
+  if (b.id === "player" && damage <= armorOf(b)) achievement(g, "Not a Scratch", 0);
   hurt(g, b, damage, "Attack", a.id === "player", a);
+  if (a.id === "player" && !b.npc && !b.merchant && unarmed && b.hp <= 0) achievement(g, "Bare Knuckle Champion", 0);
+  if (b.id === "player" && b.hp === 1 && hpBeforeHit > 1 && g.status === "playing") achievement(g, "By a Thread", 0);
   if (g.death?.source === "Attack" && b.id === "player") g.death.critical = criticalHit;
   // Retaliation triggers on a landed attack, even if armor absorbs all damage.
   // Capture shields before durability is spent so the final block still poisons.
@@ -1195,6 +1206,7 @@ function strike(g: Game, a: Actor, b: Actor, unarmed = false) {
   for (const shield of [...b.weapons].filter((weapon) => weapon.armorBonus))
     if (--shield.uses! <= 0) {
       b.weapons = b.weapons.filter((weapon) => weapon.id !== shield.id);
+      if (b.id === "player" && shield.name.startsWith("Obsidian ")) achievement(g, "Obsidian Obliteration", 0);
       log(g, b.id === "player" ? `WEAPON BROKE: ${shield.name} broke! Its protection is gone.` : `${b.name}'s ${shield.name} broke!`);
     }
   if (a.className === "Dragon" && b.hp > 0 && b.hp < hpBeforeHit) { b.burn = [4, 3]; log(g, `${b.name} is BURNING: 3 damage per action for 4 turns!`); }
@@ -1559,6 +1571,8 @@ function performSpell(g: Game, s: (typeof spells)[number], m: Actor | undefined,
           }
           break;
       }
+  const spellTrophies: Record<string, string> = { Blow: "Blown Away", Befriend: "Make a Friend", Study: "Bookworm", Gild: "Midas Touch", "Mana Drain": "Blood for Magic", Teleport: "Now You See Me", Kindle: "Playing with Fire", Summon: "Uninvited Guest", "Dark Summon": "Uninvited Guest" };
+  if (spellTrophies[s.name]) achievement(g, spellTrophies[s.name], 0);
 }
 
 function engageItemTarget(g: Game, target: Actor) {
@@ -1727,6 +1741,7 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       if (!target || !nextName) throw Error("Choose an upgradeable carried or equipped weapon.");
       const upgraded = makeItem(g, nextName);
       Object.assign(target, upgraded, { id: target.id, uses: upgraded.maxUses });
+      if (target.name.startsWith("Obsidian ")) achievement(g, "Obsidian Smith", 0);
       log(g, `Anvil upgraded your weapon to ${target.name} (${target.uses} uses).`);
       break;
     }
@@ -1738,11 +1753,11 @@ function use(g: Game, i: Item, chosenSpell?: string, targetId?: string) {
       break;
     }
     case "cursed-candy":
-      addXP(g, 100); checkLevel(g); applyCurse(g, 12, 3, i.name); break;
+      addXP(g, 100); checkLevel(g); applyCurse(g, 12, 3, i.name); achievement(g, "Curiosity Cursed the Cat", 0); break;
     case "cursed-potion":
-      heal(p, p.stats.Health); applyCurse(g, 12, 3, i.name); break;
+      heal(p, p.stats.Health); applyCurse(g, 12, 3, i.name); achievement(g, "Curiosity Cursed the Cat", 0); break;
     case "cursed-gold":
-      p.gold = (p.gold || 0) + 10; applyCurse(g, 12, 3, i.name); break;
+      p.gold = (p.gold || 0) + 10; applyCurse(g, 12, 3, i.name); achievement(g, "Curiosity Cursed the Cat", 0); break;
     case "critical-star":
       p.effects["Critical Star"] = [1, 1]; break;
     case "speedy-boots":
@@ -2053,7 +2068,7 @@ function collectFloorGold(g: Game) {
   const ids = new Set(coins.map((l) => l.item.id));
   const amount = coins.reduce((sum, l) => sum + l.item.value, 0);
   g.player.gold = (g.player.gold || 0) + amount;
-  for (const coin of coins) if (coin.item.kind === "cursed-gold") applyCurse(g, 12, 3, coin.item.name);
+  for (const coin of coins) if (coin.item.kind === "cursed-gold") { applyCurse(g, 12, 3, coin.item.name); achievement(g, "Curiosity Cursed the Cat", 0); }
   g.loot = g.loot.filter((l) => !ids.has(l.item.id));
   if (g.pendingLoot && ids.has(g.pendingLoot.id)) {
     g.pendingLoot = g.loot.find(
@@ -2067,6 +2082,7 @@ export function triggerTrap(g: Game) {
   const trap = g.traps?.find((trap) => trap.x === p.x && trap.y === p.y);
   if (!trap) return;
   trap.revealed = true;
+  achievement(g, "Watch Your Step", 0);
   const strength = 1 + Math.floor(g.floor / 3);
   switch (trap.kind) {
     case "poison": {
@@ -2084,6 +2100,7 @@ export function triggerTrap(g: Game) {
       const weapon = p.weapons.find((item) => item.kind === "weapon" || item.kind === "tome");
       if (weapon) {
         p.weapons = p.weapons.filter((item) => item.id !== weapon.id);
+        if (weapon.name.startsWith("Obsidian ")) achievement(g, "Obsidian Obliteration", 0);
         log(g, `WEAPON BROKE: Rust trap destroyed ${weapon.name}!`);
       }
       log(g, weapon ? "TRAP: Rust ate your equipped weapon." : "TRAP: Rust hissed across empty hands.");
@@ -2148,6 +2165,9 @@ export function act(input: Game, a: Action): Game {
   if (g.pendingLevels && a.type !== "level")
     throw Error("Choose your level-up bonus first.");
   const m = g.monsters.find((m) => m.id === g.combat);
+  const usedItem = a.type === "use" ? g.inventory.find(i => i.id === a.id) : a.type === "use-floor" ? (a.id ? g.loot.find(l => l.item.id === a.id)?.item : g.pendingLoot || g.loot.find(l => l.x === p.x && l.y === p.y)?.item) : undefined;
+  const usedKind = usedItem?.kind, usedName = usedItem?.name;
+  const hadNukeShield = !!p.effects["Nuke Shield"];
   if (["open-chest", "unlock-door"].includes(a.type) && g.pendingLevels)
     throw Error("Choose your level bonus first.");
   switch (a.type) {
@@ -2462,6 +2482,7 @@ export function act(input: Game, a: Action): Game {
       if (random(g) < fleeChance(p, m)) {
         g.combat = undefined;
         log(g, "You escaped safely.");
+        achievement(g, "Live to Fight Another Day", 0);
       } else {
         g.encounter = {
           enemyId: m.id,
@@ -2687,6 +2708,27 @@ export function act(input: Game, a: Action): Game {
   if (input.inventory.some(i=>i.kind==="ghost-boots") && !g.inventory.some(i=>i.kind==="ghost-boots") && g.tiles[p.y]?.[p.x]!==0 && p.hp>0) hurt(g,p,p.hp,"Entombed");
   syncPassiveStats(g);
   grantFloorBoon(g);
+  if ((g.kills || 0) >= 25) achievement(g, "Monster Hunter", 0);
+  if ((g.kills || 0) >= 50) achievement(g, "Dungeon Legend", 0);
+  if (p.level >= 5) achievement(g, "Seasoned Adventurer", 0);
+  if ((p.gold || 0) >= 100) achievement(g, "Deep Pockets", 0);
+  if (p.stats.Power > 100) achievement(g, "Might Beyond Measure", 0);
+  if (p.stats.Magic > 100) achievement(g, "Magical Overload", 0);
+  if (p.stats.Speed > 100) achievement(g, "Faster Than Thought", 0);
+  if (g.floor === input.floor && g.chests?.some(c => c.opened && input.chests?.some(old => old.id === c.id && !old.opened))) achievement(g, "Treasure Seeker", 0);
+  if (g.floor === input.floor && g.secretDoors?.some(d => d.unlocked && input.secretDoors?.some(old => old.id === d.id && !old.unlocked))) achievement(g, "Behind Closed Doors", 0);
+  if (a.type === "buy") achievement(g, "Supporting Local Business", 0);
+  if (a.type === "sell" && !g.inventory.some(i => i.id === a.id)) achievement(g, "Entrepreneur", 0);
+  if (a.type === "deal") achievement(g, "Deal or No Deal", 0);
+  if (g.floor === input.floor) {
+    const opened = g.chests?.filter(c => c.opened && input.chests?.some(old => old.id === c.id && !old.opened)) || [];
+    if (opened.some(c => c.trapped)) achievement(g, "Surprise Inside", 0);
+    if (opened.some(c => c.ultra)) achievement(g, "The Good Stuff", 0);
+  }
+  const itemTrophies: Record<string, string> = { rope: "Rope Trick", "mystery-potion": "What Could Go Wrong?", bag: "More Room for Loot", "alchemy-book": "Pocket Alchemist", "alchemy-wand": "Pocket Alchemist", anvil: "Forged in the Dungeon", "mana-pot": "Liquid Assets" };
+  if (usedKind && itemTrophies[usedKind]) achievement(g, itemTrophies[usedKind], 0);
+  if (usedKind === "nuke" && hadNukeShield && p.hp > 0) achievement(g, "Nuclear Survivor", 0);
+  if (usedKind === "greedy-amulet" && usedName === "Really Greedy Amulet") achievement(g, "A Dangerous Bargain", 0);
   g.pendingBagCleanup = g.inventory.length+Number(p.weapons.length>0)>capacityOf(g);
   return g;
 }
